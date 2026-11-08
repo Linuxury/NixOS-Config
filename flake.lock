@@ -781,11 +781,11 @@
     "zsh": {
       "flake": false,
       "locked": {
-        "lastModified": 1794087757,
-        "narHash": "sha256-Xug0GR5Govb+smeuMLt3cyWWe+yylTJqZhBuAyHK0QM=",
+        "lastModified": 1794110746,
+        "narHash": "sha256-ZrDtwqukn6MEZ10in4EsI9+c3WTulDK25zh8QKUCBNI=",
         "owner": "Linuxury",
         "repo": "ZSH",
-        "rev": "f3899f9b23e2a5b6bd9e2d2d9037f2e180d3523e",
+        "rev": "1c3d0617b45b27428ed075569354b20e6a908755",
         "type": "github"
       },
       "original": {
