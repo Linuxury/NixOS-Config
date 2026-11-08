@@ -30,6 +30,11 @@
     # -------------------------------------------------------------------------
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    # ponytail: goose-cli 1.55.0 on unstable 2026-11-07 is missing build deps
+    # (zstd, aws-lc, oniguruma…). Pin goose to the last good rev; delete this
+    # input + the override in modules/development/ai-tools/goose once fixed.
+    nixpkgs-goose.url = "github:nixos/nixpkgs/f9a75f41be3a74eab55d3a7679d34ad6cc0da977";
+
     # -------------------------------------------------------------------------
     # home-manager — Manages per-user configuration and dotfiles
     # This lets us define each user's environment declaratively.

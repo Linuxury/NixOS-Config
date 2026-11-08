@@ -16,11 +16,12 @@
 # Requires: modules/development/ai-tools/claude/default.nix (logged-in claude)
 # ===========================================================================
 
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 
 {
   environment.systemPackages = with pkgs; [
-    goose-cli         # Goose agent CLI (goose session / goose run)
+    # Pinned: unstable's goose-cli fails to build (see nixpkgs-goose in flake.nix)
+    inputs.nixpkgs-goose.legacyPackages.${pkgs.stdenv.hostPlatform.system}.goose-cli
     claude-agent-acp  # ACP adapter Goose's claude-acp provider runs
   ];
 }
