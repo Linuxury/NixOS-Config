@@ -32,9 +32,9 @@
 #   services.nixos-auto-update.nixosConfigPath = "/home/linuxury/nixos-config";
 #
 # Unattended triggers (weekly timer + session-start service) run only when
-#   services.nixos-auto-update.enable = true. Default is false while the repos
-#   are being migrated; the nixos-auto-update command itself stays available
-#   for manual use (nru, Noctalia plugin).
+#   services.nixos-auto-update.enable = true (the default). The
+#   nixos-auto-update command itself is always available for manual use
+#   (nru, Noctalia plugin).
 # ===========================================================================
 
 { config, pkgs, lib, ... }:
@@ -54,11 +54,10 @@ in
 
     enable = lib.mkOption {
       type        = lib.types.bool;
-      default     = false;
+      default     = true;
       description = ''
         Run unattended updates (system.autoUpgrade timer + session-start user
-        service) on non-primary hosts. Off during the repo migration — flip the
-        default to true once the new repos are live. Manual runs are unaffected.
+        service) on non-primary hosts. Manual runs are unaffected.
       '';
     };
 
