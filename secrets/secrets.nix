@@ -1,0 +1,285 @@
+# ===========================================================================
+# secrets/secrets.nix — Declares which SSH public keys can decrypt each secret
+#
+# HOW AGENIX WORKS:
+#   Each .age file in this directory is encrypted for a set of recipients.
+#   A recipient is an SSH public key. The corresponding private key (either
+#   your personal key or a host's SSH host key) decrypts the secret.
+#
+# TWO TYPES OF RECIPIENTS:
+#   1. linuxury-personal   — your personal SSH key (so you can re-encrypt
+#                            secrets when rotating keys or adding new hosts)
+#   2. <hostname>          — each machine's SSH host key (generated at first boot)
+#                            so the machine can decrypt its own secrets
+#
+# SETUP STEPS:
+#   1. Paste your personal public key below (cat ~/.ssh/id_ed25519.pub)
+#   2. After installing each host for the first time, collect its host key:
+#        ssh-keyscan -t ed25519 <hostname-or-ip>
+#      Paste the key string (without "hostname" prefix) for that host below.
+#   3. Re-encrypt all secrets for the new host:
+#        nix run nixpkgs#agenix -- -r
+#
+# CREATING A SECRET:
+#   nix run nixpkgs#agenix -- -e secrets/mysecret.age
+#   (Opens $EDITOR. Type the secret, save, close.)
+#
+# The encrypted .age files are safe to commit — only holders of the
+# corresponding private keys can decrypt them.
+# ===========================================================================
+
+let
+
+  # Deduplicate a list — prevents ragenix errors when placeholder host keys
+  # are identical to a personal key already in linuxury-admins.
+  # Replace placeholder keys with real host keys after first boot:
+  #   ssh-keyscan -t ed25519 <hostname-or-ip> | awk '{print $2 " " $3}'
+  uniq = builtins.foldl' (acc: x: if builtins.elem x acc then acc else acc ++ [ x ]) [ ];
+
+  # --------------------------------------------------------------------------
+  # PERSONAL SSH KEYS (per-machine — each can re-key secrets independently)
+  #
+  # Add a new entry when setting up a new machine:
+  #   cat ~/.ssh/id_ed25519.pub
+  # --------------------------------------------------------------------------
+  linuxury-personal   = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH0ZEivzBqlE7mH2ZepwWmTnQM2Oha6q0Mblx20CyvcP linuxurypr@gmail.com";
+  thinkpad-personal   = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx6aZyKXvPNCP9q+Mv+5FLJ/G3O7IA8duJuTkxeB6Uz linuxury-thinkpad";
+  ryzen5900x-personal = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ7VayUjJnywEEhyLOnc5E4Pqb5DxoNDmVVNLRpiV7dQ ryzen5900x-linuxury";
+  # babylinux's personal SSH key — generated on Ryzen5800x
+  ryzen5800x-personal = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILwXwWZ527dCVLL8cGgpMdv0kUNLCNee3kFupr6sI/Dr babylinux-ryzen5800x";
+
+  linuxury-admins = [
+    linuxury-personal
+    thinkpad-personal
+    ryzen5900x-personal
+    minisforum-personal
+  ];
+
+  # --------------------------------------------------------------------------
+  # HOST SSH HOST KEYS
+  #
+  # Collect after first boot of each host:
+  #   ssh-keyscan -t ed25519 <hostname-or-ip> | awk '{print $3}'
+  #
+  # Format: "ssh-ed25519 <key-data>"
+  # --------------------------------------------------------------------------
+  ThinkPad = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIT5rYiAs2ukQJtUmGWTD5nbxX74fh3vG3OyNxE1XfdJ root@ThinkPad";
+  Ryzen5900x = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHyps7MacHDkQcGP1kr6ZOc6fR/JTMrj4my3Bg5ybyJo root@Ryzen5900x";
+  Ryzen5800x = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINl+VNvT/47nZ0x3W+1bZudGCNcMw8k8dXeQE2pkLeWU root@Ryzen5800x";
+  Asus-A15 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH0ZEivzBqlE7mH2ZepwWmTnQM2Oha6q0Mblx20CyvcP linuxurypr@gmail.com";
+  Alex-Desktop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIMQG145RHl2xXl6wmRfpz+q7fUMVGqPp37KMD+RTSI root@Alex-Desktop";
+  Alex-Laptop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILyHn+dSmJU01t4p81PfmhHb8yaRjUhoarvQwTDJQ69T root@Alex-Laptop";
+  MinisForum = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM/HPvxQY35jS4VDZRy4viIfHIGjUqkCgFhRVNcIsZRG root@MinisForum";
+  Radxa-X4 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIUDAhDDbHUPFPmRnVJKgKfiVu7Fp1iavTk1Vp8mrqhu";
+  Media-Server = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICY9WqgrApfNR85yBAilUncMSVwnaatj9obAkmG7jSm/ root@Media-Server";
+  media-server-personal = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJYO2Wc9utl/dH/8y6CB6s6gfGIsOMGOq7DwFxcR4G1I Media-Server-linuxury";
+  minisforum-personal = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP9EOXj696mEgZ9Ke3wtOyNA2kH6t0uc820AVXcc+yEH MinisForum-linuxury";
+
+  # --------------------------------------------------------------------------
+  # Convenience groups
+  # --------------------------------------------------------------------------
+  linuxury-machines = [
+    ThinkPad
+    Ryzen5900x
+    MinisForum
+    Radxa-X4
+    Media-Server
+  ];
+  babylinux-machines = [
+    Ryzen5800x
+    Asus-A15
+  ];
+  alex-machines = [
+    Alex-Desktop
+    Alex-Laptop
+  ];
+
+in
+{
+
+  # --------------------------------------------------------------------------
+  # linuxury's SSH authorized key
+  #
+  # The .age file contains linuxury's SSH PUBLIC key (authorized_keys format).
+  # agenix decrypts it onto each host so linuxury can SSH in after install.
+  # Deployed to: all hosts (emergency/admin access on family machines).
+  # --------------------------------------------------------------------------
+  "linuxury-authorized-key.age".publicKeys = uniq (
+    linuxury-admins ++ linuxury-machines ++ babylinux-machines ++ alex-machines
+  );
+
+  # --------------------------------------------------------------------------
+  # babylinux's SSH authorized key
+  #
+  # Primary SSH key for babylinux — deployed to her machines so she can
+  # manage them directly. linuxury-admins included so secrets can be re-keyed.
+  # --------------------------------------------------------------------------
+  "babylinux-authorized-key.age".publicKeys = uniq (
+    linuxury-admins ++ [ ryzen5800x-personal ] ++ babylinux-machines
+  );
+
+  # --------------------------------------------------------------------------
+  # WireGuard config for qBittorrent VPN killswitch
+  #
+  # Contains the PRIVATE key + peer config (wg-quick format).
+  # NEVER commit the decrypted version. Only the .age file belongs here.
+  # Moved from babylinux machines to Radxa-X4 (dedicated torrent host).
+  # After updating: nix run nixpkgs#agenix -- -r
+  # --------------------------------------------------------------------------
+  "wireguard-vpnunlimited.age".publicKeys = uniq (linuxury-admins ++ [ Radxa-X4 ]);
+
+  # --------------------------------------------------------------------------
+  # Tailscale auth key for Radxa-X4
+  # Reusable key — used by tailscaled-autoconnect to auth on boot without URL.
+  # Generate a new key at: https://login.tailscale.com/admin/settings/keys
+  # After updating: nix run nixpkgs#agenix -- -r
+  # --------------------------------------------------------------------------
+  "tailscale-auth-radxa.age".publicKeys = uniq (linuxury-admins ++ [ Radxa-X4 ]);
+
+  # --------------------------------------------------------------------------
+  # User display names (GECOS / full names)
+  #
+  # These secrets are set via activation scripts so nixos-rebuild does not
+  # reset the GECOS field to blank on every switch.
+  #
+  # Machines with placeholder host keys (babylinux/alex) should only import
+  # the corresponding module after real host keys are collected and re-keyed.
+  # --------------------------------------------------------------------------
+  "description-linuxury.age".publicKeys = uniq (
+    linuxury-admins
+    ++ [
+      ThinkPad
+      Ryzen5900x
+    ]
+  );
+
+  "description-babylinux.age".publicKeys = uniq (linuxury-admins ++ babylinux-machines);
+
+  "description-alex.age".publicKeys = uniq (linuxury-admins ++ alex-machines);
+
+  # --------------------------------------------------------------------------
+  # Samba credentials for mounting Media-Server share
+  # Deployed to all COSMIC hosts — each mounts /mnt/Media-Server in their
+  # fileSystems config. Authenticates as linuxury; uid/gid set per host.
+  #
+  # After updating this list, re-encrypt with:
+  #   nix run nixpkgs#agenix -- -r
+  # --------------------------------------------------------------------------
+  "smb-credentials.age".publicKeys = uniq (
+    linuxury-admins
+    ++ [
+      ThinkPad
+      Ryzen5900x
+      Radxa-X4
+      MinisForum
+      Media-Server
+    ]
+    ++ babylinux-machines
+    ++ alex-machines
+  );
+
+  # --------------------------------------------------------------------------
+  # FreshRSS admin password
+  #
+  # Plain text password for the FreshRSS admin account (linuxury).
+  # Migrated from Radxa-X4 to Media-Server.
+  # After updating: nix run nixpkgs#agenix -- -r
+  # --------------------------------------------------------------------------
+  "freshrss-admin-password.age".publicKeys = uniq (linuxury-admins ++ [ Media-Server ]);
+
+  # --------------------------------------------------------------------------
+  # OpenRouter API key for opencode
+  #
+  # Used by the opencode() shell function to authenticate with OpenRouter.
+  # After updating: nix run nixpkgs#agenix -- -r
+  # --------------------------------------------------------------------------
+  "openrouter-api-key.age".publicKeys = uniq (
+    linuxury-admins
+    ++ [
+      ThinkPad
+      Ryzen5900x
+    ]
+  );
+
+  # IteraCompute API key (free Qwen tier). Encrypted to every host so any host
+  # that imports the Zed or ai-tools module gets it without a re-key.
+  # Zed: injected into settings.json. Shells: exported as ITERACOMPUTE_API_KEY.
+  "iteracompute-api-key.age".publicKeys = uniq (
+    linuxury-admins ++ linuxury-machines ++ babylinux-machines ++ alex-machines
+  );
+
+  # --------------------------------------------------------------------------
+  # SMTP app password for update failure emails
+  #
+  # Gmail app password (16-char) for msmtp to send failure notifications.
+  # Deployed to all hosts that run auto-update.nix.
+  # Generate at: https://myaccount.google.com/apppasswords
+  # After updating: nix run nixpkgs#agenix -- -r
+  # --------------------------------------------------------------------------
+  "smtp-app-password.age".publicKeys = uniq (
+    linuxury-admins
+    ++ linuxury-machines
+    ++ babylinux-machines
+    ++ alex-machines
+  );
+
+  # --------------------------------------------------------------------------
+  # PostgreSQL password for AI Memory database
+  #
+  # Stored as env-file format: POSTGRES_PASSWORD=<secret>
+  # Deployed only to Media-Server.
+  # After updating: nix run nixpkgs#agenix -- -r
+  # --------------------------------------------------------------------------
+  "postgres-ai-memory.age".publicKeys = uniq (
+    linuxury-admins ++ [ Media-Server ]
+  );
+
+  # --------------------------------------------------------------------------
+  # ZenNotes auth token
+  #
+  # Stored as env-file format: ZENNOTES_AUTH_TOKEN=<token>
+  # Deployed only to Media-Server (server reads it via environmentFiles).
+  # Generate: openssl rand -base64 32
+  # After updating: nix run nixpkgs#agenix -- -r
+  # --------------------------------------------------------------------------
+  "zennotes-auth-token.age".publicKeys = uniq (linuxury-admins ++ [ Media-Server ]);
+
+  # --------------------------------------------------------------------------
+  # flow-icons license key
+  #
+  # Commercial license for the flow-icons VSCodium extension.
+  # Injected into settings.json at HM activation — never stored in plaintext.
+  # After updating: nix run nixpkgs#ragenix -- -r
+  # --------------------------------------------------------------------------
+  "flow-icons-license.age".publicKeys = uniq (
+    linuxury-admins
+    ++ [
+      ThinkPad
+      Ryzen5900x
+    ]
+  );
+
+  # --------------------------------------------------------------------------
+  # SSH private key for distributed Nix builds
+  #
+  # Lets a client's nix-daemon (running as root) log into the `nixbuilder`
+  # account on MinisForum and build there. The matching PUBLIC key sits in
+  # plaintext in hosts/MinisForum/default.nix.
+  #
+  # Deployed only to the build CLIENTS — not to MinisForum itself, which
+  # builds locally. `nixbuilder` is a trusted-user on the builder, so this
+  # key is effectively root-equivalent THERE: only add hosts you control.
+  # Deliberately excluded: the Alex machines (family-controlled) and
+  # Asus-A15 (not migrated to this config).
+  # After updating: nix run nixpkgs#agenix -- -r
+  # --------------------------------------------------------------------------
+  "nix-builder-key.age".publicKeys = uniq (
+    linuxury-admins
+    ++ [
+      Radxa-X4
+      Media-Server
+      ThinkPad
+    ]
+  );
+
+}

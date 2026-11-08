@@ -1,0 +1,212 @@
+# ===========================================================================
+# modules/shells/noctalia/default.nix — Noctalia shell layer (v5+)
+#
+# Noctalia v5 is a full C++ rewrite of the v4 Quickshell/QML shell.
+# Tracked via the noctalia flake input (not nixpkgs) so it isn't stuck behind
+# nixpkgs' own packaging cadence. inputs.noctalia.homeModules.default disables
+# home-manager's bundled programs/noctalia.nix module and points its package
+# option at this input's own build instead.
+#
+# What this module sets up:
+#   - programs.noctalia.enable     — installs the package
+#   - programs.noctalia.systemd    — starts as a systemd user service;
+#     upstream module wires graphical-session.target automatically
+#     (replaces the v4 exec-once launch via shell-autostart.lua)
+#   - programs.noctalia.settings   — declarative config.toml
+#     wallpaper_changed hook writes ~/.local/share/current-wallpaper so
+#     the matugen path unit (<compositor>/matugen/default.nix) fires as before
+#   - notification daemon disabled — swaync handles notifications
+#   - greeters/noctalia — noctalia-greeter (greetd), bundled automatically
+#     so hosts don't need a separate greeter import. It matches the shell's
+#     look natively; unlike wayle it does NOT need greeters/sddm.
+#
+# Theming split: Noctalia's own templates own app theming (kitty, gtk, qt,
+# starship, umbriel, pywalfox, papirus-icons, ...). Thunderbird is themed
+# live through pywalfox (the add-on is force-installed by
+# system/graphical/thunderbird), not the `thunderbird` template: that one
+# is userChrome.css, only read at startup. Which templates are on is app
+# state: Settings → Theme → Templates, saved to
+# ~/.local/state/noctalia/settings.toml — not Nix. matugen
+# (themes/matugen) only covers Kvantum, which has no Noctalia template.
+# Templates need genuinely writable target files, so don't hand them
+# HM-managed (read-only store) paths — that's why fastfetch's is off.
+#
+# Importing this module activates Noctalia (shell + greeter). No enable
+# flag needed. To switch shell: remove this import, add shells/wayle
+# (+ greeters/sddm).
+# ===========================================================================
+
+{ config, inputs, pkgs, ... }:
+
+let
+  # Pushes the palette's primary color to OpenRGB devices + the Lemokey
+  # keyboard. Only wired up on hosts with hardware.openrgb.enable.
+  ledSync = pkgs.writeShellApplication {
+    name = "led-sync";
+    runtimeInputs = [ config.services.hardware.openrgb.package ] ++ (with pkgs; [ gawk gnugrep coreutils ]);
+    text = builtins.readFile ./color-sync/led-sync.sh;
+  };
+in
+{
+  imports = [ ../../greeters/noctalia/default.nix ];
+
+  home-manager.sharedModules = [
+
+    inputs.noctalia.homeModules.default
+
+    ({ lib, ... }: {
+      programs.noctalia = {
+        enable = true;
+
+        # Systemd user service — replaces the v4 exec-once in shell-autostart.lua.
+        # Noctalia's upstream module handles the graphical-session.target dependency
+        # internally; we just enable the service here.
+        systemd.enable = true;
+
+        # Declarative config.toml — only the fields we need to override.
+        # Everything else stays at noctalia defaults.
+        settings = {
+          # ── Wallpaper ──────────────────────────────────────────────────────
+          # Point at the per-host wallpaper symlink that wallpaper-slideshow
+          # manages. On wallpaper change, write the new path to the handoff
+          # file that triggers the matugen path unit.
+          wallpaper = {
+            enabled   = true;
+            directory = "~/Pictures/Wallpapers";
+            automation = {
+              enabled          = true;
+              interval_seconds = 1800;
+              order            = "random";
+              recursive        = true;
+            };
+          };
+
+          # ── Theme ──────────────────────────────────────────────────────────
+          # Derive accent colors from the active wallpaper so noctalia's own
+          # bar colors stay in sync with the matugen palette.
+          theme = {
+            mode   = "dark";
+            source = "wallpaper";
+          } // lib.optionalAttrs config.hardware.openrgb.enable {
+            # LED sync: render the bare primary hex, then push it to the
+            # RGB hardware (see color-sync/led-sync.sh).
+            templates.user.led-sync = {
+              input_path  = "${pkgs.writeText "led-color" "{{colors.primary.default.hex_stripped}}"}";
+              output_path = "$XDG_CACHE_HOME/noctalia/led-color";
+              post_hook   = "${ledSync}/bin/led-sync";
+            };
+          };
+
+          # ── Idle ───────────────────────────────────────────────────────────
+          # Noctalia is the only idle manager (hypridle is not started, so
+          # Noctalia owns org.freedesktop.ScreenSaver and honours app
+          # inhibits). Desktop: no suspend. Each action is preceded by a 60 s
+          # fade, and a timeout is when that fade starts, so: fade at 14 min,
+          # lock at 15, fade at 25, screen off at 26. The fade is an overlay
+          # layer, hidden by the lock screen, so only the first one is seen.
+          idle.pre_action_fade_seconds = 60.0;
+          idle.behavior.lock = { action = "lock"; enabled = true; timeout = 840.0; };
+          idle.behavior.screen-off = { action = "screen_off"; enabled = true; timeout = 1500.0; };
+          idle.behavior.lock-and-suspend.enabled  = false;
+
+          # Dark lock screen with no entry animation: the animation reveals it
+          # from the desktop, which flashed full brightness after the fade.
+          lockscreen = {
+            transition     = [ ];
+            tint_color     = "#000000";
+            tint_intensity = 0.85;
+          };
+
+          # ── Notification daemon ────────────────────────────────────────────
+          # swaync handles notifications on this config — disable noctalia's
+          # built-in daemon to avoid duplicate toasts.
+          notification.enable_daemon = false;
+
+          # ── Screenshots ────────────────────────────────────────────────────
+          # Native capture replaces the old grim/slurp/satty script. Every
+          # other field (save_to_file, copy_to_clipboard, freeze_screen, ...)
+          # already defaults to what that script did by hand.
+          shell.screenshot.directory = "~/Pictures/Screenshots";
+          # Lossless WebP (quality 100): smaller than PNG, same pixels.
+          # Clipboard/pipe output stays PNG regardless.
+          shell.screenshot.format  = "webp";
+          shell.screenshot.quality = 100;
+
+          # ── Umbriel ────────────────────────────────────────────────────────
+          # Both no-ops on any other compositor (noctalia checks isUmbriel()).
+          # Close the overview when an app is launched from it, and feed
+          # Umbriel's audio-reactive effects from noctalia's PipeWire spectrum.
+          shell.umbriel_overview_close_on_launch_enabled = true;
+          shell.umbriel_audio_provider_enabled           = true;
+
+          # ── Session panel ──────────────────────────────────────────────────
+          # Noctalia's default five actions + reboot to UEFI firmware setup.
+          # Declaring the list replaces the defaults, so all of them are
+          # spelled out (shortcuts match upstream's 1–5). reboot_uefi refuses
+          # to run (logs an error) on non-UEFI boots.
+          shell.session.actions = [
+            { action = "lock";             shortcut = "1"; }
+            { action = "logout";           shortcut = "2"; }
+            { action = "lock_and_suspend"; shortcut = "3"; }
+            { action = "reboot";           shortcut = "4"; }
+            { action = "shutdown";         shortcut = "5"; variant = "destructive"; }
+            { action = "reboot_uefi";      shortcut = "6"; }
+          ];
+
+          # ── App launching ──────────────────────────────────────────────────
+          # Run launcher/dock apps as their own app-*.service units instead of
+          # children of noctalia.service — otherwise every home-manager restart
+          # of noctalia (most nru runs) kills every app launched through it.
+          shell.launch_apps_as_systemd_services = true;
+
+          # ── Plugins ────────────────────────────────────────────────────────
+          # nixos-updates: bar badge + panel for pending package/Flatpak updates.
+          # Its update_command stays in app state (Settings → Plugins → ⚙): it
+          # opens a floating terminal via `umbriel msg spawn kitty --class
+          # nix-updates` (rule in umbriel's window-rules.toml) until
+          # noctalia-dev/community-plugins#1237 adds a terminal setting.
+          # Declaring any source replaces Noctalia's built-in list, so official
+          # and community must be listed here too. Don't add/remove sources via
+          # IPC or the GUI: that saves a full source list to the app-owned
+          # settings.toml, which then overrides this one.
+          plugin_settings."dmopp/nixos-updates" = {
+            flake_dir            = "${config.users.users.linuxury.home}/nixos-config";
+            check_interval_hours = 1;
+          };
+
+          plugins = {
+            enabled = [ "dmopp/nixos-updates" ];
+            source  = [
+              { name = "official";  kind = "git"; location = "https://github.com/noctalia-dev/official-plugins";  enabled = true; }
+              { name = "community"; kind = "git"; location = "https://github.com/noctalia-dev/community-plugins"; enabled = true; }
+            ];
+          };
+
+          # ── Hooks ──────────────────────────────────────────────────────────
+          # wallpaper_changed: write the new wallpaper path to the handoff
+          # file that the matugen path unit (hyprland/matugen) watches.
+          # $NOCTALIA_WALLPAPER_PATH is set by noctalia before running this.
+          hooks.wallpaper_changed =
+            ''echo "$NOCTALIA_WALLPAPER_PATH" > "$HOME/.local/share/current-wallpaper"'';
+        };
+      };
+    })
+
+    # =========================================================================
+    # Clear shell-autostart.lua — v5 uses the systemd service above.
+    # Clear shell-active.lua   — noctalia manages its own layer directly.
+    # Both files are dofile()'d by hyprland.lua; empty = no-op.
+    # =========================================================================
+    ({ lib, ... }: {
+      home.activation.noctaliaV5HyprFiles = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        for _f in \
+          "$HOME/dotfiles/hypr/shell-autostart.lua" \
+          "$HOME/dotfiles/hypr/shell-active.lua"; do
+          [ -d "$(dirname "$_f")" ] && : > "$_f"
+        done
+      '';
+
+    })
+
+  ];
+}
