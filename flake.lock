@@ -296,11 +296,11 @@
     "impeccable": {
       "flake": false,
       "locked": {
-        "lastModified": 1794105626,
-        "narHash": "sha256-9MntXkTa6ReVwl8eQ3OKNB8P0/4ub97wH/nFnuW1fXc=",
+        "lastModified": 1794191527,
+        "narHash": "sha256-GaHKdZP5OULoF6ab/m9xbaX6YwaM8pmExtLPFUVqliQ=",
         "owner": "pbakaus",
         "repo": "impeccable",
-        "rev": "924bbd194d02e5e15a227e75b5901fb0d7a4ecad",
+        "rev": "4b6b80f9c21cac9376deadaa2ef4924f341b8b4d",
         "type": "github"
       },
       "original": {
@@ -542,11 +542,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794164762,
-        "narHash": "sha256-9bHz1IaOF6HxUD1btzfMIZIGSvQPK7jcsIDE7kZS+jQ=",
+        "lastModified": 1794188365,
+        "narHash": "sha256-EjDNpxVNGu2q8C0f2ASWoZxzaV8xU6bxD0SHz/XhGBQ=",
         "owner": "noctalia-dev",
         "repo": "noctalia",
-        "rev": "2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b",
+        "rev": "274edea3af2015899ea57df22eed6dd282a91b61",
         "type": "github"
       },
       "original": {
