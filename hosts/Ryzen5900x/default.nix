@@ -19,6 +19,7 @@
 {
   config,
   pkgs,
+  inputs,
   ...
 }:
 
@@ -410,7 +411,7 @@
     # corectrl is installed by programs.corectrl.enable above
 
     # linuxury — everyday tools
-    topgrade           # One-command updater — Nix, cargo, flatpaks, etc.
+    inputs.nixpkgs-goose.legacyPackages.${pkgs.stdenv.hostPlatform.system}.topgrade  # pinned: unstable aws-lc-sys build broken. One-command updater — Nix, cargo, flatpaks, etc.
     bat                # cat with syntax highlighting and line numbers
     lazygit            # TUI for git — stage, commit, branch all in one
     gh                 # GitHub CLI — PRs, issues from terminal
