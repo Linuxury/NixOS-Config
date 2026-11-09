@@ -168,6 +168,9 @@
   # ==============================================================
   networking.hostName = "Ryzen5900x";
 
+  # Dux Files (module + package from nixpkgs) — trial. Portal dialog and default-handler left off for now.
+  programs.dux-files.enable = true;
+
   # ==============================================================
   # Auto-update — primary host
   #
