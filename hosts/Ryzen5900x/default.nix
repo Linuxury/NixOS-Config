@@ -170,6 +170,13 @@
 
   # Dux Files (module + package from nixpkgs) — trial. Portal dialog and default-handler left off for now.
   programs.dux-files.enable = true;
+  # Folder icons stay stale after Noctalia recolors Papirus (upstream #46): patch
+  # makes the UI reload icons when ~/.local/share/icons/Papirus-Dark/icon-theme.cache
+  # changes. Drop once #46 is fixed upstream. Theme name is hard-coded in the patch
+  # (modules/themes/gtk/default.nix) — update it if the icon theme changes.
+  programs.dux-files.package = pkgs.dux-files.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ../../pkgs/dux-files/icon-refresh.patch ];
+  });
 
   # ==============================================================
   # Auto-update — primary host
