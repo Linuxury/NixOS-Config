@@ -26,7 +26,7 @@
     ../../system/graphical/hytale.nix
     ../wallpapers.nix
     ../../system/graphical/nautilus.nix
-    ../../system/graphical/thunar.nix
+    #../../system/graphical/thunar.nix   # disabled: dux-files is the default file manager
   ];
 
   # =========================================================================

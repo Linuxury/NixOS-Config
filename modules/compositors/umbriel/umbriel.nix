@@ -148,11 +148,13 @@
     # Brightness control
     brightnessctl
 
+    # File manager — disabled 2026-11-10: dux-files is the default on this host.
+    # Nautilus + Thunar kept below, commented, to re-enable if needed.
     # File manager — Nautilus
-    nautilus
-    sushi
-    tinysparql
-    localsearch
+    #nautilus
+    #sushi
+    #tinysparql
+    #localsearch
 
     # File manager — Thunar. Nautilus draws its own hardcoded folder graphic
     # instead of reading the icon theme, so Papirus's dynamic recolor never
@@ -167,10 +169,10 @@
     # gets this for free via gnome-autoar, Thunar needs it explicit).
     # thunar-volman — auto-mount removable media (USB drives, etc.) on
     # insert, same role gvfs-udisks2 plays for Nautilus/GNOME automount.
-    thunar
-    xfconf
-    thunar-archive-plugin
-    thunar-volman
+    #thunar
+    #xfconf
+    #thunar-archive-plugin
+    #thunar-volman
 
     # Media keys
     playerctl
@@ -182,6 +184,6 @@
   # =========================================================================
   # Tracker — file indexer for Nautilus search
   # =========================================================================
-  services.gnome.tinysparql.enable = true;
-  services.gnome.localsearch.enable = true;
+  # services.gnome.tinysparql.enable = true;   # disabled with Nautilus
+  # services.gnome.localsearch.enable = true;
 }

@@ -51,7 +51,6 @@
     #   fluxer       — Discord client
     #   kdeconnect   — phone integration
     #   zennotes     — keyboard-first Markdown notes (connects to Media-Server:7879)
-    #   horizon-files — Wayland file manager (alternate to Nautilus/Thunar)
     # ==============================================================
     #../../modules/system/graphical/zen-browser.nix
     ../../modules/system/graphical/thunderbird.nix
@@ -59,7 +58,6 @@
     ../../modules/system/graphical/fluxer.nix
     ../../modules/system/graphical/craft-apps.nix
     ../../modules/system/graphical/claude-desktop.nix
-    #../../modules/system/graphical/horizon-files.nix
     ../../modules/services/kdeconnect.nix
     ../../modules/system/graphical/firefox.nix
     #../../modules/system/graphical/helium.nix

@@ -50,7 +50,6 @@
     #   fluxer       — Discord client
     #   kdeconnect   — phone integration
     #   zennotes     — keyboard-first Markdown notes (connects to Media-Server:7879)
-    #   horizon-files — Wayland file manager (alternate to Nautilus/Thunar)
     # ==============================================================
     #../../modules/system/graphical/zen-browser.nix
     ../../modules/system/graphical/thunderbird.nix
@@ -58,7 +57,6 @@
     ../../modules/system/graphical/fluxer.nix
     ../../modules/system/graphical/craft-apps.nix
     ../../modules/system/graphical/claude-desktop.nix
-    ../../modules/system/graphical/horizon-files.nix
     ../../modules/services/kdeconnect.nix
     ../../modules/system/graphical/firefox.nix
     #../../modules/system/graphical/helium.nix
@@ -170,6 +168,10 @@
 
   # Dux Files (module + package from nixpkgs) — trial. Portal dialog and default-handler left off for now.
   programs.dux-files.enable = true;
+  # Default folder handler for every user on this host (beats graphical.nix's mkDefault Nautilus).
+  home-manager.sharedModules = [{
+    xdg.mimeApps.defaultApplications."inode/directory" = pkgs.lib.mkForce "dev.duxlabs.files.desktop";
+  }];
   # Folder/sidebar icons stay stale after Noctalia recolors Papirus (upstream #46):
   # the patch reloads theme icons 1.5 s after the shell rewrites
   # ~/.cache/dms/dms-colors.json (Noctalia retargets the folder links within ~1 s;

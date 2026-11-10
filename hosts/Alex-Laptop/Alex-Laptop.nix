@@ -43,13 +43,11 @@
     #   firefox     — primary browser (locked down via policies)
     #   fluxer      — Discord client
     #   kdeconnect  — phone integration
-    #   horizon-files — Wayland file manager (alternate to Nautilus/Thunar)
     # ==============================================================
     ../../modules/system/graphical/firefox.nix
     #../../modules/system/graphical/helium.nix
     ../../modules/system/graphical/fluxer.nix
     ../../modules/system/graphical/craft-apps.nix
-    #../../modules/system/graphical/horizon-files.nix
     #../../modules/services/kdeconnect.nix
 
     # ==============================================================

@@ -44,14 +44,12 @@
     #   fluxer      — Discord client
     #   kdeconnect  — phone integration
     #   zen-browser — privacy-focused Firefox fork
-    #   horizon-files — Wayland file manager (alternate to Nautilus/Thunar)
     # ==============================================================
     ../../modules/system/graphical/firefox.nix
     ../../modules/system/graphical/helium.nix
     ../../modules/system/graphical/app-zennotes.nix
     ../../modules/system/graphical/fluxer.nix
     ../../modules/system/graphical/craft-apps.nix
-    #../../modules/system/graphical/horizon-files.nix
     ../../modules/services/kdeconnect.nix
     #../../modules/system/graphical/zen-browser.nix
 

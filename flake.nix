@@ -175,15 +175,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # horizon-files — Horizon File Manager source (no tags upstream, so the
-    # default branch is tracked like noctalia/umbriel; nru bumps it). Built by
-    # pkgs/horizon-files; only fetched on hosts importing that module.
-    # submodules=1: vendored nanosvg/stb/toml++/material-color-utilities.
-    horizon-files = {
-      url = "git+https://github.com/Event-Horizon-desktop-environment/Horizon-File-Manager?submodules=1";
-      flake = false;
-    };
-
     # bedrock-on-linux — Minecraft Bedrock (Windows/GDK) launcher. Follows our
     # nixpkgs so its steam-run/Mesa match the system's GPU driver (with its own
     # nixpkgs the GPU wasn't used). Installed by modules/gaming.
