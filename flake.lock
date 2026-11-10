@@ -275,24 +275,6 @@
         "type": "github"
       }
     },
-    "horizon-files": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1794338028,
-        "narHash": "sha256-IVzCMbwZZ6dTcYO+SoPRQLPZumD85WGt3LecN07Gl28=",
-        "ref": "refs/heads/main",
-        "rev": "b9a8e901998eb611f7d6e14f74c50549576a85d0",
-        "revCount": 62,
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/Event-Horizon-desktop-environment/Horizon-File-Manager"
-      },
-      "original": {
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/Event-Horizon-desktop-environment/Horizon-File-Manager"
-      }
-    },
     "impeccable": {
       "flake": false,
       "locked": {
@@ -618,7 +600,6 @@
         "dotfiles": "dotfiles",
         "helium-browser": "helium-browser",
         "home-manager": "home-manager",
-        "horizon-files": "horizon-files",
         "impeccable": "impeccable",
         "millennium": "millennium",
         "nixos-hardware": "nixos-hardware",
