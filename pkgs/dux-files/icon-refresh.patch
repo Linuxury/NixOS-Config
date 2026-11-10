@@ -1,14 +1,14 @@
 diff --git a/quickshell/Common/Paths.qml b/quickshell/Common/Paths.qml
-index e92f440..1d14b7a 100644
+index e92f440..1d79109 100644
 --- a/quickshell/Common/Paths.qml
 +++ b/quickshell/Common/Paths.qml
-@@ -41,16 +41,38 @@ Singleton {
+@@ -41,18 +41,43 @@ Singleton {
  
      property var _iconPaths: ({})
  
-+    // Bumped when the icon theme is rewritten on disk. Recoloring tools (Noctalia's Papirus
-+    // folders) retarget a symlink, so the resolved path never changes and Qt keeps serving the
-+    // cached pixmap; a changing query string makes it a new cache key.
++    // Bumped to make Qt reload theme icons. Recoloring tools (Noctalia's Papirus folders)
++    // retarget symlinks, so the resolved path never changes and Qt keeps serving the cached
++    // pixmap; a changing query string makes it a new cache key.
 +    property int iconGeneration: 0
 +
      function resolveIconPath(iconName: string): string {
@@ -20,7 +20,6 @@ index e92f440..1d14b7a 100644
 -        const resolved = literalIconSource(iconName) || Quickshell.iconPath(iconName, true) || bundledIconPath(iconName);
 -        if (resolved !== "")
 -            _iconPaths[iconName] = resolved;
--        return resolved;
 +        // Read first so bindings calling this re-evaluate when the generation changes.
 +        const generation = iconGeneration;
 +        let resolved = _iconPaths[iconName];
@@ -29,22 +28,44 @@ index e92f440..1d14b7a 100644
 +            if (resolved !== "")
 +                _iconPaths[iconName] = resolved;
 +        }
-+        // Only theme lookups (plain absolute paths); web and bundled sources keep their URL.
-+        return generation > 0 && resolved.startsWith("/") ? `${resolved}?g=${generation}` : resolved;
-+    }
-+
-+    FileView {
-+        // icon-theme.cache is regenerated last, after the folder symlink is retargeted.
-+        path: root.strip(StandardPaths.writableLocation(StandardPaths.GenericDataLocation)) + "/icons/Papirus-Dark/icon-theme.cache"
-+        watchChanges: true
-+        printErrors: false
-+        onFileChanged: iconRefresh.restart()
++        // Only theme lookups (Quickshell's icon provider URLs); web and bundled sources keep their
++        // URL. The provider reads `?path=` and `?fallback=` after the name and takes anything else
++        // as part of the icon name, so the cache-busting suffix is a fallback that never gets used.
++        if (generation > 0 && resolved.startsWith("image://icon/") && !resolved.includes("?"))
++            return `${resolved}?fallback=g${generation}`;
+         return resolved;
+     }
+ 
++    // Called when the shell publishes new colors. Noctalia retargets the folder icons within
++    // about a second of writing the colors file (its later passes re-link the same color), and
++    // watching the theme's own files misses replaced files, so reload once shortly after.
++    function scheduleIconRefresh() {
++        iconRefresh.restart();
 +    }
 +
 +    Timer {
 +        id: iconRefresh
-+        interval: 300
++        interval: 1500
 +        onTriggered: root.iconGeneration++
-     }
- 
++    }
++
      function literalIconSource(source: string): string {
+         switch (true) {
+         case source.startsWith("/"):
+diff --git a/quickshell/Common/Theme.qml b/quickshell/Common/Theme.qml
+index 927cee0..2d26565 100644
+--- a/quickshell/Common/Theme.qml
++++ b/quickshell/Common/Theme.qml
+@@ -711,7 +711,11 @@ Singleton {
+             }
+         }
+ 
+-        onFileChanged: dmsColorsView.reload()
++        onFileChanged: {
++            dmsColorsView.reload();
++            // Here `Paths` is DCommon's singleton; its backend is the app's Common/Paths.
++            Paths.backend?.scheduleIconRefresh();
++        }
+ 
+         onLoadFailed: function (error) {
+             if (!root.useLegacyDmsCache) {
