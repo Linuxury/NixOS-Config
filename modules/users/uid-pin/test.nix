@@ -11,7 +11,7 @@
   name = "uid-migrate";
 
   nodes.machine = { ... }: {
-    imports = [ ./default.nix ];
+    imports = [ ./uid-pin.nix ];
     users.users = {
       alex.isNormalUser = true;
       babylinux.isNormalUser = true;

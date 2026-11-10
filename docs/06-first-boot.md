@@ -219,7 +219,7 @@ lspci | grep -E "VGA|3D"
 # 01:00.0 3D controller: NVIDIA ...             → PCI:1:0:0
 ```
 
-Convert `05:00.0` → `PCI:5:0:0` (decimal, colon-separated) and update `hosts/Asus-A15/default.nix`:
+Convert `05:00.0` → `PCI:5:0:0` (decimal, colon-separated) and update `hosts/Asus-A15/Asus-A15.nix`:
 
 ```nix
 hardware.nvidia.prime = {

@@ -337,7 +337,7 @@ Review the generated file:
 cat /mnt/home/$NIXUSER/nixos-config/hosts/$HOST/hardware-configuration.nix
 ```
 
-**LUKS-specific check:** confirm there is a `boot.initrd.luks.devices` section in the file. This tells the initrd to prompt for the passphrase before mounting the root filesystem. If that section is missing, the system will boot into an emergency shell because it cannot find the root device. Check `hosts/ThinkPad/default.nix` for a working reference and add it manually if needed:
+**LUKS-specific check:** confirm there is a `boot.initrd.luks.devices` section in the file. This tells the initrd to prompt for the passphrase before mounting the root filesystem. If that section is missing, the system will boot into an emergency shell because it cannot find the root device. Check `hosts/ThinkPad/ThinkPad.nix` for a working reference and add it manually if needed:
 
 ```nix
 boot.initrd.luks.devices."cryptroot" = {
@@ -472,6 +472,6 @@ ssh -T git@github.com   # verify GitHub still accepts the restored key
 | `nixos-install` fails: "flake does not provide attribute" | `$HOST` must match `flake.nix` exactly — it is case-sensitive (`ThinkPad` not `thinkpad`) |
 | `echo $HOST` shows nothing | SSH session dropped and variables were lost — re-export all three before continuing |
 | Boot hangs at passphrase prompt, keyboard does nothing | Add `boot.initrd.availableKernelModules = ["usbhid" "xhci_pci"]` to the host's NixOS config |
-| `cryptsetup open` succeeds but system won't find the device at boot | Confirm `boot.initrd.luks.devices` is in the hardware config — check `hosts/ThinkPad/default.nix` for reference |
+| `cryptsetup open` succeeds but system won't find the device at boot | Confirm `boot.initrd.luks.devices` is in the hardware config — check `hosts/ThinkPad/ThinkPad.nix` for reference |
 | System boots to emergency shell | Run `journalctl -b` — usually a missing LUKS block or subvolume mount option mismatch |
 | Can't log in after first boot | Password wasn't set — boot the ISO again and run `nixos-enter --root /mnt -- passwd $NIXUSER` |

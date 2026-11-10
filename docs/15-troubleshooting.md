@@ -311,7 +311,7 @@ The config includes an activation script that deletes this file on every rebuild
 sudo nixos-rebuild switch --flake ~/nixos-config#Ryzen5800x   # or Asus-A15
 ```
 
-Do not use **System Settings → Login Screen** to change the SDDM theme — configure it declaratively in `greeters/sddm/default.nix` instead.
+Do not use **System Settings → Login Screen** to change the SDDM theme — configure it declaratively in `greeters/sddm.nix` instead.
 
 ---
 
@@ -341,7 +341,7 @@ Confirm the launch option is exactly `MANGOHUD=1 %command%` — it is case-sensi
 
 ### Asus-A15 using iGPU instead of dGPU
 
-Add to Steam launch options and verify the PCI bus IDs in `hosts/Asus-A15/default.nix` are correct for this machine (`lspci | grep -E "VGA|3D"`):
+Add to Steam launch options and verify the PCI bus IDs in `hosts/Asus-A15/Asus-A15.nix` are correct for this machine (`lspci | grep -E "VGA|3D"`):
 
 ```
 __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%

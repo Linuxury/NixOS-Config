@@ -181,7 +181,7 @@ To apply in Steam:
 
 The Asus A15 has both an AMD iGPU and an Nvidia dGPU. PRIME offload routes specific apps to the Nvidia GPU on demand while the AMD iGPU handles everything else (better battery life).
 
-The PCI bus IDs in `hosts/Asus-A15/default.nix` must match this specific machine. Find them:
+The PCI bus IDs in `hosts/Asus-A15/Asus-A15.nix` must match this specific machine. Find them:
 
 ```bash
 lspci | grep -E "VGA|3D"
@@ -190,7 +190,7 @@ lspci | grep -E "VGA|3D"
 # 01:00.0 3D controller: NVIDIA ...           → PCI:1:0:0
 ```
 
-Convert `05:00.0` → `PCI:5:0:0` (decimal, colon-separated) and update `hosts/Asus-A15/default.nix`:
+Convert `05:00.0` → `PCI:5:0:0` (decimal, colon-separated) and update `hosts/Asus-A15/Asus-A15.nix`:
 
 ```nix
 hardware.nvidia.prime = {

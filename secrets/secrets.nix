@@ -264,7 +264,7 @@ in
   #
   # Lets a client's nix-daemon (running as root) log into the `nixbuilder`
   # account on MinisForum and build there. The matching PUBLIC key sits in
-  # plaintext in hosts/MinisForum/default.nix.
+  # plaintext in hosts/MinisForum/MinisForum.nix.
   #
   # Deployed only to the build CLIENTS — not to MinisForum itself, which
   # builds locally. `nixbuilder` is a trusted-user on the builder, so this

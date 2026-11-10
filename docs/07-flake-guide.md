@@ -32,7 +32,7 @@ nixos-config/
 │   └── *.age                  ← Encrypted secret files (safe to commit)
 ├── hosts/
 │   ├── ThinkPad/
-│   │   ├── default.nix        ← System-level config for this host
+│   │   ├── ThinkPad.nix       ← System-level config for this host
 │   │   └── hardware-configuration.nix  ← Auto-generated hardware config
 │   ├── Ryzen5900x/
 │   ├── Ryzen5800x/
@@ -72,8 +72,8 @@ sudo nixos-rebuild switch --flake ~/nixos-config#ThinkPad
 Nix does this in order:
 
 1. Reads `flake.nix` and finds the `ThinkPad` entry
-2. Loads `hosts/ThinkPad/default.nix` (system-level config)
-3. Loads `modules/users/linuxury/home/default.nix` (Home Manager config)
+2. Loads `hosts/ThinkPad/ThinkPad.nix` (system-level config)
+3. Loads `modules/users/linuxury/linuxury-home.nix` (Home Manager config)
 4. Evaluates all imported modules recursively
 5. Builds any packages or configs that changed since the last build
 6. Activates the new config: services restart, symlinks update, dotfiles regenerate
@@ -115,9 +115,9 @@ Each host in `nixosConfigurations` calls `mkHost` with its specific values:
 ```nix
 ThinkPad = mkHost {
   hostname     = "ThinkPad";
-  hostConfig   = ./hosts/ThinkPad/default.nix;
+  hostConfig   = ./hosts/ThinkPad/ThinkPad.nix;
   user         = "linuxury";
-  userConfig   = ./modules/users/linuxury/home;
+  userConfig   = ./modules/users/linuxury/linuxury-home.nix;
   wallpaperDir = "4k";
   extraModules = [ nixos-hardware.nixosModules.lenovo-thinkpad ];
 };
@@ -129,7 +129,7 @@ ThinkPad = mkHost {
 
 ## Host Config Structure
 
-Every host has a `hosts/<HostName>/default.nix` file with system-level configuration. A typical graphical host looks like:
+Every host has a `hosts/<HostName>/<HostName>.nix` file with system-level configuration. A typical graphical host looks like:
 
 ```nix
 { inputs, pkgs, lib, ... }:
@@ -162,7 +162,7 @@ Every host has a `hosts/<HostName>/default.nix` file with system-level configura
 
 ## Home Manager Config Structure
 
-Home Manager manages everything inside the user's home directory: packages, dotfiles, services, and app configuration. Each user's config lives at `modules/users/<user>/home/default.nix`:
+Home Manager manages everything inside the user's home directory: packages, dotfiles, services, and app configuration. Each user's config lives at `modules/users/<user>/<user>-home.nix`:
 
 ```nix
 { pkgs, lib, wallpaperDir, ... }:
@@ -198,9 +198,9 @@ Follow these steps in order. See [08-secrets.md](08-secrets.md) for the secrets 
 1. **Create the host directory and config:**
    ```bash
    mkdir -p ~/nixos-config/hosts/NewHost
-   cp ~/nixos-config/hosts/ThinkPad/default.nix ~/nixos-config/hosts/NewHost/default.nix
+   cp ~/nixos-config/hosts/ThinkPad/ThinkPad.nix ~/nixos-config/hosts/NewHost/NewHost.nix
    ```
-   Edit `default.nix`: update `networking.hostName`, imports, hardware options, and user assignments.
+   Edit `NewHost.nix`: update `networking.hostName`, imports, hardware options, and user assignments.
 
 2. **Generate the hardware config** — boot the machine from the NixOS ISO and run the install (see the install guides). The hardware config is generated as part of the install process.
 
@@ -208,9 +208,9 @@ Follow these steps in order. See [08-secrets.md](08-secrets.md) for the secrets 
    ```nix
    NewHost = mkHost {
      hostname   = "NewHost";
-     hostConfig = ./hosts/NewHost/default.nix;
+     hostConfig = ./hosts/NewHost/NewHost.nix;
      user       = "linuxury";
-     userConfig = ./modules/users/linuxury/home;
+     userConfig = ./modules/users/linuxury/linuxury-home.nix;
      wallpaperDir = "4k";
    };
    ```
@@ -231,10 +231,10 @@ Where you add a package determines who gets it:
 | Scope | Where to add it |
 |-------|----------------|
 | All graphical machines | `modules/base/graphical-base.nix` → `environment.systemPackages` |
-| One specific host only | `hosts/<HostName>/default.nix` → `environment.systemPackages` |
-| One specific user only | `modules/users/<user>/home/default.nix` → `home.packages` |
+| One specific host only | `hosts/<HostName>/<HostName>.nix` → `environment.systemPackages` |
+| One specific user only | `modules/users/<user>/<user>-home.nix` → `home.packages` |
 
-Example for a user-level package in `modules/users/linuxury/home/default.nix`:
+Example for a user-level package in `modules/users/linuxury/linuxury-home.nix`:
 
 ```nix
 home.packages = with pkgs; [

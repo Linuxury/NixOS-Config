@@ -83,7 +83,7 @@
     # -------------------------------------------------------------------------
     # millennium — Steam client mod that injects themes (Material-Theme reads
     # noctalia's matugen.css). Flake lives in a subdir. Only fetched on hosts
-    # with programs.steam.millennium.enable (modules/gaming/default.nix).
+    # with programs.steam.millennium.enable (modules/gaming/gaming.nix).
     #
     # Do NOT add nixpkgs.follows — it pins its own nixpkgs; the Bun FOD hash
     # breaks on any other version.
@@ -265,7 +265,7 @@
       #   hostname     — The machine's network name (e.g. "ThinkPad")
       #   hostConfig   — Path to the host's config file in hosts/
       #   user         — The primary user on this machine
-      #   userConfig   — Path to the user's Home Manager config (modules/users/<user>/home)
+      #   userConfig   — Path to the user's Home Manager config (modules/users/<user>/<user>-home.nix)
       #   wallpaperDir     — Wallpaper subfolder from Wallpapers/ in the Assets input
       #                      Gets symlinked to ~/Pictures/Wallpapers
       #                      Options: "4k", "3440x1440", "PikaOS"
@@ -302,11 +302,11 @@
             # Option-gated hardware modules — imported for every host but
             # dormant until enabled, e.g. hardware.openrgb.enable = true;
             # Hosts toggle these with flags instead of imports.
-            ./modules/hardware/openrgb/default.nix
-            ./modules/hardware/peripherals/lemokey-keychron/default.nix
+            ./modules/hardware/openrgb.nix
+            ./modules/hardware/peripherals/lemokey-keychron.nix
 
             # Same UID per person on every host (+ one-time boot migration)
-            ./modules/users/uid-pin/default.nix
+            ./modules/users/uid-pin/uid-pin.nix
 
             # Home Manager as a NixOS module — this means Home Manager
             # runs as part of nixos-rebuild, keeping everything in sync
@@ -317,7 +317,7 @@
               nixpkgs.overlays = [
                 (final: prev: {
                   ponytrail    = prev.callPackage ./pkgs/ponytrail/package.nix {};
-                  # proton-ge-custom and goverlay overlays live in modules/gaming/default.nix
+                  # proton-ge-custom and goverlay overlays live in modules/gaming/gaming.nix
                   # so they are only fetched on hosts that import the gaming module.
                   ant-dark-kde                  = prev.callPackage ./pkgs/ant-dark-kde/package.nix {};
                   breeze-chameleon-dark-icons   = prev.callPackage ./pkgs/breeze-chameleon-dark-icons/package.nix {};
@@ -330,7 +330,7 @@
                 (final: prev: prev.lib.mapAttrs (name: fix:
                   prev.${name}.overrideAttrs (old: {
                     ${fix.attr} = old.${fix.attr}.overrideAttrs (_: { outputHash = fix.hash; });
-                  })) (import ./pkgs/hash-fixes/default.nix))
+                  })) (import ./pkgs/hash-fixes.nix))
               ];
             }
 
@@ -379,9 +379,9 @@
 
         ThinkPad = mkHost {
           hostname        = "ThinkPad";
-          hostConfig      = ./hosts/ThinkPad/default.nix;
+          hostConfig      = ./hosts/ThinkPad/ThinkPad.nix;
           user            = "linuxury";
-          userConfig      = ./modules/users/linuxury/home;
+          userConfig      = ./modules/users/linuxury/linuxury-home.nix;
           wallpaperDir    = "4k";
           hypridleProfile = "laptop";
           # The host config imports lenovo-thinkpad-t14s-amd-gen4 which already
@@ -391,9 +391,9 @@
 
         Ryzen5900x = mkHost {
           hostname        = "Ryzen5900x";
-          hostConfig      = ./hosts/Ryzen5900x/default.nix;
+          hostConfig      = ./hosts/Ryzen5900x/Ryzen5900x.nix;
           user            = "linuxury";
-          userConfig      = ./modules/users/linuxury/home;
+          userConfig      = ./modules/users/linuxury/linuxury-home.nix;
           wallpaperDir    = "3440x1440";  # Ultrawide monitor
           hypridleProfile = "desktop";
         };
@@ -406,17 +406,17 @@
 
         Ryzen5800x = mkHost {
           hostname     = "Ryzen5800x";
-          hostConfig   = ./hosts/Ryzen5800x/default.nix;
+          hostConfig   = ./hosts/Ryzen5800x/Ryzen5800x.nix;
           user         = "babylinux";
-          userConfig   = ./modules/users/babylinux/home;
+          userConfig   = ./modules/users/babylinux/babylinux-home.nix;
           wallpaperDir = "4k";
         };
 
         Asus-A15 = mkHost {
           hostname     = "Asus-A15";
-          hostConfig   = ./hosts/Asus-A15/default.nix;
+          hostConfig   = ./hosts/Asus-A15/Asus-A15.nix;
           user         = "babylinux";
-          userConfig   = ./modules/users/babylinux/home;
+          userConfig   = ./modules/users/babylinux/babylinux-home.nix;
           wallpaperDir = "4k";
           extraModules = [
             # Asus A15 has hybrid AMD + Nvidia graphics
@@ -433,17 +433,17 @@
 
         Alex-Desktop = mkHost {
           hostname     = "Alex-Desktop";
-          hostConfig   = ./hosts/Alex-Desktop/default.nix;
+          hostConfig   = ./hosts/Alex-Desktop/Alex-Desktop.nix;
           user         = "alex";
-          userConfig   = ./modules/users/alex/home;
+          userConfig   = ./modules/users/alex/alex-home.nix;
           wallpaperDir = "PikaOS";
         };
 
         Alex-Laptop = mkHost {
           hostname     = "Alex-Laptop";
-          hostConfig   = ./hosts/Alex-Laptop/default.nix;
+          hostConfig   = ./hosts/Alex-Laptop/Alex-Laptop.nix;
           user         = "alex";
-          userConfig   = ./modules/users/alex/home;
+          userConfig   = ./modules/users/alex/alex-home.nix;
           wallpaperDir = "PikaOS";
         };
 
@@ -457,20 +457,20 @@
 
         MinisForum = mkHost {
           hostname   = "MinisForum";
-          hostConfig = ./hosts/MinisForum/default.nix;
+          hostConfig = ./hosts/MinisForum/MinisForum.nix;
           user       = "linuxury";
           # No userConfig — headless servers don't need Home Manager
         };
 
         Radxa-X4 = mkHost {
           hostname   = "Radxa-X4";
-          hostConfig = ./hosts/Radxa-X4/default.nix;
+          hostConfig = ./hosts/Radxa-X4/Radxa-X4.nix;
           user       = "linuxury";
         };
 
         Media-Server = mkHost {
           hostname   = "Media-Server";
-          hostConfig = ./hosts/Media-Server/default.nix;
+          hostConfig = ./hosts/Media-Server/Media-Server.nix;
           user       = "linuxury";
         };
 

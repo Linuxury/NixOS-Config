@@ -184,7 +184,7 @@ When you install NixOS on a new machine and want it to access secrets:
 
 3. **Reference it in a host config:**
    ```nix
-   # In hosts/<HostName>/default.nix:
+   # In hosts/<HostName>/<HostName>.nix:
    age.secrets.my-new-secret.file = ../../secrets/my-new-secret.age;
 
    # Use the decrypted path in another option:

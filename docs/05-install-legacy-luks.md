@@ -327,7 +327,7 @@ boot.initrd.luks.devices."cryptroot" = {
 };
 ```
 
-2. **GRUB config** — the host's NixOS config must use GRUB for legacy BIOS, not systemd-boot. Confirm `hosts/$HOST/default.nix` has:
+2. **GRUB config** — the host's NixOS config must use GRUB for legacy BIOS, not systemd-boot. Confirm `hosts/$HOST/$HOST.nix` has:
 
 ```nix
 boot.loader.grub = {

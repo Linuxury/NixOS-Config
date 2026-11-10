@@ -26,7 +26,7 @@ COSMIC configuration is split across three places:
 |----------|-----------------|
 | `modules/desktop-environments/cosmic.nix` | System-level: DE enable, display manager, XWayland, portals, Flatpak, Keyring, fonts |
 | `modules/home/cosmic-theme.nix` | Shared HM module: cursor, icon theme, COSMIC appearance config files |
-| `modules/users/<user>/home/default.nix` | Per-user: Files sidebar favorites, Hytale install service, GTK settings |
+| `modules/users/<user>/<user>-home.nix` | Per-user: Files sidebar favorites, Hytale install service, GTK settings |
 
 `cosmic.nix` is imported by every desktop and laptop host config. It injects `wallpaper-slideshow.nix` and `cosmic-theme.nix` into all users automatically via `home-manager.sharedModules` — no need to import them in individual `home.nix` files.
 
@@ -124,7 +124,7 @@ COSMIC Files sidebar favorites are written declaratively via `home.file` for all
 
 ### Per-user favorites
 
-**linuxury** (`modules/users/linuxury/home/default.nix`):
+**linuxury** (`modules/users/linuxury/linuxury-home.nix`):
 
 ```ron
 [
@@ -139,7 +139,7 @@ COSMIC Files sidebar favorites are written declaratively via `home.file` for all
 ]
 ```
 
-**babylinux** (`modules/users/babylinux/home/default.nix`):
+**babylinux** (`modules/users/babylinux/babylinux-home.nix`):
 
 ```ron
 [
@@ -153,7 +153,7 @@ COSMIC Files sidebar favorites are written declaratively via `home.file` for all
 ]
 ```
 
-**alex** (`modules/users/alex/home/default.nix`):
+**alex** (`modules/users/alex/alex-home.nix`):
 
 ```ron
 [

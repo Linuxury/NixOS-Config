@@ -17,7 +17,7 @@
 # just endpoint layout (confirmed against real hardware). Puck support is
 # left to Steam's own Steam Input instead.
 #
-# Imported by modules/gaming/default.nix — every host that enables gaming
+# Imported by modules/gaming/gaming.nix — every host that enables gaming
 # gets controller support automatically. Not currently imported standalone
 # anywhere, so controller support and the gaming stack are coupled today.
 # ===========================================================================

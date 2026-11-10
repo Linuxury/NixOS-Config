@@ -326,7 +326,7 @@ cat /mnt/home/$NIXUSER/nixos-config/hosts/$HOST/hardware-configuration.nix
 
 **Legacy BIOS-specific check:** confirm the file does NOT include `boot.loader.systemd-boot.enable = true` or any EFI-related boot options. If it does, the hardware config was likely generated from a UEFI boot — check that you booted the installer correctly in Legacy BIOS mode.
 
-The host's NixOS config (`hosts/Alex-Desktop/default.nix`) must have GRUB configured for legacy BIOS, not systemd-boot:
+The host's NixOS config (`hosts/Alex-Desktop/Alex-Desktop.nix`) must have GRUB configured for legacy BIOS, not systemd-boot:
 
 ```nix
 boot.loader.grub = {

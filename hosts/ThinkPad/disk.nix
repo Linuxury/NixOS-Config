@@ -1,9 +1,9 @@
 # ===========================================================================
 # hosts/ThinkPad/disk.nix — disks, swap, LUKS and boot loader for ThinkPad
 #
-# Split out of default.nix so the installer can (re)write this file for a
+# Split out of ThinkPad.nix so the installer can (re)write this file for a
 # new disk layout without touching the rest of the host config. Network
-# shares and pooled mounts (cifs, mergerfs) stay in default.nix.
+# shares and pooled mounts (cifs, mergerfs) stay in ThinkPad.nix.
 # ===========================================================================
 { config, lib, pkgs, ... }:
 

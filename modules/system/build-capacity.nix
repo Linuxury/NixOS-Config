@@ -1,7 +1,7 @@
 # ===========================================================================
 # modules/system/build-capacity.nix — per-host nix build parallelism
 #
-# Imported by modules/system/core/default.nix, so every host gets it.
+# Imported by modules/system/core.nix, so every host gets it.
 #
 # Why this exists: `max-jobs` and `cores` govern different axes, and setting
 # one flat pair fleet-wide gets both wrong.

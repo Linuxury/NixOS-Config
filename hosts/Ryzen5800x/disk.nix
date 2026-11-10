@@ -1,9 +1,9 @@
 # ===========================================================================
 # hosts/Ryzen5800x/disk.nix — disks, swap, LUKS and boot loader for Ryzen5800x
 #
-# Split out of default.nix so the installer can (re)write this file for a
+# Split out of Ryzen5800x.nix so the installer can (re)write this file for a
 # new disk layout without touching the rest of the host config. Network
-# shares and pooled mounts (cifs, mergerfs) stay in default.nix.
+# shares and pooled mounts (cifs, mergerfs) stay in Ryzen5800x.nix.
 # ===========================================================================
 { config, lib, pkgs, ... }:
 

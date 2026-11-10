@@ -2,7 +2,7 @@
 # Proton Wineland prebuilt for Steam's compatibility tools.
 #
 # This file never needs to be edited. The version is derived from the tag
-# passed by the overlay. The URL and hash live in modules/gaming/default.nix —
+# passed by the overlay. The URL and hash live in modules/gaming/gaming.nix —
 # nru updates them automatically via _nru_update_proton_wineland.
 stdenvNoCC.mkDerivation {
   pname = "proton-wineland";

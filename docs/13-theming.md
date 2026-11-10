@@ -63,7 +63,7 @@ The `<dir>` is the `wallpaperDir` from `flake.nix`:
 
 **Applies to:** ThinkPad (linuxury), Alex-Desktop, Alex-Laptop (alex)
 
-Module: `modules/services/wallpaper-slideshow/default.nix` — injected into every user on every COSMIC host automatically via `home-manager.sharedModules` in `modules/desktops/cosmic/default.nix`.
+Module: `modules/services/wallpaper-slideshow.nix` — injected into every user on every COSMIC host automatically via `home-manager.sharedModules` in `modules/desktops/cosmic/cosmic.nix`.
 
 ### How it works
 
@@ -140,7 +140,7 @@ systemctl --user restart wallpaper-color-sync   # run matugen unconditionally
 
 **Applies to:** Ryzen5900x (linuxury, Noctalia shell)
 
-Module: `modules/compositors/hyprland/matugen/default.nix` — injected via `home-manager.sharedModules` in `modules/compositors/hyprland/default.nix`.
+Module: `modules/compositors/hyprland/hyprland-matugen.nix` — injected via `home-manager.sharedModules` in `modules/compositors/hyprland/hyprland.nix`.
 
 ### How it works
 
@@ -180,7 +180,7 @@ Fires 10 seconds after session start. Gives the shell time to initialize and set
 
 ### noctalia-color-sync (Noctalia shell only)
 
-Module: `modules/shells/noctalia/color-sync/default.nix` — imported automatically by the Noctalia shell module.
+Module: `modules/shells/noctalia/shell-noctalia.nix` — imported automatically by the Noctalia shell module.
 
 A separate path unit watches `~/.config/noctalia/colors.json`. Noctalia writes that file whenever it derives a new accent color from the wallpaper. The service reads `mPrimary`, writes it to the matugen color hint file, clears the dedup stamp, and starts matugen.service — keeping Hyprland borders in sync with the bar accent without waiting for the next wallpaper change.
 
@@ -273,7 +273,7 @@ This must exist before matugen runs — otherwise matugen errors trying to write
 
 **Applies to:** ThinkPad (linuxury), Alex-Desktop, Alex-Laptop (alex)
 
-Module: `modules/desktops/cosmic/themes/default.nix` — injected via `home-manager.sharedModules` in `modules/desktops/cosmic/default.nix`.
+Module: `modules/desktops/cosmic/cosmic-themes.nix` — injected via `home-manager.sharedModules` in `modules/desktops/cosmic/cosmic.nix`.
 
 ### COSMIC appearance config files
 
@@ -307,7 +307,7 @@ Only network shares appear in this file. Local drives show up automatically in C
 
 ### Adding a new share
 
-Edit the favorites block in `modules/desktops/cosmic/themes/default.nix`, then rebuild:
+Edit the favorites block in `modules/desktops/cosmic/cosmic-themes.nix`, then rebuild:
 
 ```nix
 home.file.".config/cosmic/com.system76.CosmicFiles/v1/favorites" = {
@@ -335,7 +335,7 @@ Then rebuild: `nr`
 
 ## Cursor and Icons
 
-Cursor and base GTK theme are defined in `modules/themes/gtk/default.nix`, imported by every compositor and desktop theme module.
+Cursor and base GTK theme are defined in `modules/themes/gtk.nix`, imported by every compositor and desktop theme module.
 
 ### Cursor — all hosts
 

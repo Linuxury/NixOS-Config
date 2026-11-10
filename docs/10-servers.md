@@ -150,7 +150,7 @@ sudo smartctl -a /dev/sda      # check SMART health for a specific drive (replac
 - `vpn-qbt-netns.service` — creates the network namespace + WireGuard interface (`wg-qbt`) + veth pair to the host
 - `qbittorrent-vpn.service` — the qBittorrent daemon, running *inside* the namespace
 - `qbittorrent-vpn-proxy.service` — proxies the web UI from the namespace out to the host's normal network, so it's reachable at a normal LAN address instead of requiring `ip netns exec` or an SSH tunnel
-- `vpn-qbt-failover.timer` — checks VPN connectivity every 5 minutes, triggers `vpn-qbt-failover.service` to rotate to the next server in `failoverServers` (see `hosts/Radxa-X4/default.nix`) if the active one is down
+- `vpn-qbt-failover.timer` — checks VPN connectivity every 5 minutes, triggers `vpn-qbt-failover.service` to rotate to the next server in `failoverServers` (see `hosts/Radxa-X4/Radxa-X4.nix`) if the active one is down
 
 ### VPN Status & Killswitch Verification
 
@@ -200,7 +200,7 @@ Download paths (created via `systemd.tmpfiles.rules`, owned by `linuxury:users`)
 
 Beyond the generic reinstall steps in [02-install-uefi.md](02-install-uefi.md), Radxa-X4 specifically needs these checked after any wipe/reformat:
 
-1. **CIFS mount UIDs** — `/mnt/Media-Server`'s mount options hardcode a numeric `uid=`. NixOS assigns UIDs by declaration order at install time, and it is **not guaranteed to match previous installs or other hosts** — a reinstall can silently reassign `linuxury` to a different UID than before. Verify with `id linuxury` and compare against the hardcoded `uid=` in `hosts/Radxa-X4/default.nix`'s `fileSystems."/mnt/Media-Server"` block; fix if they don't match. (The same class of bug is separately tracked for MinisForum — this isn't a one-off, check it on every host with a hardcoded CIFS uid after a reinstall.)
+1. **CIFS mount UIDs** — `/mnt/Media-Server`'s mount options hardcode a numeric `uid=`. NixOS assigns UIDs by declaration order at install time, and it is **not guaranteed to match previous installs or other hosts** — a reinstall can silently reassign `linuxury` to a different UID than before. Verify with `id linuxury` and compare against the hardcoded `uid=` in `hosts/Radxa-X4/Radxa-X4.nix`'s `fileSystems."/mnt/Media-Server"` block; fix if they don't match. (The same class of bug is separately tracked for MinisForum — this isn't a one-off, check it on every host with a hardcoded CIFS uid after a reinstall.)
 2. **qBittorrent WebUI password** — see above; grab the fresh temp password and set a permanent one before doing anything else with it.
 3. **Killswitch verification** — run the external-IP comparison above *before* trusting the VPN with real traffic, every time, not just after a fresh install.
 4. **Directory ownership** — `ls -la /data /data/torrents/{complete,incomplete}` should all show `linuxury:users`; these are declarative (`systemd.tmpfiles.rules`) so they should self-correct on rebuild, but worth a glance.

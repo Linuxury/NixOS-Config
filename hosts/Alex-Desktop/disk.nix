@@ -1,9 +1,9 @@
 # ===========================================================================
 # hosts/Alex-Desktop/disk.nix — disks, swap, LUKS and boot loader for Alex-Desktop
 #
-# Split out of default.nix so the installer can (re)write this file for a
+# Split out of Alex-Desktop.nix so the installer can (re)write this file for a
 # new disk layout without touching the rest of the host config. Network
-# shares and pooled mounts (cifs, mergerfs) stay in default.nix.
+# shares and pooled mounts (cifs, mergerfs) stay in Alex-Desktop.nix.
 # ===========================================================================
 { config, lib, pkgs, ... }:
 

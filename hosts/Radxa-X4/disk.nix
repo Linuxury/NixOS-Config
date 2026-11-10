@@ -1,9 +1,9 @@
 # ===========================================================================
 # hosts/Radxa-X4/disk.nix — disks, swap, LUKS and boot loader for Radxa-X4
 #
-# Split out of default.nix so the installer can (re)write this file for a
+# Split out of Radxa-X4.nix so the installer can (re)write this file for a
 # new disk layout without touching the rest of the host config. Network
-# shares and pooled mounts (cifs, mergerfs) stay in default.nix.
+# shares and pooled mounts (cifs, mergerfs) stay in Radxa-X4.nix.
 # ===========================================================================
 { config, lib, pkgs, ... }:
 

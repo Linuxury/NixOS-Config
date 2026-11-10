@@ -1,9 +1,9 @@
 # ===========================================================================
 # hosts/Asus-A15/disk.nix — disks, swap, LUKS and boot loader for Asus-A15
 #
-# Split out of default.nix so the installer can (re)write this file for a
+# Split out of Asus-A15.nix so the installer can (re)write this file for a
 # new disk layout without touching the rest of the host config. Network
-# shares and pooled mounts (cifs, mergerfs) stay in default.nix.
+# shares and pooled mounts (cifs, mergerfs) stay in Asus-A15.nix.
 # ===========================================================================
 { config, lib, pkgs, ... }:
 
