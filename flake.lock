@@ -296,11 +296,11 @@
     "impeccable": {
       "flake": false,
       "locked": {
-        "lastModified": 1794335440,
-        "narHash": "sha256-Il1VB7lJSyF9tjA+0S8eO4OlK96OoMYFfrp1i0BUPRY=",
+        "lastModified": 1794344818,
+        "narHash": "sha256-baSpffSAjDs2tNo8pIdF11gvjaXI7twJedqTX+OHa1w=",
         "owner": "pbakaus",
         "repo": "impeccable",
-        "rev": "b856e5010f2dd86bd97f9b2d5e38e33f3d5bd992",
+        "rev": "f2baa414a87d9acf1e21ccf776bfaec0262ad6df",
         "type": "github"
       },
       "original": {
@@ -798,11 +798,11 @@
     "zsh": {
       "flake": false,
       "locked": {
-        "lastModified": 1794110746,
-        "narHash": "sha256-ZrDtwqukn6MEZ10in4EsI9+c3WTulDK25zh8QKUCBNI=",
+        "lastModified": 1794345260,
+        "narHash": "sha256-4kjEi2NVwE7JjdzEIlFzXuu+wdO5R3+QuFfGLEIInyk=",
         "owner": "Linuxury",
         "repo": "ZSH",
-        "rev": "1c3d0617b45b27428ed075569354b20e6a908755",
+        "rev": "2f76db498d72b135db62b9ca6b1bb81b4969158a",
         "type": "github"
       },
       "original": {
