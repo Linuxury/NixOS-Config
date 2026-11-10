@@ -32,7 +32,7 @@ let
     lightcraft  = { version = "0.20.0"; hash = "sha256-jLXu2CWy3Z4PpCaAEp0+WqcY8HGW1nzF0FdB8OapzCU="; description = "Photo library and raw developer"; };
     vectorcraft = { version = "0.23.0"; hash = "sha256-B8JKYJT7RXxmW5WEjVW/vQVGA1S8DqybTsn5RnqLHjE="; description = "Vector illustration"; };
     filmcraft   = { version = "0.19.0"; hash = "sha256-dhSTQ8GXALpqyQX96KAZ4JF9BlB/QmpZODltl6HKISQ="; description = "Video editor"; };
-    effectcraft = { version = "0.23.0"; hash = "sha256-E9mrI7db57inF3XMlALg+DIoCxZhR0ZyglV+nGoh09I="; description = "Motion graphics and VFX"; };
+    effectcraft = { version = "0.23.1"; hash = "sha256-ozDRQG/ecdB6xVrTf+gfXeN+x+p8p8O5+gKqzQRQLbE="; description = "Motion graphics and VFX"; };
     designcraft = { version = "0.19.0"; hash = "sha256-UFVTH+n2Dk2mETdw/s8n37A5hPgx+k7XBzC+FWoxaGY="; description = "Page layout and publishing"; };
     wordcraft   = { version = "0.17.0"; hash = "sha256-nHRMDDGjziXfgmgPx15kXWgoRvrMvhA/T5GnWLGfNoc="; description = "Word processor"; };
     gridcraft   = { version = "0.18.0"; hash = "sha256-aSBf1y5I6D52PFPI9so+3AHTi6i6DRbisYSpyFikzV8="; description = "Spreadsheet"; };
