@@ -185,7 +185,6 @@
     alsa.enable = true;
     alsa.support32Bit = true; # Needed for some games and older software
     pulse.enable = true;      # PulseAudio compatibility
-    jack.enable = true;       # JACK compatibility (for audio production tools)
     wireplumber.enable = true;
     # x11-bell (plays the X11 beep) crashes the whole daemon with SIGSEGV when
     # the X server goes away, e.g. Umbriel's lazy Xwayland restarting — that
