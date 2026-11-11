@@ -4,6 +4,7 @@
   fetchurl,
   autoPatchelfHook,
   alsa-lib,
+  dbus,
   libGL,
   libx11,
   libxcursor,
@@ -59,7 +60,9 @@ let
 
     # dlopen'd at runtime, invisible to autoPatchelf's link scan. X11 libs: DesignCraft
     # forces winit's X11 backend (file drag-and-drop), so it runs under XWayland.
-    runtimeDependencies = [ libGL libxkbcommon vulkan-loader wayland libx11 libxcursor libxi libxrandr ];
+    # dbus: rfd dlopens libdbus-1.so for the xdg file-chooser portal; without it
+    # "Open" silently does nothing (falls back to zenity, which isn't installed).
+    runtimeDependencies = [ libGL libxkbcommon vulkan-loader wayland libx11 libxcursor libxi libxrandr dbus ];
 
     installPhase = ''
       runHook preInstall
