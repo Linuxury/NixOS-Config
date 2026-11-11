@@ -36,7 +36,7 @@ let
     designcraft = { version = "0.19.0"; hash = "sha256-UFVTH+n2Dk2mETdw/s8n37A5hPgx+k7XBzC+FWoxaGY="; description = "Page layout and publishing"; };
     wordcraft   = { version = "0.17.0"; hash = "sha256-nHRMDDGjziXfgmgPx15kXWgoRvrMvhA/T5GnWLGfNoc="; description = "Word processor"; };
     gridcraft   = { version = "0.18.0"; hash = "sha256-aSBf1y5I6D52PFPI9so+3AHTi6i6DRbisYSpyFikzV8="; description = "Spreadsheet"; };
-    deckcraft   = { version = "0.17.0"; hash = "sha256-phoFCVpSqAmQqomQtEcQBVPpnI+m7ch1SqUnQKGm+bA="; description = "Presentations"; };
+    deckcraft   = { version = "0.18.0"; hash = "sha256-0fEpr4wS8SULzBfbzbqsOAkAyROByEpK2m7ntICk2wY="; description = "Presentations"; };
     soundcraft  = { version = "0.19.0"; hash = "sha256-iaKb9Iwpnu5ZPXzWhLIchIPKKHq8GWZXrj+Vmh68GK0="; description = "Digital audio workstation"; };
     cadcraft    = { version = "0.19.0"; hash = "sha256-plTfjD5EfGLEkMCoqtjEKp+vqwEMpNJbw1BO1Fs8j1E="; description = "CAD and drafting"; };
     figcraft    = { version = "0.17.0"; hash = "sha256-68i/pNoCaGDP+CHSAk1vUXBKxpR4lp9bKWEdu5am5GQ="; description = "Interface design and prototyping"; };
