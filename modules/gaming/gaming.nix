@@ -91,7 +91,11 @@ in
   imports = [
     ./dmemcg-booster.nix
     ./controller.nix
-    { options.programs.steam.millennium.enable = lib.mkEnableOption "Millennium Steam client mod (theme injection)"; }
+    { options.programs.steam.millennium.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = config.programs.steam.enable; # on wherever Steam is; set false per host to opt out
+        description = "Millennium Steam client mod (theme injection)";
+      }; }
   ];
 
   # =========================================================================

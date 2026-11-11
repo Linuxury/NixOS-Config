@@ -413,7 +413,6 @@
   # ==============================================================
   programs.corectrl.enable = true;
   # programs.affinity.enable = true;  # disabled 2026-10-08 — replaced by craft-apps
-  programs.steam.millennium.enable = true;
   hardware.amdgpu.overdrive.enable = true;
 
   # ==============================================================
