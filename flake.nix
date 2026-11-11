@@ -88,7 +88,9 @@
     # Do NOT add nixpkgs.follows — it pins its own nixpkgs; the Bun FOD hash
     # breaks on any other version.
     # -------------------------------------------------------------------------
-    millennium.url = "github:SteamClientHomebrew/Millennium?dir=packages/nix";
+    # PINNED to 6d5379e: dee8e60 (2026-11-11) fails the LuaJIT arch check in the
+    # 64-bit build ("Unsupported target architecture"). Drop ?rev= once fixed upstream.
+    millennium.url = "github:SteamClientHomebrew/Millennium?dir=packages/nix&rev=6d5379ec502896465c74dcc2462b94082c8caca2";
 
 
     # -------------------------------------------------------------------------

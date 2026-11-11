@@ -310,6 +310,7 @@
         "dir": "packages/nix",
         "owner": "SteamClientHomebrew",
         "repo": "Millennium",
+        "rev": "6d5379ec502896465c74dcc2462b94082c8caca2",
         "type": "github"
       }
     },
