@@ -12,7 +12,6 @@
 #   - COSMIC (disabled)
 #   - Gaming
 #
-# No development tools — kept clean and simple.
 # ===========================================================================
 
 { config, pkgs, ... }:
@@ -269,16 +268,17 @@
   # ==============================================================
   # Stability focused extras
   #
-  # Since this is a machine you manage for someone else, we add a few
-  # quality of life things that make it easier to support remotely.
   # ==============================================================
   environment.systemPackages = with pkgs; [
     cifs-utils
     ntfs3g
 
     # Remote support
-    # TODO: re-enable once nixpkgs fixes rustdesk-flutter (libsodium-sys fails: libsodium.pc not found, 2026-11-10)
-    # rustdesk-flutter  # Open source remote desktop — lets you help her remotely
+    # ponytail: drop the override once nixpkgs rustdesk-flutter builds again (libsodium-sys can't find libsodium.pc, 2026-11-10)
+    (rustdesk-flutter.overrideAttrs (o: {
+      buildInputs = (o.buildInputs or [ ]) ++ [ libsodium ];
+      nativeBuildInputs = (o.nativeBuildInputs or [ ]) ++ [ pkg-config ];
+    }))  # Open source remote desktop — lets you help her remotely
 
     # Media
     vlc       # Reliable video player that plays anything
