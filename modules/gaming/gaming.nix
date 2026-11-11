@@ -188,6 +188,34 @@ in
   # runner names Faugus already stores). force = true lets HM replace the old
   # real-files "Proton-GE Latest" copy; other entries in the dir are untouched.
   home-manager.sharedModules = [
+    # Millennium seed-once (hosts with programs.steam.millennium.enable): copies
+    # settings, plugins, theme and Quick CSS from the dotfiles pin, only when
+    # absent, because Millennium rewrites config.json and noctalia writes
+    # matugen.css into the theme dir, so these must be real writable files.
+    # Refresh after changing things in Steam (then push dotfiles + bump the input):
+    #   cp ~/.config/millennium/{config.json,quick.css} ~/dotfiles/millennium/
+    #   cp -r ~/.local/share/Steam/millennium/themes/QOL-Toggles-Steam ~/dotfiles/millennium/themes/
+    # steam-easygrid is deliberately absent: it crashed the UI (React #130).
+    ({ lib, ... }: lib.mkIf config.programs.steam.millennium.enable {
+      home.activation.millenniumSeed = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        _src="${inputs.dotfiles}/millennium"
+        _cfg="$HOME/.config/millennium"
+        _pl="$HOME/.local/share/millennium/plugins"
+        _th="$HOME/.local/share/Steam/millennium/themes"
+        mkdir -p "$_cfg" "$_pl" "$_th"
+        [ -f "$_cfg/config.json" ] || cp --no-preserve=mode "$_src/config.json" "$_cfg/"
+        for _p in "$_src"/plugins/*; do
+          [ -d "$_pl/$(basename "$_p")" ] || cp -r --no-preserve=mode "$_p" "$_pl/"
+        done
+        for _t in "$_src"/themes/*; do
+          [ -d "$_th/$(basename "$_t")" ] || cp -r --no-preserve=mode "$_t" "$_th/"
+        done
+        # JetBrainsMono via Quick CSS; Millennium creates a comment-only file on
+        # first run, so seed unless ours is already in.
+        # ponytail: clobbers other hand-added quick.css rules lacking "JetBrains"; keep them in the dotfiles copy.
+        grep -q JetBrains "$_cfg/quick.css" 2>/dev/null || cp --no-preserve=mode "$_src/quick.css" "$_cfg/"
+      '';
+    })
     # HM-side `lib` (has lib.hm), not the NixOS-module lib captured above.
     ({ lib, ... }: {
       # HM can swap a file/symlink but not a real directory ("cannot overwrite
