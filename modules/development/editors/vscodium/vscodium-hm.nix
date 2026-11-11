@@ -61,20 +61,19 @@
     [ -L "$_target" ] && rm "$_target"
     mkdir -p "$(dirname "$_target")"
 
-    if [ -r "$_license" ]; then
-      ${pkgs.python3}/bin/python3 -c "
-import json, sys
+    # VSCodium-only: wrapper setting (VS Code runs the bundled binary fine)
+    ${pkgs.python3}/bin/python3 -c "
+import json, os
 with open('$_base') as f:
     s = json.load(f)
-with open('$_license') as f:
-    s['flow-icons.licenseKey'] = f.read().strip()
+s['claudeCode.claudeProcessWrapper'] = '/run/current-system/sw/bin/claude'
+if os.access('$_license', os.R_OK):
+    with open('$_license') as f:
+        s['flow-icons.licenseKey'] = f.read().strip()
 with open('$_target', 'w') as f:
     json.dump(s, f, indent=2)
     f.write('\n')
 "
-    else
-      cp "$_base" "$_target"
-    fi
   '';
 
   # =========================================================================
