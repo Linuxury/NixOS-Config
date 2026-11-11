@@ -277,7 +277,8 @@
     ntfs3g
 
     # Remote support
-    rustdesk-flutter  # Open source remote desktop — lets you help her remotely
+    # TODO: re-enable once nixpkgs fixes rustdesk-flutter (libsodium-sys fails: libsodium.pc not found, 2026-11-10)
+    # rustdesk-flutter  # Open source remote desktop — lets you help her remotely
 
     # Media
     vlc       # Reliable video player that plays anything
