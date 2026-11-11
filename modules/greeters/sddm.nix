@@ -25,9 +25,14 @@
 #   - services.gnome.gnome-keyring.enable (session-level concern, not greeter)
 # ===========================================================================
 
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 let
+  # KDE hosts have no matugen wallpaper pipeline, so the theme's runtime colour
+  # extractor is unreliable there (pink card on a teal wallpaper). Pin a teal
+  # accent instead; empty string = keep dynamic extraction (Hyprland hosts).
+  accent = lib.optionalString config.services.desktopManager.plasma6.enable "#7CC8D6";
+
   # ---------------------------------------------------------------------------
   # Patch script for Main.qml — two patches applied in one pass.
   #
@@ -90,6 +95,21 @@ let
         modified = True
         print("Patched Main.qml: icon role Qt.UserRole+3 -> Qt.UserRole+4 (SDDM 0.21 enum fix)")
 
+    # Patch 4 (KDE hosts only, argv[2] = accent): pin the accent and turn the
+    # wallpaper colour extractor into a no-op. KDE has no matugen pipeline, and
+    # the extractor picked pink from a teal wallpaper.
+    accent = sys.argv[2] if len(sys.argv) > 2 else ""
+    if accent:
+        old4 = 'property color extractedAccent: "#A9C78F"'
+        old5 = "if (!vibrantFound) return;"
+        if old4 not in content or old5 not in content:
+            print("WARN: accent default / extractor guard not found — skipping patch 4")
+        else:
+            content = content.replace(old4, 'property color extractedAccent: "' + accent + '"', 1)
+            content = content.replace(old5, "return;", 1)
+            modified = True
+            print("Patched Main.qml: accent pinned to " + accent)
+
     if modified:
         with open(path, "w") as f:
             f.write(content)
@@ -138,7 +158,7 @@ let
 
       # Apply both QML patches (visible:false → opacity:0, extend icon regex).
       # See mainQmlPatch above for full explanation of each patch.
-      python3 ${mainQmlPatch} "$dest/Main.qml"
+      python3 ${mainQmlPatch} "$dest/Main.qml" "${accent}"
 
       # Switch clock from 24h (HH) to 12h (hh) — Qt formatTime lowercase h = 1–12.
       sed -i 's/Qt\.formatTime(new Date(), "HHmm")/Qt.formatTime(new Date(), "hhmm")/g' \

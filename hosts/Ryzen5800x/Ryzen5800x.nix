@@ -166,8 +166,10 @@
   #   openrgb          — RGB lighting: package + udev rules + daemon
   #   lemokey-keychron — WebHID udev rules for keyboard web configurators
   # ==============================================================
-  hardware.openrgb.enable = true;
-  hardware.openrgb.profile = "main";   # no Noctalia led-sync here, so the saved profile sets the colours
+  # OpenRGB off: its boot scan makes the HyperX Alloy Origins drop off USB (disconnect ~3 s after the
+  # scan, every boot), which resets NumLock and RGB. The "main" profile never existed on this host anyway.
+  # Re-enable only with the HyperX detector disabled + a real saved profile.
+  hardware.openrgb.enable = false;
   hardware.lemokey-keychron.enable = false;
 
   services.nixos-auto-update.primaryUser = "babylinux";

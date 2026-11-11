@@ -99,6 +99,13 @@
     # shutdown_or_switch: not yet in nixpkgs — install via KDE Store (Kai Uwe Broulik / Davide Sandona)
   ];
 
+  # NumLock for the greeter: sddm's General.Numlock is X11-only, but this greeter is kwin_wayland,
+  # which reads the sddm user's kcminputrc (0 = on). Plasma sessions get the same from home.nix.
+  systemd.tmpfiles.rules = [
+    "d /var/lib/sddm/.config 0755 sddm sddm -"
+    "f+ /var/lib/sddm/.config/kcminputrc 0644 sddm sddm - [Keyboard]\\nNumLock=0"
+  ];
+
   # Remove kde_settings.conf if sddm-kcm previously wrote it.
   # That file contains [Theme] Current=breeze and sorts after 00-nixos.conf,
   # making it override our declarative theme on every boot.
