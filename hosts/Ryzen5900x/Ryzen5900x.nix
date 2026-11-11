@@ -126,6 +126,7 @@
     # ==============================================================
     ../../modules/development/editors/neovim/neovim.nix
     ../../modules/development/editors/vscodium/vscodium.nix
+    ../../modules/development/editors/vscode/vscode.nix
     ../../modules/development/editors/zed.nix
 
     # ==============================================================
