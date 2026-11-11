@@ -11,7 +11,7 @@
 #   office — WordCraft, GridCraft, DeckCraft, PdfCraft   (Word/Excel/PowerPoint/Acrobat)
 #   design — PhotoCraft, LightCraft, VectorCraft, DesignCraft, FigCraft, TextureCraft
 #            (Photoshop/Lightroom/Illustrator/InDesign/Figma)
-#   video  — FilmCraft, EffectCraft                      (Premiere/After Effects)
+#   video  — FilmCraft, EffectCraft, AniCraft            (Premiere/After Effects/Animate)
 #   audio  — SoundCraft                                  (Audition)
 #   cad    — CADCraft                                    (AutoCAD)
 #
@@ -34,11 +34,13 @@ let
   suites = with pkgs.craft-apps; {
     office = [ wordcraft gridcraft deckcraft pdfcraft ];
     design = [ photocraft lightcraft vectorcraft designcraft figcraft texturecraft materialcraft ];
-    video  = [ filmcraft effectcraft ];
+    video  = [ filmcraft effectcraft anicraft ];
     audio  = [ soundcraft ];
     cad    = [ cadcraft ];
   };
   installed = lib.concatMap (s: suites.${s}) config.craftApps.suites;
+  # AniCraft has no MCP entry (no `mcp` subcommand found), so skip apps absent from `mcp`.
+  mcpApps = lib.filter (a: mcp ? ${a.pname}) installed;
 
   # Type folder under ~ + args after `<app>-cli`. "roots" = read <dir>,
   # write <dir>/Craft.
@@ -87,8 +89,8 @@ in
           args = lib.concatMap (a: if a == "roots"
             then [ "--automation-read-root" "${home}/${m.dir}" "--automation-write-root" (craftDir app) ]
             else [ a ]) m.args;
-        }) installed);
-        craftDirs = lib.escapeShellArgs (lib.unique (map craftDir installed));
+        }) mcpApps);
+        craftDirs = lib.escapeShellArgs (lib.unique (map craftDir mcpApps));
         serversJson = pkgs.writeText "craft-mcp-servers.json" (builtins.toJSON servers);
         # Every Craft server name, installed or not, so the merge removes
         # exactly these keys and never a hand-added server like "minecraft".

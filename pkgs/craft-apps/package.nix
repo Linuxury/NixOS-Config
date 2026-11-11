@@ -42,6 +42,7 @@ let
     figcraft    = { version = "0.17.0"; hash = "sha256-68i/pNoCaGDP+CHSAk1vUXBKxpR4lp9bKWEdu5am5GQ="; description = "Interface design and prototyping"; };
     texturecraft = { version = "0.5.0"; hash = "sha256-DVZP4n1iCFAhKpB3EfMHoAd+fUcdIneSRDHV6R1Au18="; description = "Procedural texture designer"; };
     materialcraft = { version = "0.3.0"; hash = "sha256-0UOdHwc+K6zY4YoSPXuMJMDEF0ORmzzK4yqTIYP3YoU="; description = "Material and shader authoring"; };
+    anicraft    = { version = "0.2.0"; hash = "sha256-/fGVjqSF/Kbliz704/WRc+1MCdTKAFZ7aSRM2TzMgcs="; description = "2D vector animation studio"; };
   };
 
   mk = pname: app: stdenv.mkDerivation {
