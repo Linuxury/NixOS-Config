@@ -166,8 +166,11 @@
   # ==============================================================
   networking.hostName = "Ryzen5900x";
 
-  # Dux Files (module + package from nixpkgs) — trial. Portal dialog and default-handler left off for now.
+  # Dux Files (module + package from nixpkgs) — default folder handler and Open/Save dialog.
   programs.dux-files.enable = true;
+  programs.dux-files.portal.enable = true;
+  # Umbriel's own portal has no FileChooser, so route dialogs to Dux Files (was falling through to GTK).
+  xdg.portal.config.umbriel."org.freedesktop.impl.portal.FileChooser" = [ "dfiles" ];
   # Default folder handler for every user on this host (beats graphical.nix's mkDefault Nautilus).
   home-manager.sharedModules = [{
     xdg.mimeApps.defaultApplications."inode/directory" = pkgs.lib.mkForce "dev.duxlabs.files.desktop";
