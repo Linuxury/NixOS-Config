@@ -135,11 +135,11 @@
     "dotfiles": {
       "flake": false,
       "locked": {
-        "lastModified": 1794101187,
-        "narHash": "sha256-Ao3BGTo+OW26qjCWGwBwMSVrM0d/6e5uFzce3ykdC14=",
+        "lastModified": 1794359931,
+        "narHash": "sha256-iLbjSGLJnrGTyhtYI2lyIEcKfsM0lIzgYIi/sRNqjrU=",
         "owner": "Linuxury",
         "repo": "Dotfiles",
-        "rev": "796155c9dd6a53f1c5f7b03e9b6202d5557cff11",
+        "rev": "72dec42efd9ab904a942923bb753945278c6e285",
         "type": "github"
       },
       "original": {
@@ -278,11 +278,11 @@
     "impeccable": {
       "flake": false,
       "locked": {
-        "lastModified": 1794344818,
-        "narHash": "sha256-baSpffSAjDs2tNo8pIdF11gvjaXI7twJedqTX+OHa1w=",
+        "lastModified": 1794363292,
+        "narHash": "sha256-GYW+CrTcQLxgSwW2tjHB7IXzJ9mQdYAr7mlPopFJsqE=",
         "owner": "pbakaus",
         "repo": "impeccable",
-        "rev": "f2baa414a87d9acf1e21ccf776bfaec0262ad6df",
+        "rev": "fead7938331bb92129e3c5ce14f600611067bd06",
         "type": "github"
       },
       "original": {
@@ -524,11 +524,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794336464,
-        "narHash": "sha256-ifRSEpQSKEn/4v2KnFFejejGfJLg+iZHgGzGHhJWSEY=",
+        "lastModified": 1794364650,
+        "narHash": "sha256-LqTsiB5jmjQyl+z2iHkKftcOcCYGgeeQ1ZnnZhPe/tc=",
         "owner": "noctalia-dev",
         "repo": "noctalia",
-        "rev": "03d144e58367f9d7e69b7c085c1dda9ffee69bf6",
+        "rev": "ae0dc73381d7572310557e2e8e1085993ad96abc",
         "type": "github"
       },
       "original": {
