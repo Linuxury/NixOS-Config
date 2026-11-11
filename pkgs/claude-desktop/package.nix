@@ -45,11 +45,11 @@
 # patched inside app.asar + the kvm group. Add if Cowork is wanted.
 stdenv.mkDerivation rec {
   pname = "claude-desktop";
-  version = "5.1231.0";
+  version = "5.1231.2";
 
   src = fetchurl {
     url = "https://downloads.claude.ai/claude-desktop/apt/stable/pool/main/c/claude-desktop/claude-desktop_${version}_amd64.deb";
-    hash = "sha256-8d70D0H/oJRMYioeWrkNHwDLBfvrhc1xL397LAmJ7jA=";
+    hash = "sha256-600Wya/wppY2bYhyj3T6VRNr58/ePB/jWvQGK0WVW28=";
   };
 
   nativeBuildInputs = [ dpkg autoPatchelfHook makeWrapper ];
