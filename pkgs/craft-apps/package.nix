@@ -28,10 +28,10 @@
 # Drop an app from here once it lands in nixpkgs.
 let
   apps = {
-    photocraft  = { version = "0.23.0"; hash = "sha256-mFjuI0hU98OQ8+q0c0rqUxAMyRLCyNzqoClCe3XdIvg="; description = "Image editor"; };
+    photocraft  = { version = "0.23.1"; hash = "sha256-Q4Ou9noHzDcK0lCm7WABUgXT5sRj+vP/Sw9nuBeMz8g="; description = "Image editor"; };
     pdfcraft    = { version = "0.21.1"; hash = "sha256-wpGekETv/eMY5mgHrSohu7dKlVWzwLmfmtDEDPYc4l4="; description = "PDF workbench"; };
-    lightcraft  = { version = "0.21.0"; hash = "sha256-fn2lU96hACaKBY8TXHxK0fT7drTYJC4U9w8W7YkllYA="; description = "Photo library and raw developer"; };
-    vectorcraft = { version = "0.24.0"; hash = "sha256-nGFxygB6b4NcNotZL+nukMmF1lBX7cnc0rxMTvxQrSs="; description = "Vector illustration"; };
+    lightcraft  = { version = "0.21.1"; hash = "sha256-sSPeFpFYCaeeZLpO467p4c3tbvI7c3wG+Bzcfi8obWI="; description = "Photo library and raw developer"; };
+    vectorcraft = { version = "0.24.1"; hash = "sha256-oJBRQlL94UVJWsb8Zdb/ExHWmJmOV7pDTV0IlsPR+/o="; description = "Vector illustration"; };
     filmcraft   = { version = "0.20.1"; hash = "sha256-Pk/qPLjUc+aPGJoKh5K6RhYPq1B62rOriSAHP9QfJPo="; description = "Video editor"; };
     effectcraft = { version = "0.24.1"; hash = "sha256-XOA5NpAUQif6kYboIwitY4pu9tn5dsmW5tA7W1G2Wns="; description = "Motion graphics and VFX"; };
     designcraft = { version = "0.20.1"; hash = "sha256-6RYw1M31eMyx4vOfiOJOhSDxSC1RrkcUZX7kceIjf0Q="; description = "Page layout and publishing"; };
