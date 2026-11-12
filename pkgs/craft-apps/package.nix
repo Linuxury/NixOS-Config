@@ -28,9 +28,9 @@
 # Drop an app from here once it lands in nixpkgs.
 let
   apps = {
-    photocraft  = { version = "0.22.0"; hash = "sha256-7t6vpGdd+9HyNR5r+kuC9URTaU6zbaG71cqLv19U8gI="; description = "Image editor"; };
+    photocraft  = { version = "0.23.0"; hash = "sha256-mFjuI0hU98OQ8+q0c0rqUxAMyRLCyNzqoClCe3XdIvg="; description = "Image editor"; };
     pdfcraft    = { version = "0.21.0"; hash = "sha256-eajHbiOtbmcd47hWpHaTavwAD4qn/v/xkNQ95i+jW6E="; description = "PDF workbench"; };
-    lightcraft  = { version = "0.20.0"; hash = "sha256-jLXu2CWy3Z4PpCaAEp0+WqcY8HGW1nzF0FdB8OapzCU="; description = "Photo library and raw developer"; };
+    lightcraft  = { version = "0.21.0"; hash = "sha256-fn2lU96hACaKBY8TXHxK0fT7drTYJC4U9w8W7YkllYA="; description = "Photo library and raw developer"; };
     vectorcraft = { version = "0.24.0"; hash = "sha256-nGFxygB6b4NcNotZL+nukMmF1lBX7cnc0rxMTvxQrSs="; description = "Vector illustration"; };
     filmcraft   = { version = "0.20.0"; hash = "sha256-NUZdcb3hifUMrK8+T9icTKY3f6+OtI6qLwZbjlRZMjY="; description = "Video editor"; };
     effectcraft = { version = "0.24.0"; hash = "sha256-l7Ws6bjL44qF/k7dAuR+vfQnKTML0oC6IHTAiblrUCI="; description = "Motion graphics and VFX"; };
@@ -38,9 +38,9 @@ let
     wordcraft   = { version = "0.18.0"; hash = "sha256-8paT5gNt6UFWzvQrzb1kR4oa7C85akwqFaf3JT51kiY="; description = "Word processor"; };
     gridcraft   = { version = "0.19.0"; hash = "sha256-47HPSpJuKvp+isIukIt833uvYQO7RE+Za/oLw9iJrbY="; description = "Spreadsheet"; };
     deckcraft   = { version = "0.18.0"; hash = "sha256-0fEpr4wS8SULzBfbzbqsOAkAyROByEpK2m7ntICk2wY="; description = "Presentations"; };
-    soundcraft  = { version = "0.19.0"; hash = "sha256-iaKb9Iwpnu5ZPXzWhLIchIPKKHq8GWZXrj+Vmh68GK0="; description = "Digital audio workstation"; };
+    soundcraft  = { version = "0.20.0"; hash = "sha256-zoR0Rz4+f+sidq8E/yBzLtY5EFXxiJE3eYNPUU7hpkg="; description = "Digital audio workstation"; };
     cadcraft    = { version = "0.20.0"; hash = "sha256-UAWDN6wl9UL87yyDQxg1dtDEIKocfdYjEQvtiZ4sSOk="; description = "CAD and drafting"; };
-    figcraft    = { version = "0.17.0"; hash = "sha256-68i/pNoCaGDP+CHSAk1vUXBKxpR4lp9bKWEdu5am5GQ="; description = "Interface design and prototyping"; };
+    figcraft    = { version = "0.18.0"; hash = "sha256-jHZKpXlYqkY0w/0taHk6f4jQsyZtH0pIe3inB607JRM="; description = "Interface design and prototyping"; };
     texturecraft = { version = "0.6.0"; hash = "sha256-kxhlhG6mqCArs8JYl75h4K+vjtMmTCaNXVutqXP9dy4="; description = "Procedural texture designer"; };
     materialcraft = { version = "0.4.0"; hash = "sha256-rGp0I4apLErb0UUtVTDwwkSQeP3J4HAzPoM+bSvfjPc="; description = "Material and shader authoring"; };
     anicraft    = { version = "0.2.0"; hash = "sha256-/fGVjqSF/Kbliz704/WRc+1MCdTKAFZ7aSRM2TzMgcs="; description = "2D vector animation studio"; };
