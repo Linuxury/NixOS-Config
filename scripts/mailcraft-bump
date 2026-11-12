@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Bump the pinned MailCraft release to the newest on GitHub (no token needed).
+# Hash comes from the release's SHA256SUMS.txt, so nothing is downloaded.
+# Rewrites pkgs/mailcraft/mailcraft.json only; commit and nru yourself.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+out=pkgs/mailcraft/mailcraft.json
+repo=UCS-Care-Group/mailcraft
+
+tag=$(curl -fsS "https://api.github.com/repos/$repo/releases/latest" | jq -r .tag_name)
+version=${tag#v}
+[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "unexpected release tag: $tag" >&2; exit 1; }
+cur=$(jq -r .version "$out")
+if [ "$version" = "$cur" ]; then echo "already on $version"; exit 0; fi
+# Never downgrade.
+[ "$(printf '%s\n%s\n' "$cur" "$version" | sort -V | tail -1)" = "$version" ] || { echo "already on $cur"; exit 0; }
+
+hex=$(curl -fsSL "https://github.com/$repo/releases/download/$tag/SHA256SUMS.txt" \
+  | awk -v f="mailcraft-$version-linux-x86_64.tar.gz" '$2 == f {print $1}')
+[ -n "$hex" ] || { echo "no checksum for $version linux-x86_64 tarball" >&2; exit 1; }
+sri=$(nix hash convert --hash-algo sha256 --to sri "$hex")
+
+jq -n --arg v "$version" --arg h "$sri" '{version:$v, hash:$h}' > "$out"
+echo "pinned $version"

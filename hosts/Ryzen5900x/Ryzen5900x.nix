@@ -57,6 +57,7 @@
     ../../modules/system/graphical/fluxer.nix
     ../../modules/system/graphical/craft-apps.nix
     ../../modules/system/graphical/claude-desktop.nix
+    ../../modules/system/graphical/mailcraft.nix
     ../../modules/services/kdeconnect.nix
     ../../modules/system/graphical/firefox.nix
     #../../modules/system/graphical/helium.nix
