@@ -15,8 +15,8 @@
 { config, lib, pkgs, ... }:
 
 let
-  # Pinned tag; Phase 2 adds scripts/baalda-bump.
-  pin     = builtins.fromJSON (builtins.readFile ./baalda.json);
+  # Pinned tag, shared with the desktop package; scripts/baalda-bump rewrites it.
+  pin     = builtins.fromJSON (builtins.readFile ../../../pkgs/baalda/baalda.json);
   podman  = "${pkgs.podman}/bin/podman";
   ts      = "${config.services.tailscale.package}/bin/tailscale";
   image   = "localhost/baalda-server:${pin.version}";
@@ -92,6 +92,9 @@ in
         git clone --depth 1 --branch v${pin.version} https://github.com/naveedharri/baalda.git "$src"
         ${podman} build -f app/apps/server/Dockerfile -t ${image} "$src"
       fi
+      # Keep the newest two tags for rollback; a running image refuses removal, hence || true.
+      ${podman} images --format '{{.Tag}}' localhost/baalda-server | sort -V | head -n -2 \
+        | while read -r t; do ${podman} rmi "localhost/baalda-server:$t" || true; done
     '';
   };
 
@@ -102,12 +105,20 @@ in
     after         = [ "baalda-build.service" "podman-baalda-postgres.service" ];
     requires      = [ "baalda-build.service" "podman-baalda-postgres.service" ];
     before        = [ "podman-baalda-server.service" ];
+    path          = [ pkgs.gzip ];
     serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
     script = ''
       for _ in $(seq 1 60); do
         ${podman} exec baalda-postgres pg_isready -U baalda -d baalda -q && break
         sleep 2
       done
+      # One dump per version, taken before its migrations; restore it if a bump goes wrong.
+      f=/data/backups/baalda/baalda-pre-migrate-${pin.version}.sql.gz
+      if [ ! -e "$f" ]; then
+        set -o pipefail
+        ${podman} exec baalda-postgres pg_dump -U baalda baalda | gzip > "$f.tmp"
+        mv "$f.tmp" "$f"
+      fi
       ${podman} run --rm --network=baalda --env-file ${envFile} ${envArgs} \
         ${image} node dist/db/migrate.js
     '';
