@@ -245,6 +245,12 @@ in
   "zennotes-auth-token.age".publicKeys = uniq (linuxury-admins ++ [ Media-Server ]);
 
   # --------------------------------------------------------------------------
+  # Baalda server env (POSTGRES_PASSWORD, JWT_SECRET, DATABASE_URL, BETTER_AUTH_URL)
+  # Deployed only to Media-Server.
+  # --------------------------------------------------------------------------
+  "baalda-env.age".publicKeys = uniq (linuxury-admins ++ [ Media-Server ]);
+
+  # --------------------------------------------------------------------------
   # flow-icons license key
   #
   # Commercial license for the flow-icons VSCodium extension.
