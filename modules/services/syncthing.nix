@@ -10,17 +10,61 @@
 #   ~/Jarvis    — vault: session logs, research, projects, work, stack (ZenNotes)
 #                 Per-client ZenNotes metadata excluded via ~/Jarvis/.stignore:
 #                   .zennotes/
-#   ~/.agents   — AI config: AGENTS.md, CLAUDE.md, Claude/OpenCode settings,
-#                 MCP config, and mcp-servers/ source code.
-#                 Runtime artifacts excluded via ~/.agents/.stignore:
-#                   memory/, backups/, .venv, __pycache__, *.egg-info
+#   ~/.agents   — AI definitions: rules (Shared/AGENTS.md, Claude/CLAUDE.md),
+#                 Claude/OpenCode settings, agents, mods, themes, memory/.
+#                 Per-host runtime (Claude history, projects, credentials,
+#                 plugins, caches), conflict files and mcp-servers/ code are
+#                 excluded by ~/.agents/.stignore, written on every host by
+#                 the tmpfiles rule below (agentsStignore).
 # Device IDs generated fresh 2026-03-25 — no legacy config carried over.
 # Phone (Pixel Pro 8) ID obtained from Syncthing-Fork app.
 # ===========================================================================
 
 { lib, ... }:
 
+let
+  # Ignore patterns for ~/.agents (one per line, no spaces: tmpfiles argument).
+  # Ignoring never deletes anything on a peer; it only stops future syncing.
+  agentsStignore = lib.concatStringsSep "\\n" [
+    "Claude/projects"
+    "Claude/plugins"
+    "Claude/plans"
+    "Claude/file-history"
+    "Claude/session-env"
+    "Claude/sessions"
+    "Claude/shell-snapshots"
+    "Claude/cache"
+    "Claude/paste-cache"
+    "Claude/ide"
+    "Claude/state"
+    "Claude/state.json*"
+    "Claude/.claude.json"
+    "Claude/history*.jsonl"
+    "Claude/.credentials*"
+    "Claude/mcp-needs-auth-cache*"
+    "Claude/pricing-cache.json"
+    "Claude/.last-cleanup"
+    "Claude/.ponytail-active"
+    "Claude/mods-logs"
+    "Claude/backups"
+    "Claude/settings.json.bak*"
+    "Claude/settings.json.*.bak"
+    "Claude/skills/synced"
+    "Shared/mcp-servers"
+    "skills.bak"
+    "**/*sync-conflict-*"
+    "**/.venv"
+    "**/__pycache__"
+    "**/*.egg-info"
+  ];
+in
 {
+  # Same ignore file on every host (the file is per-device, never synced itself).
+  systemd.tmpfiles.rules = [
+    "d /home/linuxury/.agents 0755 linuxury users -"
+    "f+ /home/linuxury/.agents/.stignore 0644 linuxury users - ${agentsStignore}"
+  ];
+
   # Upstream's syncthing-init unit uses `Requisite=syncthing.service`, which
   # only checks that syncthing.service is *already active* at job-queue time
   # instead of waiting for it — during a rebuild/restart race this fails with
