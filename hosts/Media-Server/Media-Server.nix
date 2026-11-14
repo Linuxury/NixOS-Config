@@ -15,7 +15,6 @@
 #   - system/core.nix
 #   - services/samba.nix (single Media-Server share → /data)
 #   - services/zennotes/service-zennotes.nix (self-hosted notes server, port 7879)
-#   - services/baalda/service-baalda.nix (Baalda sync server, tailnet HTTPS on 443)
 #   - freshrss/ (migrated from Radxa-X4, local to this host)
 # ===========================================================================
 
@@ -79,7 +78,6 @@
     ../../modules/services/syncthing.nix
     ../../modules/services/auto-update/auto-update.nix
     ../../modules/services/zennotes/service-zennotes.nix
-    ../../modules/services/baalda/service-baalda.nix
     #../../modules/services/vpn-qbittorrent.nix
     #../../modules/services/snapper.nix
     #../../modules/services/syncthing-babylinux.nix
