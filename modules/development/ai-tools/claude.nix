@@ -153,8 +153,8 @@ in
         '';
 
       # =====================================================================
-      # ~/.claude/settings.json — enable the plugins listed in the Agents-Skills
-      # flake (lib.claude.enabledPlugins) and register their marketplaces.
+      # ~/.claude/settings.json — enable the plugins listed in claudePlugins
+      # (top of this file) and register their marketplaces.
       #
       # Merges only the keys we own into an existing settings.json so user-
       # local settings (permissions, MCP servers, theme, etc.) are preserved.
