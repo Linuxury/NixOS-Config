@@ -15,11 +15,11 @@
         "wintypes_shim": "wintypes_shim"
       },
       "locked": {
-        "lastModified": 1793921726,
-        "narHash": "sha256-X2bD4itaupSjjXf7gGCGyftRCGYtSfkXx3lI5kX14bs=",
+        "lastModified": 1794618174,
+        "narHash": "sha256-MkTFAutbKjjQehXQMU3FnCRXJzkWR33lSwSJqEfJ2lU=",
         "owner": "mrshmllow",
         "repo": "affinity-nix",
-        "rev": "0013d501101e91f9ba16b198d48b2cbeec6f5d80",
+        "rev": "8f7b06f7ea29330f7bd98d047fecfa9c30eb99a3",
         "type": "github"
       },
       "original": {
@@ -119,11 +119,11 @@
     },
     "crane": {
       "locked": {
-        "lastModified": 1793585954,
-        "narHash": "sha256-tXvzytP+yKObBT9UpMoqA8AINfq62ZzeOcGFiCJ8ouo=",
+        "lastModified": 1793836618,
+        "narHash": "sha256-TREenflwEjxOSq292FYwbc3kEm7TDRtXCZRNWEdjBmg=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "8782adaf7e415975d2737b41ccca93b08a8f7d9f",
+        "rev": "79fd63528501446749c09f08cad486a58c7d173e",
         "type": "github"
       },
       "original": {
@@ -201,11 +201,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1791909798,
-        "narHash": "sha256-VAhpCOmrun/KXimYfR8NM88bciKCui7CqHHhThSzgag=",
+        "lastModified": 1793686154,
+        "narHash": "sha256-Zb/0L3soxrkfcrywpfp0J++0WFLB3tzh0Xtx9up+VNc=",
         "owner": "cachix",
         "repo": "git-hooks.nix",
-        "rev": "1ba1dbfe28738c9a71c266be6efa5b89e75491a9",
+        "rev": "204b6977e00caac19e2313015a598543ca7be150",
         "type": "github"
       },
       "original": {
@@ -508,11 +508,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794590380,
-        "narHash": "sha256-OX/wLeTXNZpUW3dtaLFYQvmbxgCdE9TXKOaxewUco6g=",
+        "lastModified": 1794619258,
+        "narHash": "sha256-h+0+qTEr+Wm3gRZDBa/kRqWO9dGnd9cVdeDenKmbg1Q=",
         "owner": "noctalia-dev",
         "repo": "noctalia",
-        "rev": "6ba9c46a227c11ddf513edb27323a1629fc3bd18",
+        "rev": "8eecf934421c1c992f85884314ac5c323935b944",
         "type": "github"
       },
       "original": {
@@ -763,11 +763,11 @@
     "zsh": {
       "flake": false,
       "locked": {
-        "lastModified": 1794613353,
-        "narHash": "sha256-ZACDwL4StAnq4FBGfb0opFtbniWZ0JESey7io09curI=",
+        "lastModified": 1794619438,
+        "narHash": "sha256-kWk1CoHxDjT8FyuiWsSehAelvM2oi1ysbEHddN/u4VU=",
         "owner": "Linuxury",
         "repo": "ZSH",
-        "rev": "9ffb2fb5940b0473c66580735b31beaed89c4571",
+        "rev": "f44e416caba9962ce0ec8285bf0b3f0956aa1092",
         "type": "github"
       },
       "original": {
