@@ -155,7 +155,7 @@ in
     let
       protonCachyosTag = "cachyos-11.0-20261015-slr"; # proton-cachyos-nru
       protonGeTag = "GE-Proton11-12"; # proton-ge-nru
-      protonWinelandTag = "wineland-11.0-20261106"; # proton-wineland-nru
+      protonWinelandTag = "wineland-11.0-20261114"; # proton-wineland-nru
     in
     {
       proton-ge-custom = prev.callPackage ../../pkgs/proton-ge-custom/package.nix {
@@ -172,7 +172,7 @@ in
         tag = protonWinelandTag;
         proton-wineland-src = pkgs.fetchzip {
           url  = "https://github.com/nanomatters/proton-salkim/releases/download/${protonWinelandTag}/proton-${protonWinelandTag}-x86_64.tar.xz"; # proton-wineland-url
-          hash = "sha256-ytEcqEQURQHFQecOqnN+c/0/5n3jNgeq8FV4KMEWw5g="; # proton-wineland-hash
+          hash = "sha256-ZK3kv9GvXhvgIgWG9XyewGmdFxiKu5cdpoC/u+Kf7A4="; # proton-wineland-hash
         };
       };
 
