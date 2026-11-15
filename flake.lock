@@ -654,11 +654,11 @@
     "upstream-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1794765909,
-        "narHash": "sha256-AjuUC4pegr0svdEw3uEaWIbUuQh/E0Z1zG+x3+MCT3U=",
+        "lastModified": 1794768090,
+        "narHash": "sha256-NUIOPTaYs6jDneMx9iekFDSx1DRyBTNA9IPmAfKruzE=",
         "owner": "sickn33",
         "repo": "agentic-awesome-skills",
-        "rev": "ba30de53217bc264dd3a3eb1ae409bd4347f7ce6",
+        "rev": "8f1eb06978b026c5434284202c22215792c3071c",
         "type": "github"
       },
       "original": {
