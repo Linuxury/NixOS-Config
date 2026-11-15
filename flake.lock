@@ -508,11 +508,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794761326,
-        "narHash": "sha256-4XRpoUnHcpkXIyUGsxwPkxUAiKQSYpfNFinH4W+SOQw=",
+        "lastModified": 1794765689,
+        "narHash": "sha256-2dMDLeDpa684M04gG9xHnZ4fRYUfzbyY9fm57FYoBe4=",
         "owner": "noctalia-dev",
         "repo": "noctalia",
-        "rev": "c6b6304033785c85c3cef3ebfe195ce6fe469da8",
+        "rev": "215c74df6cd6dee93750f81149d195e869750bb4",
         "type": "github"
       },
       "original": {
@@ -654,11 +654,11 @@
     "upstream-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1794509926,
-        "narHash": "sha256-kb774AxhTIVQU3xNNiswA6ZgnrIOZ/HUNxFy9QlaxIM=",
+        "lastModified": 1794765909,
+        "narHash": "sha256-AjuUC4pegr0svdEw3uEaWIbUuQh/E0Z1zG+x3+MCT3U=",
         "owner": "sickn33",
         "repo": "agentic-awesome-skills",
-        "rev": "560b762c309d6b96315855d7968727d3bca7df20",
+        "rev": "ba30de53217bc264dd3a3eb1ae409bd4347f7ce6",
         "type": "github"
       },
       "original": {
