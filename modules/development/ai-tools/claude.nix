@@ -56,7 +56,7 @@ let
   claudePlugins = {
     enabledPlugins = {
       "ponytail@DietrichGebert" = true;
-      "ribbon@robonuggets" = true;
+      "ribbon@robonuggets" = false;
       "savvy-progress@claude-kit" = true;
       "cache-tax@claude-code-mods" = true;
       "blast-radius@claude-code-playground-mods" = true;
