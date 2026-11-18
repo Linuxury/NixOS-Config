@@ -430,6 +430,8 @@
     # linuxury — everyday tools
     inputs.nixpkgs-goose.legacyPackages.${pkgs.stdenv.hostPlatform.system}.topgrade  # pinned: unstable aws-lc-sys build broken. One-command updater — Nix, cargo, flatpaks, etc.
     bat                # cat with syntax highlighting and line numbers
+    herdr              # CLI — agent multiplexer TUI (delete this line for desktop only)
+    herdr-desktop      # GUI app — persistent terminals + agents (delete this line for CLI only)
     lazygit            # TUI for git — stage, commit, branch all in one
     gh                 # GitHub CLI — PRs, issues from terminal
     delta              # Pretty diff viewer — integrates with git
