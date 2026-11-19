@@ -41,6 +41,7 @@ let
     link() { ln -sfn "$1" "$out/$(basename "$1")"; }
     for d in ${inputs.upstream-skills}/skills/*/; do
       d="''${d%/}"; n=$(basename "$d")
+      case $n in *superpowers*) continue ;; esac  # excluded on purpose
       if [[ $n =~ ^[a-z0-9-]+$ ]] || [ ! -f "$d/SKILL.md" ]; then link "$d"; continue; fi
       # Zed only loads names of lowercase letters, digits and hyphens: copy and rename.
       m=$(printf %s "$n" | tr 'A-Z_' 'a-z-')
@@ -60,7 +61,7 @@ let
       "savvy-progress@claude-kit" = true;
       "cache-tax@claude-code-mods" = true;
       "blast-radius@claude-code-playground-mods" = true;
-      "replay-theater@claude-code-playground-mods" = true;
+      "replay-theater@claude-code-playground-mods" = false;
       "lua-lsp@claude-plugins-official" = true;
       "typescript-lsp@claude-plugins-official" = true;
       # 5 skills Claude always sees: planning, git pushing, lint, debugging, TDD.
