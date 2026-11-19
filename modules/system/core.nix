@@ -104,8 +104,8 @@
             case "$IFACE" in
               en*|eth*|eno*)
                 case "$ACTION" in
-                  up)        nmcli radio wifi off ;;
-                  down)      nmcli radio wifi on  ;;
+                  up)        ${config.networking.networkmanager.package}/bin/nmcli radio wifi off ;;
+                  down)      ${config.networking.networkmanager.package}/bin/nmcli radio wifi on  ;;
                 esac
                 ;;
             esac
