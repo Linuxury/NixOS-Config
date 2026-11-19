@@ -159,6 +159,13 @@ in
   # would run it again and rewrite the completion dump: ~0.9 s per shell.
   programs.zsh.enableGlobalCompInit = false;
 
+  # NetworkManager-wait-online held graphical.target ~4 s (via tailscaled's
+  # network-online ordering); Ryzen5900x userspace 8.6 s -> 4.9 s without it.
+  # Safe on desktops/laptops: CIFS mounts are automount, nixos-upgrade skips
+  # the first 20 min after boot (auto-update.nix). Servers keep it, since
+  # Radxa-X4's VPN killswitch needs a real network-online.
+  systemd.services.NetworkManager-wait-online.enable = false;
+
   # Weekly unattended Flatpak updates — the "nobody ran nru in a while"
   # backstop. Same script nru uses; skips gracefully where Flathub is absent
   # (e.g. Alex's machines).
