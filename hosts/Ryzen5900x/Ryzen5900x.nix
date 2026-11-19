@@ -167,6 +167,10 @@
   # Host identity
   # ==============================================================
   networking.hostName = "Ryzen5900x";
+  # Its ~4 s wait sat on the boot path to graphical.target (via tailscaled's
+  # network-online ordering). Units ordered after network-online now start
+  # before a DHCP lease is confirmed.
+  systemd.services.NetworkManager-wait-online.enable = false;
 
   # Dux Files (module + package from nixpkgs) — default folder handler and Open/Save dialog.
   programs.dux-files.enable = true;

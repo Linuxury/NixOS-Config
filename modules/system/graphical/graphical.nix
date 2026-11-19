@@ -155,6 +155,9 @@ in
     export ABBR_TMPDIR="''${XDG_RUNTIME_DIR:-/tmp/$USER}/zsh-abbr"
     export JOB_QUEUE_TMPDIR="''${XDG_RUNTIME_DIR:-/tmp/$USER}/zsh-job-queue"
   '';
+  # Home Manager's ~/.zshrc already runs compinit. The system /etc/zshrc
+  # would run it again and rewrite the completion dump: ~0.9 s per shell.
+  programs.zsh.enableGlobalCompInit = false;
 
   # Weekly unattended Flatpak updates — the "nobody ran nru in a while"
   # backstop. Same script nru uses; skips gracefully where Flathub is absent
