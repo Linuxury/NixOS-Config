@@ -508,11 +508,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795134824,
-        "narHash": "sha256-FZTKrfe4MOJaJNYcrzZee+DlU6+STHkbGr9DlD/J0mg=",
+        "lastModified": 1795136763,
+        "narHash": "sha256-lIouTxXrduKCn/Q2GAk+DHGbpZCGla5UvvxhbnJ8uhc=",
         "owner": "noctalia-dev",
         "repo": "noctalia",
-        "rev": "a81e34e7f4fdada43ac7c9fe911e224eb6ee5f0a",
+        "rev": "0e32beeeb3d3fedb6d1da720abcfe6fe4f4fad75",
         "type": "github"
       },
       "original": {
@@ -763,11 +763,11 @@
     "zsh": {
       "flake": false,
       "locked": {
-        "lastModified": 1795051016,
-        "narHash": "sha256-LoL/8OcTnYAJmCTIvFEJX/aAGpfh+u7HiBuOpyea9pA=",
+        "lastModified": 1795136712,
+        "narHash": "sha256-kyU1HZ4/OtNr7ZVNNFDrfbX49ztERC6B8R5odl8iWSY=",
         "owner": "Linuxury",
         "repo": "ZSH",
-        "rev": "cf061e09aeb026d93620a8006175b4631171e97c",
+        "rev": "9ee5d36d2c0602e7206a8abb81025f3f61c62124",
         "type": "github"
       },
       "original": {
