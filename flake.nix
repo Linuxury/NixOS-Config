@@ -132,7 +132,10 @@
     # as the rest of the system.
     # -------------------------------------------------------------------------
     noctalia = {
-      url = "github:noctalia-dev/noctalia";
+      # Pinned 2026-11-20: upstream 9213809 (async wpa_supplicant BSS fetch)
+      # fails to compile against nixpkgs' sdbus-c++ 2.2.1. Drop the rev once
+      # upstream builds again (see PENDING "noctalia held back").
+      url = "github:noctalia-dev/noctalia/e56dee2cd4cd0b6b0b5600e50e02610365c9b165";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
