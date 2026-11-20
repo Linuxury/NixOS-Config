@@ -252,8 +252,8 @@
 
   };
 
-  # Craft apps — Office + Design suites only on the laptop
-  craftApps.suites = [ "office" "design" ];
+  # Craft apps — Office + the old Design set (photo, graphics, 3d) on the laptop
+  craftApps.suites = [ "office" "photo" "graphics" "3d" ];
 
   # ==============================================================
   # Mount point directory + CIFS tools

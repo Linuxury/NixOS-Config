@@ -13,6 +13,10 @@
   libxkbcommon,
   vulkan-loader,
   wayland,
+  wrapGAppsHook3,
+  gtk3,
+  webkitgtk_4_1,
+  libsoup_3,
 }:
 # storytold Craft apps (https://getartcraft.com/apps) — prebuilt Linux release tarballs.
 #
@@ -44,6 +48,9 @@ let
     texturecraft = { version = "0.6.1"; hash = "sha256-4X0Uoeu59hHaRhcIwpiIdQ+YL91/DNEeFpDsSoQGhgA="; description = "Procedural texture designer"; };
     materialcraft = { version = "0.4.1"; hash = "sha256-QxFfjT4v7o+fKbwHsDyYTC6PbQTg4ZWUOdc+xc32gw4="; description = "Material and shader authoring"; };
     anicraft    = { version = "0.2.1"; hash = "sha256-o6h5W9aupLS8XKDybCJqByMw04/pP07fVSY2Dr9xVv0="; description = "2D vector animation studio"; };
+    # Tags are artcraft-v<ver> (the repo also carries artcraft-windows-v* tags).
+    artcraft    = { version = "0.41.1"; hash = "sha256-FJ+XSOozVTF3wCHhreR6GV+tJbiBEp1BeP5b2SKpTrQ="; tagPrefix = "artcraft-"; tauri = true; description = "AI art and film studio"; };
+    craft-anything = { version = "0.6.1"; hash = "sha256-g+wHMMkRfzmRIrMVxj7Uw6jTGsVb3ddMuLM80vdu9wQ="; description = "AI clean-room app re-creator (early alpha)"; };
   };
 
   mk = pname: app: stdenv.mkDerivation {
@@ -51,12 +58,15 @@ let
     inherit (app) version;
 
     src = fetchurl {
-      url = "https://github.com/storytold/${pname}/releases/download/v${app.version}/${pname}-${app.version}-linux-x86_64.tar.gz";
+      url = "https://github.com/storytold/${pname}/releases/download/${app.tagPrefix or ""}v${app.version}/${pname}-${app.version}-linux-x86_64.tar.gz";
       inherit (app) hash;
     };
 
-    nativeBuildInputs = [ autoPatchelfHook ];
-    buildInputs = [ stdenv.cc.cc.lib alsa-lib ];
+    # tauri = GTK3/WebKitGTK webview app (ArtCraft): needs those libs linked, and
+    # wrapGAppsHook3 for GSettings schemas + GIO modules (file chooser, TLS).
+    nativeBuildInputs = [ autoPatchelfHook ] ++ lib.optional (app.tauri or false) wrapGAppsHook3;
+    buildInputs = [ stdenv.cc.cc.lib alsa-lib ]
+      ++ lib.optionals (app.tauri or false) [ gtk3 webkitgtk_4_1 libsoup_3 dbus ];
 
     # dlopen'd at runtime, invisible to autoPatchelf's link scan. X11 libs: DesignCraft
     # forces winit's X11 backend (file drag-and-drop), so it runs under XWayland.
@@ -73,7 +83,7 @@ let
 
     # Nothing is compiled here — untar a prebuilt tree, then autoPatchelf it.
     # Without this, a remote builder gets picked and the transfer dwarfs the
-    # work: ~60-106 MB tarball up, ~127-195 MB output back, per app, times 13.
+    # work: ~60-106 MB tarball up, ~127-195 MB output back, per app.
     # On a wifi host (ThinkPad) that turned a seconds-long unpack into minutes.
     preferLocalBuild = true;
 

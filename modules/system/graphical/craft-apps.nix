@@ -6,14 +6,16 @@
 # (versions + hashes live there).
 #
 # Grouped into suites mirroring Microsoft/Adobe. Hosts pick with:
-#   craftApps.suites = [ "office" ];   # default: all suites
+#   craftApps.suites = [ "office" ];   # default: every suite except ai
 #
-#   office — WordCraft, GridCraft, DeckCraft, PdfCraft   (Word/Excel/PowerPoint/Acrobat)
-#   design — PhotoCraft, LightCraft, VectorCraft, DesignCraft, FigCraft, TextureCraft
-#            (Photoshop/Lightroom/Illustrator/InDesign/Figma)
-#   video  — FilmCraft, EffectCraft, AniCraft            (Premiere/After Effects/Animate)
-#   audio  — SoundCraft                                  (Audition)
-#   cad    — CADCraft                                    (AutoCAD)
+#   office   — WordCraft, GridCraft, DeckCraft, PdfCraft  (Word/Excel/PowerPoint/Acrobat)
+#   photo    — PhotoCraft, LightCraft                     (Photoshop/Lightroom)
+#   graphics — VectorCraft, DesignCraft, FigCraft         (Illustrator/InDesign/Figma)
+#   3d       — TextureCraft, MaterialCraft                (Substance Designer/Painter)
+#   video    — FilmCraft, EffectCraft, AniCraft           (Premiere/After Effects/Animate)
+#   audio    — SoundCraft                                 (Audition)
+#   cad      — CADCraft                                   (AutoCAD)
+#   ai       — ArtCraft, Craft Anything                   (AI-driven; opt-in only)
 #
 # Overlay is scoped here, so only hosts importing this module fetch them.
 #
@@ -32,14 +34,17 @@
 
 let
   suites = with pkgs.craft-apps; {
-    office = [ wordcraft gridcraft deckcraft pdfcraft ];
-    design = [ photocraft lightcraft vectorcraft designcraft figcraft texturecraft materialcraft ];
-    video  = [ filmcraft effectcraft anicraft ];
-    audio  = [ soundcraft ];
-    cad    = [ cadcraft ];
+    office   = [ wordcraft gridcraft deckcraft pdfcraft ];
+    photo    = [ photocraft lightcraft ];
+    graphics = [ vectorcraft designcraft figcraft ];
+    "3d"     = [ texturecraft materialcraft ];
+    video    = [ filmcraft effectcraft anicraft ];
+    audio    = [ soundcraft ];
+    cad      = [ cadcraft ];
+    ai       = [ artcraft craft-anything ];
   };
   installed = lib.concatMap (s: suites.${s}) config.craftApps.suites;
-  # AniCraft has no MCP entry (no `mcp` subcommand found), so skip apps absent from `mcp`.
+  # Apps absent from `mcp` (AniCraft, ArtCraft) get no MCP server.
   mcpApps = lib.filter (a: mcp ? ${a.pname}) installed;
 
   # Type folder under ~ + args after `<app>-cli`. "roots" = read <dir>,
@@ -60,12 +65,15 @@ let
     effectcraft = { dir = "Videos";    args = [ "mcp" "roots" ]; };
     filmcraft   = { dir = "Videos";    args = [ "mcp" ]; };
     soundcraft  = { dir = "Music";     args = [ "mcp" "roots" ]; };
+    # No root flags (unconfined). Default mode asks before running code or acting
+    # on the device; --allow-run would skip that, so it's deliberately left off.
+    craft-anything = { dir = "Documents"; args = [ "mcp" ]; };
   };
 in
 {
   options.craftApps.suites = lib.mkOption {
     type        = lib.types.listOf (lib.types.enum (lib.attrNames suites));
-    default     = lib.attrNames suites;
+    default     = lib.remove "ai" (lib.attrNames suites);
     description = "Which Craft app suites to install.";
   };
 
