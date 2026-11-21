@@ -16,7 +16,6 @@
 #     session menu, plugins, hooks; see each block below). The
 #     wallpaper_changed hook writes ~/.local/share/current-wallpaper so the
 #     matugen path unit (themes/theme-matugen.nix) runs.
-#   - notification daemon disabled      swaync handles notifications
 #   - led-sync template                 on hosts with hardware.openrgb.enable
 #   - greeters/greeter-noctalia.nix     noctalia-greeter (greetd), imported
 #     here so hosts need no separate greeter import; unlike wayle it does
@@ -135,11 +134,6 @@ in
             tint_color     = "#000000";
             tint_intensity = 0.85;
           };
-
-          # ── Notification daemon ────────────────────────────────────────────
-          # swaync handles notifications on this config — disable noctalia's
-          # built-in daemon to avoid duplicate toasts.
-          notification.enable_daemon = false;
 
           # ── Screenshots ────────────────────────────────────────────────────
           # Built-in capture. Only the directory and format are set; other
