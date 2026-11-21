@@ -428,8 +428,8 @@
       enable = true;
       abbreviations = {
         # agenix — run from secrets/ dir without changing shell's cwd
-        age-edit = "env -C ~/nixos-config/secrets nix run github:ryantm/agenix -- -e";
-        age-rekey = "env -C ~/nixos-config/secrets nix run github:ryantm/agenix -- -r";
+        age-edit = "env -C ~/nixos-config/secrets nix run nixpkgs#ragenix -- -e";
+        age-rekey = "env -C ~/nixos-config/secrets nix run nixpkgs#ragenix -- -r";
 
         # Jarvis vault
         notes = "cd ~/Jarvis && nvim .";

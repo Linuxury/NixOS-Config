@@ -77,8 +77,8 @@
     shellAliases = {
       # agenix secret management; run from the secrets/ directory, where
       # secrets.nix lives.
-      age-edit  = "nix run github:ryantm/agenix -- -e";
-      age-rekey = "nix run github:ryantm/agenix -- -r";
+      age-edit  = "nix run nixpkgs#ragenix -- -e";
+      age-rekey = "nix run nixpkgs#ragenix -- -r";
     };
 
     # Shared init — same shell config as desktop hosts.
