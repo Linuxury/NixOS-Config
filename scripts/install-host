@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# install-host — run NixOS-Installer on a machine booted from the NixOS live ISO, from
+# an admin machine over SSH, and register its host key first (no copy-paste of keys).
+# Usage:
+#   install-host <ip>                     run the installer remotely (starter config, or
+#                                         register the key at the Secrets step by hand)
+#   install-host <ip> <Host>              also: make <Host>'s new SSH host key here, run
+#                                         add-host (re-key + push), copy the key to the ISO
+#   install-host <ip> <Host> -- <args>    pass <args> to the installer (e.g. --hub)
+#
+# On the target first: boot the live ISO, connect to the network, and set a password
+# for the `nixos` user (`passwd`), so SSH can log in.
+#
+# How the key hand-off works: the installer keeps the new host key in
+# /tmp/nixos-install-hostkey/ and only creates one when none is there. This script puts
+# the key there (root-owned, 0600) before starting the installer, so at the installer's
+# Secrets step pick "I ran add-host — pull the re-keyed secrets". The local copy of the
+# private key is deleted on exit.
+# SSH: agent forwarding (-A) lets the installer push hosts/<Host>/disk.nix back to the
+# repo. Host-key checking is off for this session only: a live ISO makes a new SSH host
+# key on every boot.
+set -euo pipefail
+
+usage() { grep '^#   install-host' "$0" | sed 's/^#   /usage: /' >&2; exit 2; }
+[ $# -ge 1 ] || usage
+ip=$1; shift
+host=""
+if [ $# -ge 1 ] && [ "$1" != -- ]; then host=$1; shift; fi
+[ "${1:-}" = -- ] && shift
+[[ -z $host || $host =~ ^[A-Za-z0-9-]+$ ]] || { echo "install-host: bad host name: $host" >&2; exit 2; }
+
+sshopt=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR)
+target=nixos@$ip
+ssh "${sshopt[@]}" -o ConnectTimeout=10 "$target" true \
+  || { echo "install-host: cannot log in to $target. On the ISO: set a password with passwd, check the IP." >&2; exit 1; }
+
+if [ -n "$host" ]; then
+  tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+  ssh-keygen -q -t ed25519 -N "" -C "root@$host" -f "$tmp/key"
+  add-host "$host" "$(cut -d' ' -f1,2 "$tmp/key.pub")"
+  # A new host stops inside add-host (recipient lists first); the key is still copied,
+  # so the installer uses it and a later add-host run matches it.
+  ssh "${sshopt[@]}" "$target" 'sudo install -d -m 700 /tmp/nixos-install-hostkey'
+  ssh "${sshopt[@]}" "$target" 'sudo tee /tmp/nixos-install-hostkey/ssh_host_ed25519_key >/dev/null && sudo chmod 600 /tmp/nixos-install-hostkey/ssh_host_ed25519_key' < "$tmp/key"
+  ssh "${sshopt[@]}" "$target" 'sudo tee /tmp/nixos-install-hostkey/ssh_host_ed25519_key.pub >/dev/null' < "$tmp/key.pub"
+  echo "install-host: host key for $host is on the ISO. At the Secrets step pick \"I ran add-host\"."
+fi
+
+# Run as the nixos user: the installer re-runs itself with sudo and keeps
+# SSH_AUTH_SOCK (install.sh), so the forwarded agent still reaches git push.
+args=""; [ $# -eq 0 ] || args=$(printf ' %q' "$@")
+exec ssh "${sshopt[@]}" -A -t "$target" \
+  "nix --extra-experimental-features 'nix-command flakes' run github:Linuxury/NixOS-Installer --$args"
