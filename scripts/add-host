@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# add-host — register a host's SSH host key with agenix and re-key the secrets.
+# Run on an admin machine (one whose personal key is in secrets.nix linuxury-admins).
+# Usage:
+#   add-host <Host> '<ssh-ed25519 KEY>'            add or replace, re-key, commit, push
+#   add-host --no-push <Host> '<ssh-ed25519 KEY>'  same, but stop after the commit
+# NixOS-Installer prints the exact command (with the new key) at its Secrets step.
+#
+# Existing host (reinstall): its key line in secrets/secrets.nix is replaced, then
+# every secret is re-encrypted (ragenix -r), committed and pushed, so the installer's
+# "pull the re-keyed secrets" picks it up.
+# New host: the key line is added, then the script stops: add the host to the
+# recipient lists of the secrets it needs in secrets.nix, and run add-host again.
+# Repo: $NIXOS_CONFIG, else ~/nixos-config. Needs nix, git and the admin's SSH key.
+set -euo pipefail
+
+push=1
+[ "${1:-}" = --no-push ] && { push=0; shift; }
+[ $# -eq 2 ] || { grep '^#   add-host' "$0" | sed 's/^#   /usage: /' >&2; exit 2; }
+host=$1 key=$2
+[[ $host =~ ^[A-Za-z0-9-]+$ ]] || { echo "add-host: bad host name: $host" >&2; exit 2; }
+key=$(printf '%s' "$key" | awk '{print $1, $2}')
+[[ $key =~ ^ssh-ed25519\ [A-Za-z0-9+/]+=*$ ]] || { echo "add-host: not an ssh-ed25519 public key" >&2; exit 2; }
+
+repo=${NIXOS_CONFIG:-$HOME/nixos-config}
+cd "$repo"
+nix=secrets/secrets.nix
+[ -z "$(git status --porcelain -- secrets/)" ] || { echo "add-host: secrets/ has uncommitted changes; commit or stash them first" >&2; exit 1; }
+git pull -q --rebase
+
+line="  $host = \"$key root@$host\";"
+if grep -qE "^  $host = \"ssh-ed25519 " "$nix"; then
+  # ponytail: matches the exact `  <Host> = "ssh-ed25519 ...";` form; a hand-reformatted entry needs editing by hand.
+  awk -v h="  $host = " -v l="$line" 'index($0, h) == 1 && $0 ~ /"ssh-ed25519 / { print l; next } { print }' "$nix" > "$nix.tmp" && mv "$nix.tmp" "$nix"
+  new=0
+else
+  # Insert after the last host-key line (capitalised name = host, lowercase = personal key).
+  last=$(grep -nE '^  [A-Z][A-Za-z0-9-]* = "ssh-ed25519 ' "$nix" | tail -1 | cut -d: -f1)
+  [ -n "$last" ] || { echo "add-host: no host-key lines found in $nix" >&2; exit 1; }
+  awk -v n="$last" -v l="$line" '{ print } NR == n { print l }' "$nix" > "$nix.tmp" && mv "$nix.tmp" "$nix"
+  new=1
+fi
+nix-instantiate --parse "$nix" >/dev/null
+
+if [ $new -eq 1 ]; then
+  echo "add-host: added $host to $nix."
+  echo "Next: add $host to the recipient lists of the secrets it needs (same file), then run add-host again to re-key."
+  exit 0
+fi
+
+echo "add-host: re-keying every secret (ragenix -r)..."
+(cd secrets && nix run nixpkgs#ragenix -- -r)
+git add -- secrets/
+git commit -qm "secrets: new host key for $host, re-keyed" -- secrets/
+echo "add-host: committed $(git log --format=%h -1)."
+if [ $push -eq 1 ]; then git push -q && echo "add-host: pushed. The installer can now pull the re-keyed secrets."; fi
