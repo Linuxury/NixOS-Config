@@ -11,16 +11,22 @@
 # the Nix store). Matugen colors go to ~/.local/share/nvim/lua/ (untracked).
 #
 # LSP binaries come from Nix packages below — Mason is not used on NixOS.
+#
+# Imported for linuxury by neovim.nix. To turn off, remove that import.
+# Sets: EDITOR=nvim, vi/vim aliases, the nvimConfig activation step, and the
+# package list (neovim, language servers, formatters, picker backends).
 # ===========================================================================
 
 { pkgs, lib, ... }:
 
 {
+  # Default editor for CLI tools, and vi/vim aliases that run nvim.
   home.sessionVariables.EDITOR = "nvim";
   home.shellAliases = { vi = "nvim"; vim = "nvim"; };
 
-  # After all HM files are written, replace ~/.config/nvim with a symlink to
-  # our own config in dotfiles/nvim/.
+  # After all HM files are written (entryAfter writeBoundary), make
+  # ~/.config/nvim a symlink to the config in ~/dotfiles/nvim/: a real directory
+  # or a symlink to another target is removed, a correct symlink is kept.
   home.activation.nvimConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     NVIM_SRC="$HOME/dotfiles/nvim"
     NVIM_DIR="$HOME/.config/nvim"
@@ -42,6 +48,8 @@
   # =========================================================================
   # LSP binaries — lua/servers/ calls vim.lsp.config() + vim.lsp.enable()
   # which look for these executables. Mason is not used for installs on NixOS.
+  # home.packages installs for this user only (the binary itself is also here,
+  # not via programs.neovim — see header).
   # =========================================================================
   home.packages = with pkgs; [
     neovim

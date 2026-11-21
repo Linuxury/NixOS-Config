@@ -5,11 +5,11 @@
 # dynamic tiling, Niri arranges windows in an infinite horizontal scroll —
 # new windows always open to the right, never overlapping.
 #
-# It's a newer, more opinionated compositor with a simpler config format
-# compared to Hyprland. Good for experimentation and learning a different
-# tiling philosophy.
+# It's an opinionated compositor with a simpler config format than
+# Hyprland's.
 #
-# Like Hyprland, this is ONLY enabled on your machines (linuxury).
+# Not imported by any host. To enable it, add this file to a host's imports;
+# remove the import to turn it off.
 # ===========================================================================
 
 { config, pkgs, ... }:
@@ -22,6 +22,10 @@
   # xwayland support in Niri is handled differently than Hyprland —
   # it requires xwayland-satellite as a separate companion process
   # rather than being built in.
+  #
+  #   enable       install niri and register its session
+  #   Not set here: package, useNautilus (Nautilus as the GNOME portal's file
+  #   chooser, default true).
   # =========================================================================
   programs.niri = {
     enable = true;
@@ -51,9 +55,14 @@
   # =========================================================================
   # XDG Portal for Niri
   #
-  # Niri doesn't have its own portal implementation yet.
-  # xdg-desktop-portal-gnome works well as a fallback and handles
-  # screen sharing, file pickers, and other integrations reliably.
+  # Niri has no portal implementation of its own.
+  # xdg-desktop-portal-gnome handles screen sharing, file pickers and other
+  # integrations; gtk covers the rest.
+  #
+  #   enable                 run xdg-desktop-portal
+  #   extraPortals           backends to install
+  #   config.common.default  backend used for every interface
+  #   Not set here: xdgOpenUsePortal, configPackages.
   # =========================================================================
   xdg.portal = {
     enable = true;
@@ -89,7 +98,7 @@
     libnotify               # notify-send — sends notifications from scripts/apps
 
     # Wallpaper
-    awww               # Works well with Niri — formerly swww
+    awww               # Wallpaper daemon (the swww successor)
 
     # Screenshots
     grim

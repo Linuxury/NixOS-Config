@@ -1,15 +1,15 @@
 {
   # ===========================================================================
-  # flake.nix — The entry point of your entire NixOS configuration
+  # flake.nix — entry point of the NixOS configuration
   #
-  # Think of this file as the "table of contents" for your whole system.
-  # It does three main things:
-  #   1. Declares WHERE to get packages from (inputs)
-  #   2. Declares WHAT systems/hosts exist (outputs)
-  #   3. Wires everything together
+  #   inputs    where packages, modules and files come from (locked in
+  #             flake.lock)
+  #   outputs   one nixosConfigurations entry per host, all built by mkHost,
+  #             plus a VM test under checks
   #
-  # mkHost takes a per-host wallpaperDir, passed into Home Manager via
-  # extraSpecialArgs. Servers skip Home Manager entirely, so it's unused there.
+  # mkHost takes a per-host wallpaperDir and hypridleProfile, passed into
+  # Home Manager via extraSpecialArgs. Servers have no Home Manager config,
+  # so both are unused there.
   # ===========================================================================
 
   description = "Linuxury Family NixOS Configuration";
@@ -17,28 +17,30 @@
   # ===========================================================================
   # INPUTS — External sources this flake depends on
   #
-  # Each input is a separate flake that gets "locked" in flake.lock.
-  # The lock file remembers the exact version of each input so your system
-  # is always reproducible. Run `nix flake update` to get newer versions.
+  # Each input is locked to an exact revision in flake.lock, so builds are
+  # reproducible. `nix flake update` moves every input; `nix flake update
+  # <name>` moves one. Per input:
+  #   url                       where to fetch it (github:owner/repo/rev)
+  #   inputs.nixpkgs.follows    reuse this flake's nixpkgs instead of its own
+  #   flake = false             plain source tree, no flake.nix
   # ===========================================================================
   inputs = {
 
     # -------------------------------------------------------------------------
-    # nixpkgs — The main package collection
-    # We use "nixos-unstable" for bleeding edge packages across all hosts.
-    # This is the source of almost every package you'll install.
+    # nixpkgs — the main package collection and NixOS modules.
+    # The nixos-unstable branch, on every host.
     # -------------------------------------------------------------------------
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
-    # ponytail: goose-cli 1.55.0 on unstable 2026-11-07 is missing build deps
-    # (zstd, aws-lc, oniguruma…). Pin goose to the last good rev; delete this
-    # input + the override in modules/development/ai-tools/goose once fixed.
+    # ponytail: goose-cli 1.55.0 on unstable is missing build deps
+    # (zstd, aws-lc, oniguruma…), so goose comes from this older nixpkgs rev.
+    # Delete this input + the override in modules/development/ai-tools/goose
+    # once unstable builds it.
     nixpkgs-goose.url = "github:nixos/nixpkgs/f9a75f41be3a74eab55d3a7679d34ad6cc0da977";
 
     # -------------------------------------------------------------------------
-    # home-manager — Manages per-user configuration and dotfiles
-    # This lets us define each user's environment declaratively.
-    # "follows" means it uses the same nixpkgs as above — avoids duplicates.
+    # home-manager — per-user configuration and dotfiles, declared in Nix.
+    # Follows this flake's nixpkgs, so there is only one nixpkgs.
     # -------------------------------------------------------------------------
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -46,21 +48,18 @@
     };
 
     # -------------------------------------------------------------------------
-    # nixos-hardware — Community hardware profiles
-    # Provides pre-made configs for common laptops and desktops.
-    # Saves a lot of work for things like AMD/Nvidia quirks.
+    # nixos-hardware — community hardware profiles for specific laptops and
+    # boards (kernel params, firmware and power quirks).
     # -------------------------------------------------------------------------
     nixos-hardware.url = "github:nixos/nixos-hardware";
 
     # -------------------------------------------------------------------------
     # agenix — Declarative secret management using age encryption
     #
-    # Secrets are encrypted with age (using SSH public keys as recipients)
-    # and stored in secrets/ inside the repo. At activation time, agenix
-    # decrypts them using the host's SSH private key and places them at
-    # their configured paths on disk.
-    #
-    # No plaintext secrets ever touch the repo — only the encrypted .age files.
+    # Secrets are encrypted with age (SSH public keys as recipients) and
+    # stored in secrets/. At activation agenix decrypts them with the host's
+    # SSH private key and places them at their configured paths. The repo
+    # holds only the encrypted .age files.
     # -------------------------------------------------------------------------
     agenix = {
       url = "github:ryantm/agenix";
@@ -71,12 +70,12 @@
     # affinity-nix — Affinity v3 (Photo/Designer/Publisher) via Wine
     #
     # Affinity has no native Linux build. This flake wraps the free Windows
-    # app in ElementalWarrior's patched Wine fork so it runs on NixOS.
-    # The overlay is scoped to modules/system/graphical/affinity/ so
-    # headless servers never evaluate it.
+    # app in ElementalWarrior's patched Wine fork. Its overlay is added only
+    # by modules/system/graphical/affinity.nix when programs.affinity.enable
+    # is set.
     #
-    # Do NOT add nixpkgs.follows here — the flake pins its own nixpkgs commit
-    # for Wine build stability. Overriding it breaks the Wine build.
+    # No nixpkgs.follows: the flake pins its own nixpkgs for the Wine build,
+    # and another nixpkgs breaks it.
     # -------------------------------------------------------------------------
     affinity-nix.url = "github:mrshmllow/affinity-nix";
 
@@ -85,11 +84,12 @@
     # noctalia's matugen.css). Flake lives in a subdir. Only fetched on hosts
     # with programs.steam.millennium.enable (modules/gaming/gaming.nix).
     #
-    # Do NOT add nixpkgs.follows — it pins its own nixpkgs; the Bun FOD hash
-    # breaks on any other version.
+    # No nixpkgs.follows: it pins its own nixpkgs, and the Bun fixed-output
+    # hash breaks on any other version.
     # -------------------------------------------------------------------------
-    # PINNED to 6d5379e: dee8e60 (2026-11-11) fails the LuaJIT arch check in the
-    # 64-bit build ("Unsupported target architecture"). Drop ?rev= once fixed upstream.
+    # Pinned to rev 6d5379e: newer revisions fail the LuaJIT architecture
+    # check in the 64-bit build ("Unsupported target architecture"). Drop
+    # ?rev= once upstream builds again.
     millennium.url = "github:SteamClientHomebrew/Millennium?dir=packages/nix&rev=6d5379ec502896465c74dcc2462b94082c8caca2";
 
 
@@ -98,7 +98,8 @@
     #
     # Helium is a privacy-focused Chromium-based browser with built-in ad/
     # tracker blocking, split-view, and !bang search shortcuts.
-    # Not in nixpkgs — packaged via community flake (prebuilt binaries).
+    # Not in nixpkgs; this community flake packages the prebuilt binaries.
+    # Used by modules/system/graphical/helium.nix.
     # -------------------------------------------------------------------------
     helium-browser.url = "github:schembriaiden/helium-browser-nix-flake";
 
@@ -106,8 +107,8 @@
     # zen-browser — Nix flake for Zen Browser
     #
     # Zen is a Firefox-based browser with a focus on privacy and a minimal UI.
-    # Not in nixpkgs — packaged via community flake (prebuilt binaries).
-    # Enable per host: programs.zenBrowser.enable = true;
+    # Not in nixpkgs; this community flake packages the prebuilt binaries.
+    # A host turns it on by importing modules/system/graphical/zen-browser.nix.
     # -------------------------------------------------------------------------
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
@@ -117,38 +118,36 @@
     # -------------------------------------------------------------------------
     # noctalia — Noctalia Shell itself, tracked directly instead of via nixpkgs
     #
-    # nixpkgs packages pkgs.noctalia by pinning a specific release tag, so it
-    # always trails upstream by however long nixpkgs' own update cycle takes
-    # (e.g. v5.1.0 released 2026-09-10, still v5.0.1 in nixpkgs the next day).
-    # Tracking the default branch directly avoids that lag, same as umbriel
-    # and noctalia-greeter below.
+    # nixpkgs packages pkgs.noctalia from release tags, so it trails
+    # upstream by nixpkgs' update cycle. Tracking the upstream repo directly
+    # avoids that lag, as for umbriel and noctalia-greeter below.
     #
     # Provides homeModules.default, which disables home-manager's own bundled
-    # programs/noctalia.nix module (disabledModules) and re-points its package
-    # option at this input's own build — no option conflicts, config schema
-    # always matches the binary it's paired with.
+    # programs/noctalia.nix module (disabledModules) and points its package
+    # option at this input's own build, so the config schema always matches
+    # the binary.
     #
     # nixpkgs.follows ensures the binary links against the same glibc/wayland
     # as the rest of the system.
     # -------------------------------------------------------------------------
     noctalia = {
-      # Pinned 2026-11-20: upstream 9213809 (async wpa_supplicant BSS fetch)
-      # fails to compile against nixpkgs' sdbus-c++ 2.2.1. Drop the rev once
-      # upstream builds again (see PENDING "noctalia held back").
+      # Pinned to rev e56dee2: upstream 9213809 (async wpa_supplicant BSS
+      # fetch) does not compile against nixpkgs' sdbus-c++ 2.2.1. Drop the rev
+      # once upstream builds again.
       url = "github:noctalia-dev/noctalia/e56dee2cd4cd0b6b0b5600e50e02610365c9b165";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # -------------------------------------------------------------------------
-    # noctalia-greeter — first-party greetd-based login greeter for Noctalia v5
+    # noctalia-greeter — first-party greetd-based login greeter for Noctalia
     #
     # Built for greetd: ships its own wlroots compositor
     # (noctalia-greeter-session), so it's independent of SDDM/Qt6. Matches
     # Noctalia Shell's look and can sync wallpaper/palette from it via the
     # shell's Settings -> Security -> Noctalia Greeter -> Sync Now action.
     #
-    # No versioned release tags upstream yet (unlike noctalia/noctalia-shell)
-    # — tracks the default branch directly, no nru sentinel needed here.
+    # Upstream has no release tags, so this tracks the default branch; nru
+    # needs no version sentinel for it.
     #
     # nixpkgs.follows ensures the binary links against the same glibc/wayland
     # as the rest of the system.
@@ -167,25 +166,24 @@
     # Bundles xdg-desktop-portal-umbriel as its own input, wired in
     # automatically by nixosModules.default — no separate input needed here.
     #
-    # Landed in nixpkgs-unstable as a raw package on 2026-08-31, but there's
-    # no programs.umbriel module upstream (nixpkgs or home-manager) yet —
-    # same situation as noctalia-greeter above, same fix: use the flake's
-    # own nixosModules/homeModules instead of the bare pkgs.umbriel package.
+    # nixpkgs has pkgs.umbriel but no programs.umbriel module (nor does
+    # home-manager), so the flake's own nixosModules/homeModules are used
+    # instead of the bare package.
     #
-    # No versioned releases upstream yet — tracks the default branch
-    # directly, no nru sentinel needed here (same as noctalia-greeter).
+    # Upstream has no release tags, so this tracks the default branch; nru
+    # needs no version sentinel for it.
     # -------------------------------------------------------------------------
     umbriel = {
       url = "github:noctalia-dev/umbriel";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # bedrock-on-linux — Minecraft Bedrock (Windows/GDK) launcher. Follows our
-    # nixpkgs so its steam-run/Mesa match the system's GPU driver (with its own
-    # nixpkgs the GPU wasn't used). Installed by modules/gaming.
-    # Pinned to a release tag: main can ask for a downloader (xodus) that isn't
-    # published yet ("has not been published yet" in the launcher). To update,
-    # change the tag to the newest stable release on GitHub.
+    # bedrock-on-linux — Minecraft Bedrock (Windows/GDK) launcher. Follows
+    # this flake's nixpkgs so its steam-run/Mesa match the system's GPU
+    # driver (with its own nixpkgs the GPU is not used). Installed by
+    # modules/gaming.
+    # Pinned to a release tag: main can ask for a downloader (xodus) that is
+    # not published. To update, change the tag to the newest stable release.
     bedrock-on-linux = {
       url = "github:Wyze3306/BedrockOnLinux/v2.2.10";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -200,8 +198,8 @@
     };
 
     # Assets — wallpapers, avatars, fastfetch art, SteamGridDB, the Hytale
-    # bundle. Not a flake: files only. Read at build time, so hosts without git
-    # (babylinux, alex) get them through the build. Moves only when the Assets
+    # bundle. Not a flake: files only. Read at build time, so hosts with no
+    # git clone (babylinux, alex) get them through the build. Moves only when the Assets
     # repo changes ("nix flake update assets", which nru does for every input).
     assets = {
       url = "github:Linuxury/Assets";
@@ -224,7 +222,7 @@
       flake = false;
     };
 
-    # My per-app configs (hypr, nvim, kitty, ...). Not a flake. Build-time reads
+    # Per-app configs (hypr, nvim, kitty, ...). Not a flake. Build-time reads
     # come from this pin; live links use a clone at ~/dotfiles (cloned by
     # home.activation.dotfilesClone in the linuxury home config).
     dotfiles = {
@@ -237,25 +235,24 @@
   # ===========================================================================
   # OUTPUTS — What this flake produces
   #
-  # The outputs function receives all inputs and returns your configurations.
-  # `@inputs` captures the whole inputs set so we can pass it around easily.
+  # The outputs function receives all inputs and returns the host
+  # configurations. `@inputs` binds the whole inputs set so it can be passed
+  # to modules as specialArgs.
   # ===========================================================================
   outputs = { self, nixpkgs, home-manager, nixos-hardware, agenix, ... } @ inputs:
 
     # -------------------------------------------------------------------------
-    # let...in — Nix's way of defining local variables
-    # We define helpers here to avoid repeating ourselves below.
+    # Local helpers used by every host below.
     # -------------------------------------------------------------------------
     let
-      # The system architecture all our machines use.
-      # x86_64-linux covers all standard AMD and Intel 64-bit machines.
+      # Architecture of every host (64-bit AMD and Intel).
       system = "x86_64-linux";
 
       # -----------------------------------------------------------------------
       # mkHost — A helper function to build a NixOS host configuration
       #
-      # Instead of repeating the same boilerplate for every host, we define
-      # it once here. Each host just passes in what makes it unique.
+      # Holds the module list every host shares; each host passes only what
+      # makes it unique.
       #
       # Arguments:
       #   hostname     — The machine's network name (e.g. "ThinkPad")
@@ -269,6 +266,7 @@
       #                      Options: "desktop" (no suspend), "laptop" (suspend)
       #                      Default: "laptop" (safe fallback)
       #   extraModules — Any additional modules specific to this host
+      #                  (default [])
       # -----------------------------------------------------------------------
       mkHost = {
         hostname,
@@ -285,7 +283,7 @@
           # reading config (see modules/system/build-capacity.nix).
           specialArgs = { inherit inputs hostname; };
           modules = [
-            # Set the host platform — replaces the deprecated `system` argument
+            # Host platform (instead of nixosSystem's deprecated `system` argument)
             { nixpkgs.hostPlatform.system = system; }
 
             # The host's specific hardware and role configuration
@@ -295,17 +293,17 @@
             # Provides the age.secrets.* options used throughout host configs.
             agenix.nixosModules.default
 
-            # Option-gated hardware modules — imported for every host but
-            # dormant until enabled, e.g. hardware.openrgb.enable = true;
-            # Hosts toggle these with flags instead of imports.
+            # Option-gated hardware modules, imported for every host but
+            # inactive until a host sets their flag, e.g.
+            # hardware.openrgb.enable = true;
             ./modules/hardware/openrgb.nix
             ./modules/hardware/peripherals/lemokey-keychron.nix
 
             # Same UID per person on every host (+ one-time boot migration)
             ./modules/users/uid-pin/uid-pin.nix
 
-            # Home Manager as a NixOS module — this means Home Manager
-            # runs as part of nixos-rebuild, keeping everything in sync
+            # Home Manager as a NixOS module, so it runs as part of
+            # nixos-rebuild
             home-manager.nixosModules.home-manager
 
             # Local packages not in nixpkgs.
@@ -333,17 +331,16 @@
             # Home Manager settings that apply to all hosts
             {
               home-manager = {
-                # Use the same nixpkgs as the system — avoids conflicts
+                # Use the system's pkgs (and its overlays/config) in HM
                 useGlobalPkgs   = true;
-                # Allow each user's HM config to install packages
+                # Install home.packages into /etc/profiles/per-user
                 useUserPackages = true;
-                # Pass inputs AND wallpaperDir into Home Manager modules.
-                # wallpaperDir tells the user's home.nix which wallpaper
-                # folder to symlink into ~/Pictures/Wallpapers.
-                # Servers skip this entirely since userConfig is null.
+                # Pass inputs, wallpaperDir and hypridleProfile into Home
+                # Manager modules. wallpaperDir tells the user's home.nix
+                # which wallpaper folder to link to ~/Pictures/Wallpapers.
                 extraSpecialArgs = { inherit inputs wallpaperDir hypridleProfile; };
-                # Wire up the user's Home Manager config if one exists.
-                # Servers won't have a userConfig so we skip it.
+                # The user's Home Manager config, when the host has one
+                # (servers have none).
                 users = nixpkgs.lib.optionalAttrs (userConfig != null) {
                   ${user} = userConfig;
                 };
@@ -359,7 +356,7 @@
       checks.${system}.uid-migrate = nixpkgs.legacyPackages.${system}.testers.runNixOSTest ./modules/users/uid-pin/test.nix;
 
       # =======================================================================
-      # nixosConfigurations — Your actual host definitions
+      # nixosConfigurations — the host definitions
       #
       # Each entry here becomes a buildable NixOS system.
       # To build and switch: sudo nixos-rebuild switch --flake .#ThinkPad
@@ -367,7 +364,7 @@
       nixosConfigurations = {
 
         # ---------------------------------------------------------------------
-        # YOUR MACHINES (linuxury)
+        # linuxury's hosts
         #
         # ThinkPad  → 4k wallpapers (standard laptop display)
         # Ryzen5900x → 3440x1440 wallpapers (ultrawide monitor)
@@ -395,7 +392,7 @@
         };
 
         # ---------------------------------------------------------------------
-        # WIFE'S MACHINES (babylinux)
+        # babylinux's hosts
         #
         # Both machines → 4k wallpapers
         # ---------------------------------------------------------------------
@@ -415,16 +412,17 @@
           userConfig   = ./modules/users/babylinux/babylinux-home.nix;
           wallpaperDir = "4k";
           extraModules = [
-            # Asus A15 has hybrid AMD + Nvidia graphics
-            # This hardware module handles the tricky parts automatically
+            # Asus battery charge limit (hardware.asus.battery.chargeUpto,
+            # default 100; enableChargeUptoScript adds `charge-upto`).
+            # Hybrid graphics are set up by hardware.gpu = "nvidia-hybrid".
             nixos-hardware.nixosModules.asus-battery
           ];
         };
 
         # ---------------------------------------------------------------------
-        # KID'S MACHINES (alex)
+        # alex's hosts (child account)
         #
-        # Both machines → PikaOS wallpapers (kid friendly)
+        # Both machines → PikaOS wallpapers
         # ---------------------------------------------------------------------
 
         Alex-Desktop = mkHost {
@@ -446,7 +444,7 @@
         # ---------------------------------------------------------------------
         # HEADLESS SERVERS
         #
-        # No Home Manager — managed via SSH by linuxury.
+        # No Home Manager; administered over SSH by linuxury.
         # wallpaperDir defaults to "4k" but is unused since
         # userConfig is null and Home Manager is skipped entirely.
         # ---------------------------------------------------------------------
@@ -455,7 +453,7 @@
           hostname   = "MinisForum";
           hostConfig = ./hosts/MinisForum/MinisForum.nix;
           user       = "linuxury";
-          # No userConfig — headless servers don't need Home Manager
+          # No userConfig: headless servers have no Home Manager config
         };
 
         Radxa-X4 = mkHost {

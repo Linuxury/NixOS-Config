@@ -1,21 +1,22 @@
 # ===========================================================================
 # modules/system/graphical/fluxer.nix — Fluxer via Flathub (system-wide)
 #
-# Imported by: system/graphical/graphical.nix (all graphical hosts)
+# Installs Fluxer, a self-hostable chat and community app, from Flathub
+# (nixpkgs has no package for it). Imported by graphical.nix, so it runs on
+# every graphical host; remove that import to turn it off.
 #
-# Creates a systemd user service that installs Fluxer from Flathub on
-# first login for every user on every graphical host.
+# A systemd user service installs the Flatpak for each user at first login.
+#   ConditionPathExists   skips the unit once the app directory exists
+#   after / wants         waits for the graphical session and the network
+#   Type = oneshot        runs once per login, Restart = "no"
 #
-# Fluxer is a self-hostable community/messaging platform replacing Discord.
-# Install it from Flathub — no nixpkgs derivation exists.
-#
-# Gracefully skips if:
+# The script exits cleanly when:
 #   - Fluxer is already installed
-#   - Flathub remote is not available (e.g. Alex's machines where all
-#     system remotes are wiped for child safety)
+#   - the system has no Flathub remote (child-account hosts remove all
+#     system remotes)
 #
-# Requires: services.flatpak.enable = true and Flathub system remote
-#           (both provided by system/graphical/graphical.nix).
+# Requires services.flatpak.enable = true and the Flathub system remote,
+# both set in graphical.nix.
 # ===========================================================================
 
 { pkgs, ... }:

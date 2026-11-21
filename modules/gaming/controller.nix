@@ -1,7 +1,7 @@
 # ===========================================================================
 # modules/gaming/controller.nix — Controller support
 #
-# System-wide plug-and-play support for all controllers in the house:
+# System-wide plug-and-play support for the supported controllers:
 #   - 8BitDo Ultimate (2dc8:*)     — covered by game-devices-udev-rules
 #   - Steam Controller (28de:1102/1142/1205) — sc-controller daemon
 #   - Anbernic RG P01  (3537:1007) — custom udev rule (not in upstream yet)
@@ -11,15 +11,14 @@
 # configure profiles, touchpad behaviour, gyro, and button mappings.
 #
 # The Steam Controller "Puck" (28de:1304) is deliberately NOT supported here.
-# nixpkgs' sc-controller 0.5.5 doesn't register its hotplug ID, and even a
-# patched hotplug ID never gets a working handshake — the Puck's wire
-# protocol differs from the wired/wireless dongle and Deck in more than
-# just endpoint layout (confirmed against real hardware). Puck support is
-# left to Steam's own Steam Input instead.
+# sc-controller 0.5.5 doesn't register its hotplug ID, and the Puck's wire
+# protocol differs from the wired/wireless dongle and Deck in more than just
+# endpoint layout, so it cannot complete the handshake. Puck support is left
+# to Steam's own Steam Input instead.
 #
-# Imported by modules/gaming/gaming.nix — every host that enables gaming
-# gets controller support automatically. Not currently imported standalone
-# anywhere, so controller support and the gaming stack are coupled today.
+# Imported by modules/gaming/gaming.nix — every host that imports gaming gets
+# controller support automatically; it can also be imported on its own. To turn
+# it off, remove the import from gaming.nix.
 # ===========================================================================
 
 { pkgs, lib, ... }:
@@ -34,6 +33,7 @@
   # hid_steam — in-kernel HID driver for Valve controllers; gives the OS
   #             basic visibility into the device before sc-controller takes
   #             over with a full profile.
+  # boot.kernelModules loads them at boot (boot.kernelModules, not initrd).
   # =========================================================================
   boot.kernelModules = [ "uinput" "hid_steam" ];
 
@@ -49,8 +49,12 @@
   # a manual rule is added below. Without it the device is only accessible
   # as root and antimicrox / SDL games won't see it on Wayland.
   #
-  # Track upstream: https://codeberg.org/fabiscafe/game-devices-udev
-  # Remove the extraRules block once Anbernic 3537:1007 is merged upstream.
+  # Upstream: https://codeberg.org/fabiscafe/game-devices-udev
+  # The extraRules block can be removed once the upstream package covers
+  # Anbernic 3537:1007.
+  #   services.udev.packages    packages whose udev rules are installed
+  #   services.udev.extraRules  extra rule text; MODE 0660 + TAG uaccess give the
+  #                             logged-in seat user access (usb, hidraw, js, event)
   # =========================================================================
   services.udev.packages = with pkgs; [
     game-devices-udev-rules
@@ -83,7 +87,8 @@
   ];
 
   # =========================================================================
-  # sc-controller daemon — available, but NOT autostarted
+  # sc-controller daemon — available, but NOT autostarted (no wantedBy)
+  #   after/partOf  tied to the graphical session; Restart on-failure, 3 s delay
   #
   # scc-daemon unconditionally creates a virtual "Xbox360" uinput gamepad
   # (hardcoded vendor=0x045e product=0x028e) the moment it starts, whether

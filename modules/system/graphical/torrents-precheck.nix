@@ -1,21 +1,20 @@
 # ===========================================================================
 # modules/system/graphical/torrents-precheck.nix — Fast-fail for Torrents automount
 #
-# Problem: COSMIC Files (and other apps) probe favorites paths on startup.
-# /mnt/Torrents is a CIFS automount pointing to Media-Server, which is not
-# always reachable (laptops away from home LAN). When offline, mount.cifs
-# hangs for the full TCP SYN timeout (~120s). COSMIC Files retries the
-# probe repeatedly during init, multiplying the delay to 60–90s total.
+# Makes the /mnt/Torrents CIFS automount fail fast when Media-Server
+# (10.0.0.3) is unreachable, e.g. a laptop away from the home LAN. Without
+# it, mount.cifs waits out the full TCP SYN timeout (~120s), and file
+# managers such as COSMIC Files, which probe favourite paths on startup and
+# retry, hang for over a minute.
 #
-# Fix — two-layered:
-#   1. Pre-check service: test port 445 with nc -w 1 before attempting
-#      the CIFS mount. Fails in ~1s when Media-Server is unreachable.
-#   2. Start limit on the mount unit: after 2 fast failures within 60s,
-#      subsequent automount requests get an immediate error (no new mount
-#      attempt), so COSMIC Files unblocks after ~2s total instead of ~80s.
+# Two parts:
+#   1. A oneshot pre-check (radxa-smb-check) tests SMB port 445 with
+#      `nc -w 1`; the mount requires it, so an offline server fails in ~1s.
+#   2. A start limit on the mount unit: after 2 failures within 60s, further
+#      automount requests get an immediate error instead of a new attempt.
 #
-# Auto-activates: only applied when /mnt/Torrents is in fileSystems.
-# No-op on hosts without the mount (servers, Alex machines if removed, etc.)
+# Turns itself on: everything is under lib.mkIf, so it applies only to hosts
+# that define fileSystems."/mnt/Torrents" and is a no-op elsewhere.
 # ===========================================================================
 
 { config, pkgs, lib, ... }:
@@ -23,8 +22,10 @@
 lib.mkIf (config.fileSystems ? "/mnt/Torrents") {
 
   # Oneshot service: probe Media-Server port 445 with a 1s timeout.
-  # Fails fast when the server is unreachable; succeeds in <1s on LAN.
-  # The mount unit requires this to pass before calling mount.cifs.
+  #   Type = oneshot, RemainAfterExit = false   re-runs on every mount attempt
+  #   DefaultDependencies = no                  no implicit ordering on
+  #                                             basic.target / shutdown
+  #   startLimitIntervalSec / startLimitBurst   at most 5 runs per 30s
   systemd.services.radxa-smb-check = {
     description = "Check Media-Server SMB connectivity before mounting Torrents";
     serviceConfig = {
@@ -35,20 +36,21 @@ lib.mkIf (config.fileSystems ? "/mnt/Torrents") {
     unitConfig = {
       DefaultDependencies = "no";
     };
-    # Rate-limit the check itself — don't hammer the network
+    # Rate-limit the check itself so it cannot flood the network
     startLimitIntervalSec = 30;
     startLimitBurst       = 5;
   };
 
   # Drop-in for the generated mnt-Torrents.mount unit:
-  #   - Require the connectivity check to pass before mounting
-  #   - StartLimitBurst=2: after 2 failures in 60s, return immediate
-  #     errors to callers (automount releases waiting processes instantly)
-  #     instead of triggering another slow mount attempt
+  #   Requires / After=radxa-smb-check   the check must pass before mounting
+  #   StartLimitIntervalSec=60, StartLimitBurst=2
+  #                     after 2 failures in 60s, callers get an immediate
+  #                     error and the automount releases waiting processes
   #
-  # Uses systemd.units with overrideStrategy="asDropin" rather than
-  # environment.etc — NixOS manages /etc/systemd/system/ as a store
-  # symlink so environment.etc can't create subdirectories inside it.
+  # systemd.units with overrideStrategy = "asDropin" writes a drop-in
+  # (mnt-Torrents.mount.d/overrides.conf) next to the generated unit.
+  # environment.etc cannot do this: /etc/systemd/system is a store symlink,
+  # so no subdirectories can be created inside it.
   systemd.units."mnt-Torrents.mount" = {
     overrideStrategy = "asDropin";
     text = ''

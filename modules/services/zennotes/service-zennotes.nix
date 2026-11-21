@@ -18,6 +18,8 @@
 #   1. nixos-rebuild switch on Media-Server
 #   2. Log in at http://Media-Server:7879 with the token from the secret
 #   3. Desktop app: Settings → Connect to Remote Vault → http://Media-Server:7879
+#
+# Imported by Media-Server; remove the import to turn it off.
 # ===========================================================================
 
 { config, lib, ... }:
@@ -71,6 +73,16 @@ in
 
   # ===========================================================================
   # Container
+  #
+  #   image             registry image and tag (tag pinned in zennotes.json)
+  #   ports             host:container port map
+  #   volumes           bind mounts (vault → /workspace, config → /data)
+  #   environmentFiles  env files read at start (the auth token)
+  #   extraOptions      raw podman run flags (--user here)
+  #   Not set here: user (same as --user), cmd, entrypoint, environment,
+  #   labels, dependsOn, networks, hostname, workdir, autoStart (default
+  #   true), pull, devices, capabilities, privileged, login.* (registry
+  #   credentials), imageFile / imageStream (load a local image).
   # ===========================================================================
   virtualisation.oci-containers.containers = {
     zennotes = {
@@ -91,6 +103,7 @@ in
   # ===========================================================================
   networking.firewall.allowedTCPPorts = [ 7879 ];
 
-  # Written under a raw UID — hand back to linuxury if UIDs ever migrate
+  # Written under a raw UID — uidMigrate re-owns it to linuxury if that
+  # account's UID changes.
   users.uidMigrate.ownedBy."/data/config/zennotes" = "linuxury";
 }

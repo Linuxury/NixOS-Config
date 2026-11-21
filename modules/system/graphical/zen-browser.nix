@@ -1,22 +1,21 @@
 # ===========================================================================
 # modules/system/graphical/zen-browser.nix — Zen Browser
 #
-# Zen is a Firefox-based browser focused on privacy and a clean UI.
-# Not in nixpkgs — packaged via the community flake's home-manager module
-# (github:0xc000022070/zen-browser-flake), scoped to linuxury only.
+# Zen is a Firefox-based browser focused on privacy and a clean UI. It is
+# not in nixpkgs; it comes from the Home Manager module of the zen-browser
+# flake input (github:0xc000022070/zen-browser-flake), for linuxury only.
 #
-# Enable per host by importing this module:
+# Turn it on by importing this module from a host:
 #   ../../modules/system/graphical/zen-browser.nix
+# Remove the import to turn it off.
 #
-# Requires: flake input zen-browser (github:0xc000022070/zen-browser-flake)
-#
-# By default also applies the "de-slop" managed policy shared with Firefox
-# (../../../../dotfiles/firefox/policies.json — Zen is Firefox-based so the
-# same policies.json schema applies): telemetry/AI/password-manager off,
-# uBlock Origin and Proton Pass force-installed, uBlock preloaded with a
-# hardened filter list plus the yt-shorts hider
-# (github.com/gijsdev/ublock-hide-yt-shorts). Set
-# programs.zen-browser.deSlop.enable = false; on a host to opt out.
+# Option of this module:
+#   programs.zen-browser.deSlop.enable   (default true) applies the managed
+#     policy shared with Firefox (dotfiles/firefox/policies.json; Zen reads
+#     the same schema): telemetry, AI and password manager off, uBlock Origin
+#     and Proton Pass force-installed, uBlock preloaded with a hardened
+#     filter list plus the yt-shorts hider
+#     (github.com/gijsdev/ublock-hide-yt-shorts). Set false to opt out.
 # ===========================================================================
 
 { config, inputs, lib, ... }:
@@ -34,12 +33,18 @@ in
 
   config = {
     # =======================================================================
-    # Zen Browser — Firefox-based, privacy-focused browser
-    #
-    # homeModules.default matches the packages.default channel used previously,
-    # so this doesn't change which Zen build is installed — just how it's
-    # managed. policies.Preferences (not profiles.<name>.settings) is used so
-    # this doesn't need to know/match the existing on-disk profile name.
+    # Zen Browser — Home Manager module from the flake (homeModules.default,
+    # the beta channel). It is built on Home Manager's Firefox module, so it
+    # takes the same options:
+    #   enable               install Zen
+    #   policies             enterprise policies (from policies.json here);
+    #                        policies.Preferences sets prefs without needing
+    #                        the on-disk profile name
+    #   profiles.<name>      per-profile settings, search, bookmarks,
+    #                        extensions
+    #   nativeMessagingHosts, languagePacks
+    # Zen-specific extras, not set here: setAsDefaultBrowser,
+    # profiles.<name>.mods / keyboardShortcuts / pins, extraPrefs.
     # =======================================================================
     home-manager.users.linuxury = {
       imports = [ inputs.zen-browser.homeModules.default ];
@@ -50,9 +55,9 @@ in
         policies = lib.mkIf cfg.deSlop.enable
           (builtins.fromJSON (builtins.readFile "${inputs.dotfiles}/firefox/policies.json")).policies;
 
-        # gfx.color_management.hdr / .force_enabled are left unset — same
-        # red-tint Gecko bug as Firefox (see firefox.nix), not
-        # fixable from config.
+        # gfx.color_management.hdr / .force_enabled stay unset: they hit the
+        # same Gecko red-tint bug as Firefox (see firefox.nix), which config
+        # cannot fix.
       };
     };
   };

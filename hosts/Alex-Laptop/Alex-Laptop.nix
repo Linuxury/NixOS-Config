@@ -1,27 +1,25 @@
 # ===========================================================================
-# hosts/Alex-Laptop/Alex-Laptop.nix — Alex's Laptop (HP with AMD A-10 APU)
+# hosts/Alex-Laptop/Alex-Laptop.nix — HP laptop (AMD A-10 APU) for the child account
 #
-# Owner: alex
-# Hardware: Older HP laptop, AMD A-10 APU (integrated graphics)
-# Type: Laptop — kid focused
-# Role: Kid's laptop — school, gaming, videos
+# Hardware: older HP laptop, AMD A-10 APU (integrated Radeon graphics)
+# Type: laptop for a child account
+# Role: school, gaming and video on the child account's laptop
 #
 # Enabled modules:
 #   - AMD drivers
-#   - COSMIC (default DE)
+#   - COSMIC desktop with cosmic-greeter
 #   - Gaming
 #   - Firefox with forced policies (via firefox.nix)
 #
-# Parental controls:
-#   - Same as Alex-Desktop
-#   - Extra power management for older battery
+# Parental controls: the same as the desktop host (Alex-Desktop.nix), plus extra power
+# management for an older battery.
 # ===========================================================================
 
 { pkgs, lib, ... }:
 
 {
   imports = [
-    # Disks, swap, LUKS and boot loader (written by the installer)
+    # Local filesystems, swap and boot loader (disk.nix)
     ./disk.nix
 
     # ==============================================================
@@ -117,12 +115,9 @@
     #   auto-update — weekly nixos-rebuild from GitHub
     #   syncthing   — linuxury pair (admin access to sync config + vault)
     #   snapper     — BTRFS automatic snapshots
-    # ==============================================================
-    # DISABLED 2026-09-16: this host still needs the @steam btrfs
-    # subvolume created before it's safe to switch (see PENDING.md) —
-    # auto-update would crash-loop the boot the moment it fires, same as
-    # it did on Ryzen5900x. Re-enable (uncomment this + the primaryUser
-    # line below) once @steam has been created+populated here.
+    # Auto-update is off on this host until the @steam Btrfs subvolume exists and holds the
+    # Steam library (disk.nix mounts it at the Steam path). Before then, auto-update would
+    # fail on boot. To re-enable: uncomment this line and the primaryUser line below.
     # ../../modules/services/auto-update/auto-update.nix
     ../../modules/services/syncthing.nix
     #../../modules/services/snapper.nix
@@ -149,7 +144,7 @@
   # ==============================================================
   networking.hostName = "Alex-Laptop";
 
-  # services.nixos-auto-update.primaryUser = "alex"; # see DISABLED note above
+  # services.nixos-auto-update.primaryUser = "alex"; # set this when auto-update is re-enabled (see the imports block)
 
   # ==============================================================
   # GPU driver selection
@@ -168,14 +163,16 @@
   hardware.lemokey-keychron.enable = false;
 
   # ==============================================================
-  # Filesystem — BTRFS with subvolumes
+  # Network shares — CIFS mounts, read-only for the child account
+  #   ro                  read-only: browse, but no deleting or changing files
+  #   uid=alex, gid=users owner of the files shown (the child account, group users)
+  #   Each share mounts on first access and unmounts after 60 s idle.
+  # The local disk layout is in disk.nix.
   # ==============================================================
   fileSystems = {
 
     # -----------------------------------------------------------------------
-    # Media-Server Samba share
-    # Read-only for alex — he can browse media but not accidentally delete.
-    # Automounts on first access, disconnects after 60s idle.
+    # Media-Server share (//10.0.0.3/Media-Server), read-only.
     # -----------------------------------------------------------------------
     "/mnt/Media-Server" = {
       device  = "//10.0.0.3/Media-Server";
@@ -230,10 +227,10 @@
   environment.systemPackages = with pkgs; [
     cifs-utils
 
-    # alex — everyday tools
+    # Everyday tools for the child account
     nix-output-monitor # Progress bar + TUI for nix builds (nom)
-    gcompris           # 100+ educational activities — ages 2-10
-    freetube           # YouTube without ads, algorithm, or shorts
+    gcompris           # Educational activities for young children
+    freetube           # YouTube client without ads, the recommendation feed, or Shorts
 
     # ==============================================================
     # Host-specific apps
@@ -243,7 +240,7 @@
   ];
 
   # ==============================================================
-  # Agenix secrets
+  # Agenix secrets — the SMB login for the CIFS mounts above (root-only, mode 0400)
   # ==============================================================
   age.secrets.smb-credentials = {
     file  = ../../secrets/network/smb-credentials.age;
@@ -254,9 +251,8 @@
   # ==============================================================
   # Kernel
   #
-  # Using latest stable rather than testing on this older hardware.
-  # Older AMD APUs are very well supported and stable — no need
-  # to risk RC kernel instability on a kid's school laptop.
+  # Latest stable kernel (boot.kernelPackages), not a release candidate: older AMD APUs are
+  # well supported, and an unstable kernel is not worth the risk on a school laptop.
   # ==============================================================
   boot.kernelPackages = pkgs.linuxPackages_latest;           # Vanilla
   # boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;  # XanMod
@@ -298,10 +294,16 @@
     };
   };
 
+  # power-profiles-daemon is off: TLP manages the power settings, and the two conflict.
   services.power-profiles-daemon.enable = false;
 
   # ==============================================================
-  # Touchpad
+  # Touchpad — libinput (services.libinput.touchpad)
+  #   tapping               tap to click (set here)
+  #   naturalScrolling      reverse scroll direction (set here)
+  #   scrollMethod          "twofinger": scroll with two fingers (set here)
+  #   middleEmulation       pressing left and right together acts as a middle click (set here)
+  #   disableWhileTyping    ignore the touchpad while typing (set here)
   # ==============================================================
   services.libinput = {
     enable = true;
@@ -326,10 +328,14 @@
   };
 
   # ==============================================================
-  # DNS filtering — same as Alex-Desktop
+  # DNS filtering — same as Alex-Desktop (Cloudflare family DNS, 1.1.1.3 and 1.0.0.3)
+  #   networking.nameservers              the resolvers (set here)
+  #   networking.networkmanager.dns       "none": NetworkManager leaves resolv.conf alone (mkForce,
+  #                                       because services.resolved sets it to "systemd-resolved")
+  #   services.resolved.enable            systemd-resolved (set here)
+  #   settings.Resolve.FallbackDNS        fallback servers (set here)
   # ==============================================================
   networking.nameservers = [ "1.1.1.3" "1.0.0.3" ];
-  # mkForce needed because services.resolved sets this to "systemd-resolved"
   networking.networkmanager.dns = lib.mkForce "none";
   services.resolved = {
     enable = true;
@@ -351,16 +357,17 @@
   # ==============================================================
   # Packages
   #
-  # Office apps come from the Craft office suite (below).
+  # Office apps come from the craft-apps module, which takes suites (set below).
   # Gaming packages (prismlauncher, jdk17) are in
   # modules/gaming/gaming.nix (imported above).
   # Graphical tools (kitty, showtime, etc.) are in modules/system/graphical/graphical.nix.
   # Shell tools (fastfetch, btop) are in modules/system/core.nix.
   # ==============================================================
+  #   craftApps.suites  app suites to install (here: "office")
   craftApps.suites = [ "office" ];
 
   # ==============================================================
-  # User account — no wheel, same restrictions as desktop
+  # Child account (users.users.alex) — no wheel, same restrictions as the desktop host
   # ==============================================================
   users.users.alex = {
     isNormalUser = true;
@@ -374,7 +381,7 @@
     shell = pkgs.zsh;
   };
 
-  # linuxury user — needed for Syncthing (vault sync) and auto-update notifications
+  # Administrator account (linuxury): needed for Syncthing (vault sync)
   users.users.linuxury = {
     isNormalUser = true;
     extraGroups  = [ "wheel" "networkmanager" ];
@@ -384,7 +391,7 @@
     shell        = pkgs.zsh;
   };
 
-  # Hide linuxury from the login screen — emergency account only
+  # Hide the administrator account from the login screen (emergency account only).
   services.displayManager.hiddenUsers = [ "linuxury" ];
 
   programs.zsh.enable = true;

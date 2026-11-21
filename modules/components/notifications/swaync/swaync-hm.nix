@@ -1,8 +1,9 @@
 # ===========================================================================
 # modules/components/notifications/swaync/swaync-hm.nix — SwayNC (Home Manager)
 #
-# Generates config.json dynamically based on host hardware capabilities
-# declared via NixOS options (options.myModules.swaync.*) in swaync.nix.
+# Home Manager module, added to every user by swaync.nix. Generates
+# ~/.config/swaync/config.json from the host's hardware options
+# (options.myModules.swaync.*, declared in swaync.nix) and links the CSS.
 #
 # Host option reference (set in hosts/<name>/<name>.nix):
 #   myModules.swaync.hasBacklight      = true;
@@ -110,7 +111,7 @@ let
       mpris = {
         image-size   = 80;
         image-radius = 8;
-        autohide     = true;  # hides when no player; no orphaned label (label removed from widget list)
+        autohide     = true;  # hidden when no player is running, so it has no section label
       };
     }
     // lib.optionalAttrs hasButtons {
@@ -136,6 +137,14 @@ let
       };
     };
 
+  # Top-level swaync settings. Every key is described in the JSON schema the
+  # package installs at /etc/xdg/swaync/configSchema.json (linked by "$schema").
+  #   positionX/Y, layer           where popups appear and on which layer
+  #   control-center-*             panel layer, size and margins
+  #   notification-*               popup size, icons, images, 2FA, replies
+  #   timeout, timeout-low/-critical  seconds before popups close (0 = never)
+  #   hide-on-clear/-action        close the panel after clearing or acting
+  #   widgets / widget-config      panel layout, built above
   swayncConfig = {
     "$schema"                    = "/etc/xdg/swaync/configSchema.json";
     positionX                    = "right";
@@ -175,9 +184,9 @@ in {
     text = builtins.toJSON swayncConfig;
   };
 
-  # CSS files — symlinked so live edits take effect without a rebuild.
-  # config.json is HM-managed (generated), so the entire dir cannot be
-  # symlinked; CSS files are symlinked individually instead.
+  # CSS files link to ~/dotfiles/swaync so edits apply without a rebuild.
+  # config.json is generated here, so the directory cannot be one symlink;
+  # each CSS file is linked on its own.
   home.file.".config/swaync/style.css".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/swaync/style.css";
   home.file.".config/swaync/colors.css".source =

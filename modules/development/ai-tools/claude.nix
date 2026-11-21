@@ -3,30 +3,32 @@
 #
 # Installs the claude-code CLI and wires the full AI skill environment for
 # every HM user on this host via sharedModules — no per-host or per-user
-# additions needed. Import this module once, all users get everything.
+# additions needed. Import this module once, all users get everything;
+# remove the import to turn it off.
 #
 #   ~/.agents/skills      — agent harness skill library: one folder per skill,
 #                           built below from the flake inputs upstream-skills
 #                           and impeccable, plus pony-trail from pkgs.ponytrail.
 #                           Pinned in flake.lock and read-only; the pins move
 #                           with nru. To add a skill set: add a flake input
-#                           (flake = false) and one link line in the let block.
+#                           (flake = false) and one link line inside agentsSkillsDir
+#                           (let block).
 #
 #   ~/.agents/skills-catalog.md — the upstream catalog: a searchable index of
 #                           every skill, so Claude can find the ones it does
 #                           not load up front.
 #
 #   ~/.claude/skills/     — Claude Code skill pony-trail, installed via
-#                           activation to avoid ~/.claude symlink conflicts on
-#                           linuxury's setup.
+#                           activation (a home.file link would conflict where
+#                           ~/.claude is itself a symlink).
 #
 #   ~/.claude/settings.json — the plugins and marketplaces in claudePlugins
-#                           (below) are merged in via activation, so all users
-#                           have them without wiping their existing settings.
+#                           (let block) are merged in via activation, so all
+#                           users have them without wiping their existing settings.
 #
-# The VSCodium extension config (claudeCode.claudeProcessWrapper) in
-# dotfiles/vscodium/settings.json points at the bash wrapper so the
-# extension uses the same Nix-installed binary.
+# The VSCodium extension setting claudeCode.claudeProcessWrapper (written by
+# editors/vscodium/vscodium-hm.nix) points at the bash wrapper so the extension
+# uses the same Nix-installed binary.
 #
 # Requires: modules/development/ai-tools/ai-tools.nix (nix-ld)
 # ===========================================================================
@@ -53,6 +55,9 @@ let
   '';
 
   # Plugins to enable for every user, and the marketplaces they come from.
+  #   enabledPlugins  "<plugin>@<marketplace>" = true/false (false = known but off)
+  #   marketplaces    name -> source: { source = "github"; repo = ...; } or
+  #                   { source = "directory"; path = ...; }
   # The official marketplace (lua-lsp, typescript-lsp) is built in.
   claudePlugins = {
     enabledPlugins = {
@@ -64,7 +69,7 @@ let
       "replay-theater@claude-code-playground-mods" = false;
       "lua-lsp@claude-plugins-official" = true;
       "typescript-lsp@claude-plugins-official" = true;
-      # 5 skills Claude always sees: planning, git pushing, lint, debugging, TDD.
+      # Essentials bundle: planning, git pushing, lint, debugging, TDD skills.
       "agentic-bundle-essentials@agentic-awesome-skills" = true;
     };
     marketplaces = {
@@ -72,7 +77,7 @@ let
       robonuggets.source = { source = "github"; repo = "robonuggets/ribbon"; };
       claude-kit.source = { source = "github"; repo = "JohnnyVizz/claude-kit"; };
       claude-code-mods.source = { source = "github"; repo = "karanb192/claude-code-mods"; };
-      # The upstream repo is itself a marketplace (31 skill bundles); only the
+      # The upstream repo is itself a marketplace of skill bundles; only the
       # Essentials bundle is enabled above. Pinned through the flake input.
       agentic-awesome-skills.source = {
         source = "directory";
@@ -90,6 +95,7 @@ in
 {
   # =========================================================================
   # System packages — CLI tools available to all users
+  #   claude  wrapper script around pkgs.claude-code that sets SHELL to bash
   # =========================================================================
   environment.systemPackages = [
     # Bash wrapper: claude-code uses bash-specific features that break under sh.
@@ -100,20 +106,21 @@ in
 
   # =========================================================================
   # Home Manager — applied to every HM user on this host
+  # (home-manager.sharedModules entries are merged into each user's config)
   # =========================================================================
   home-manager.sharedModules = [
     ({ pkgs, lib, config, ... }: {
 
       # =====================================================================
-      # ponytrail — dev tool, only for HM users (not installed on servers)
+      # ponytrail — dev tool, only for HM users (headless hosts have no HM)
       # =====================================================================
       home.packages = [ pkgs.ponytrail ];
 
       # =====================================================================
       # ~/.agents/skills — full agent harness skill library
       #
-      # Migration: if a mutable directory exists from before Nix management,
-      # move it to .bak so HM can create the managed symlink cleanly.
+      # Before linking, a real (non-symlink) directory at that path is moved to
+      # ~/.agents/skills.bak so Home Manager can create the managed symlink.
       # =====================================================================
       home.activation.migrateAgentsSkills =
         lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
@@ -137,7 +144,8 @@ in
       # ~/.claude/skills — Claude Code specific skills
       #
       # Installed via activation rather than home.file to avoid conflicts
-      # with ~/.claude being a symlink to ~/.agents/Claude/ on linuxury.
+      # where ~/.claude is a symlink (to ~/.agents/Claude/). Copied once; an
+      # existing pony-trail folder is left alone.
       # =====================================================================
       home.activation.installClaudeSkills =
         lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -155,12 +163,12 @@ in
 
       # =====================================================================
       # ~/.claude/settings.json — enable the plugins listed in claudePlugins
-      # (top of this file) and register their marketplaces.
+      # (let block) and register their marketplaces.
       #
-      # Merges only the keys we own into an existing settings.json so user-
-      # local settings (permissions, MCP servers, theme, etc.) are preserved.
-      # Works for linuxury too because ~/.claude is a symlink that the shell
-      # resolves at write time.
+      # Merges only the keys we own (enabledPlugins, extraKnownMarketplaces) into
+      # an existing settings.json (created as {} when missing) so user-local
+      # settings (permissions, MCP servers, theme, etc.) are preserved. Also works
+      # where ~/.claude is a symlink, because the shell resolves it at write time.
       # =====================================================================
       home.activation.configureClaudeSettings =
         lib.hm.dag.entryAfter [ "installClaudeSkills" ] ''

@@ -1,15 +1,19 @@
 # ===========================================================================
 # modules/system/graphical/nautilus.nix — Bookmarks and scripts for Nautilus
 #
-# Linuxury-specific: hardcodes /home/linuxury/ paths — import only from
-# modules/users/linuxury/linuxury-home.nix, not from home-manager.sharedModules.
+# Home Manager module for linuxury. It hardcodes /home/linuxury paths, so
+# turn it on by importing it from modules/users/linuxury/linuxury-home.nix,
+# never from home-manager.sharedModules; remove the import to turn it off.
 #
-# Nautilus reads sidebar bookmarks from ~/.config/gtk-3.0/bookmarks.
-# Samba shares appear as smb:// URIs — browsed via gvfs (enabled in
-# system/graphical/graphical.nix with Samba support).
+#   home.file.".config/gtk-3.0/bookmarks"
+#            sidebar bookmarks: home folders plus the /mnt server mounts.
+#            Thunar reads the same file (thunar.nix).
+#   home.file.".local/share/nautilus/scripts/<name>"
+#            executable scripts shown under right-click -> Scripts:
+#            Copy Path, Copy Name, Open as Root
 #
-# Scripts live in ~/.local/share/nautilus/scripts/ and appear in the
-# right-click context menu under Scripts.
+# smb:// locations are browsed through gvfs, which graphical.nix enables
+# with Samba support.
 # ===========================================================================
 
 { ... }:
@@ -29,8 +33,8 @@
   '';
 
   # ---------------------------------------------------------------------------
-  # Scripts — appear in right-click → Scripts menu
-  # Uses wl-copy (wl-clipboard) since we're on Wayland.
+  # Scripts — appear in the right-click -> Scripts menu. The copy scripts
+  # use wl-copy (wl-clipboard), so they need a Wayland session.
   # ---------------------------------------------------------------------------
   home.file.".local/share/nautilus/scripts/Copy Path" = {
     executable = true;

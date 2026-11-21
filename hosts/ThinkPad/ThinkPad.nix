@@ -1,17 +1,19 @@
 # ===========================================================================
-# hosts/ThinkPad/ThinkPad.nix — Lenovo ThinkPad T14s Gen 4 (AMD)
+# hosts/ThinkPad/ThinkPad.nix — Lenovo ThinkPad T14s Gen 4 (AMD) laptop
 #
-# Owner: linuxury
 # Hardware: AMD Ryzen 7 PRO 7840U, Radeon 780M iGPU
-# Type: Laptop — LUKS encrypted, power managed
-# Role: Personal daily driver
+# Type: laptop with LUKS full-disk encryption (disk.nix) and TLP power management
+# Role: personal daily-driver laptop
 #
 # Enabled modules:
 #   - AMD drivers
-#   - COSMIC Desktop (active DE — cosmic-greeter)
-#   - Hyprland / Niri / GNOME / KDE (available — commented out, one at a time)
+#   - COSMIC desktop with cosmic-greeter
 #   - Gaming
-#   - Development
+#   - Development (AI tools, editors, Python)
+#
+# Hyprland, Niri, GNOME, KDE, wayle and noctalia are in the imports block, commented out.
+# Only one desktop and one compositor should be active. To change one, uncomment its line
+# and comment out the current one.
 # ===========================================================================
 
 {
@@ -165,7 +167,8 @@
   # ==============================================================
   networking.hostName = "ThinkPad";
 
-  # Staggered off the 03:00 default (Ryzen5800x keeps it) — see MinisForum.
+  # Update timer (services.nixos-auto-update.schedule): 03:30 instead of the 03:00 default,
+  # so this host does not update at the same time as the others.
   services.nixos-auto-update.schedule = "*-*-* 03:30";
 
   # ==============================================================
@@ -203,18 +206,24 @@
   boot.initrd.kernelModules = [ "amdgpu" ];
 
   # ==============================================================
-  # Filesystem — BTRFS with subvolumes
+  # Network shares — CIFS mounts from the home servers
   #
-  # All subvolumes live on the LUKS container (cryptroot).
-  # Labels reference what we set during installation.
+  # The local BTRFS subvolumes and the LUKS container are in disk.nix. Each share below
+  # mounts on first access and unmounts after 60 s idle. Options used on each share:
+  #   credentials=<file>        username and password, from the agenix secret below
+  #   uid=<n>, gid=<n>          owner of files when the server reports none (gid 100 = users)
+  #   nofail                    a missing share does not stop boot (e.g. when away from home)
+  #   _netdev                   network mount: ordered after the network is up
+  #   noauto                    not mounted at boot or by nixos-rebuild switch
+  #   x-systemd.automount       mount on first access
+  #   x-systemd.idle-timeout=60 unmount after 60 s without access
+  #   x-systemd.mount-timeout=2s give up if the mount command takes longer than 2 s
   # ==============================================================
   fileSystems = {
 
     # -----------------------------------------------------------------------
-    # Media-Server Samba share
-    # Automounts on first access, disconnects after 60s idle.
-    # nofail: non-fatal if the server is offline (e.g. away from home).
-    # Mount manually with: sudo mount /mnt/Media-Server
+    # Media-Server share (//10.0.0.3/Media-Server), mounted at /mnt/Media-Server.
+    # Mount by hand with: sudo mount /mnt/Media-Server
     # -----------------------------------------------------------------------
     "/mnt/Media-Server" = {
       device = "//10.0.0.3/Media-Server";
@@ -233,10 +242,8 @@
     };
 
     # -----------------------------------------------------------------------
-    # MinisForum Samba share — game server file management
-    # Automounts on first access, disconnects after 60s idle.
-    # nofail: non-fatal if the server is offline (e.g. away from home).
-    # Mount manually with: sudo mount /mnt/MinisForum
+    # MinisForum share (//10.0.0.7/GameServers), mounted at /mnt/MinisForum.
+    # Used to manage game server files. Mount by hand with: sudo mount /mnt/MinisForum
     # -----------------------------------------------------------------------
     "/mnt/MinisForum" = {
       device = "//10.0.0.7/GameServers";
@@ -278,8 +285,8 @@
   environment.systemPackages = with pkgs; [
     cifs-utils
 
-    # linuxury — everyday tools
-    inputs.nixpkgs-goose.legacyPackages.${pkgs.stdenv.hostPlatform.system}.topgrade  # pinned: unstable aws-lc-sys build broken. One-command updater — Nix, cargo, flatpaks, etc.
+    # Everyday tools
+    inputs.nixpkgs-goose.legacyPackages.${pkgs.stdenv.hostPlatform.system}.topgrade  # from the nixpkgs-goose input, pinned: the unstable aws-lc-sys build fails. One-command updater for Nix, cargo, flatpaks, etc.
     bat                # cat with syntax highlighting and line numbers
     herdr              # CLI — agent multiplexer TUI (delete this line for desktop only)
     herdr-desktop      # GUI app — persistent terminals + agents (delete this line for CLI only)
@@ -304,11 +311,12 @@
     # video editors, image editors, etc. go here so each host can
     # enable/disable them independently.
     # ==============================================================
-    # affinity-v3  # re-enable when vc_redist.x64.exe CDN recovers (Microsoft 503s as of 2026-07-04)
+    # affinity-v3  # off: re-enable once the vc_redist.x64.exe download (Microsoft's CDN) works
   ];
 
   # ==============================================================
-  # Mount point directory
+  # Mount point directories for the shares above
+  #   "d <path> <mode> <owner> <group> -": create the directory, mode 0755, owned by linuxury:users
   # ==============================================================
   systemd.tmpfiles.rules = [
     "d /mnt/Media-Server 0755 linuxury users -"
@@ -317,14 +325,21 @@
   ];
 
   # ==============================================================
-  # Agenix secrets
+  # Agenix secrets — encrypted files in secrets/, decrypted at boot into /run/agenix/<name>
+  #   file   the encrypted .age file (required)
+  #   mode   permissions of the decrypted file, chmod style (default "0400")
+  #   owner  user that owns the decrypted file (default "0", root)
+  #   group  group that owns it (default: the owner's primary group)
   # ==============================================================
+
+  # Samba login for the CIFS mounts above. Readable by root only.
   age.secrets.smb-credentials = {
     file = ../../secrets/network/smb-credentials.age;
     mode = "0400";
     owner = "root";
   };
 
+  # API key for OpenRouter. Readable by root and members of the users group.
   age.secrets.openrouter-api-key = {
     file = ../../secrets/api-keys/openrouter.age;
     mode = "0440";
@@ -332,6 +347,7 @@
     group = "users";
   };
 
+  # License file for the Flow icon set. Readable by root and members of the users group.
   age.secrets.flow-icons-license = {
     file = ../../secrets/licenses/flow-icons.age;
     mode = "0440";
@@ -340,57 +356,61 @@
   };
 
   # ==============================================================
-  # Kernel
+  # Kernel — boot.kernelPackages selects the kernel package set
+  #   pkgs.linuxPackages_latest           mainline latest (set here)
+  #   pkgs.linuxPackages_xanmod_latest    XanMod latest (commented out)
+  #   pkgs.linuxPackages_zen              Zen kernel (commented out)
+  # To switch, comment out the active line and uncomment another one.
   # ==============================================================
   boot.kernelPackages = pkgs.linuxPackages_latest;          # Vanilla
   # boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;  # XanMod
   # boot.kernelPackages = pkgs.linuxPackages_zen;            # Zen
 
   # ==============================================================
-  # Power management — critical for laptop battery life
-  #
-  # TLP is a comprehensive power management tool that automatically
-  # applies optimized settings for battery vs AC power.
+  # Power management — TLP (services.tlp, written to tlp.conf)
+  #   enable    run TLP (set here)
+  #   settings  TLP keys; AC = on charger, BAT = on battery. See tlp.conf(5) for each key.
   # ==============================================================
   services.tlp = {
     enable = true;
     settings = {
-      # CPU scaling governor
-      CPU_SCALING_GOVERNOR_ON_AC = "performance"; # Full speed on charger
-      CPU_SCALING_GOVERNOR_ON_BAT = "powersave"; # Save battery on battery
+      # CPU frequency governor: full speed on AC, powersave on battery.
+      CPU_SCALING_GOVERNOR_ON_AC = "performance";
+      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
 
-      # AMD CPU power management
+      # AMD energy/performance preference: performance on AC, power on battery.
       CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
       CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
 
-      # Keep battery between 75-95% — charges whenever plugged in and below
-      # 75%, stops at 95% so there's plenty of charge if you need to head out.
-      # ThinkPads support this natively via the embedded controller.
+      # Battery charge thresholds, handled by the ThinkPad embedded controller. Charging starts
+      # when the charge drops below 75 % and stops at 95 %.
       START_CHARGE_THRESH_BAT0 = 75;
       STOP_CHARGE_THRESH_BAT0 = 95;
 
-      # PCIe power management
+      # PCIe link power management on battery: powersupersave is the lowest-power setting.
       PCIE_ASPM_ON_BAT = "powersupersave";
     };
   };
 
-  # Prevent TLP and power-profiles-daemon from conflicting
+  # power-profiles-daemon is off: TLP manages the power settings, and the two conflict.
   services.power-profiles-daemon.enable = false;
 
   # ==============================================================
-  # Touchpad — libinput
-  #
-  # libinput is the modern input driver for touchpads on Linux.
-  # These settings give a comfortable laptop touchpad experience.
+  # Touchpad — libinput (services.libinput.touchpad)
+  #   tapping               tap to click (set here)
+  #   naturalScrolling      reverse scroll direction (set here)
+  #   scrollMethod          "twofinger": scroll with two fingers (set here)
+  #   middleEmulation       pressing left and right together acts as a middle click (set here)
+  #   disableWhileTyping    ignore the touchpad while typing (set here)
   # ==============================================================
   services.libinput = {
     enable = true;
     touchpad = {
-      tapping = true; # Tap to click
-      naturalScrolling = true; # Reverse scroll direction (like macOS/modern default)
+      tapping = true;
+      naturalScrolling = true;
       scrollMethod = "twofinger";
-      middleEmulation = true; # Three finger tap = middle click
-      disableWhileTyping = true; # Disable touchpad while typing to avoid accidental input
+      middleEmulation = true;
+      disableWhileTyping = true;
     };
   };
 
@@ -407,8 +427,9 @@
   # ==============================================================
   services.fprintd.enable = true;
 
-  # Allow PAM (authentication system) to use fingerprint as an auth method.
-  # mkForce needed: GDM sets login.fprintAuth = false by default.
+  # Allow PAM to use the fingerprint reader for login, sudo and polkit prompts.
+  # login uses mkForce because the GDM module sets login.fprintAuth = false when fprintd is
+  # enabled. This host uses cosmic-greeter, not GDM, so the override is only needed with GDM.
   security.pam.services = {
     login.fprintAuth = lib.mkForce true;
     sudo.fprintAuth = true;
@@ -438,12 +459,16 @@
   boot.kernelModules = [ "thinkpad_acpi" ];
 
   # ==============================================================
-  # Lid and power button behavior
+  # Lid, power button and idle behavior (services.logind.settings.Login)
+  #   HandleLidSwitch              action when the lid closes on battery: suspend (set here)
+  #   HandleLidSwitchExternalPower action when the lid closes on AC: suspend (set here)
+  #   HandlePowerKey               action for the power button: suspend (set here)
+  #   IdleAction, IdleActionSec    action after idle time: suspend after 20 min (set here)
   # ==============================================================
   services.logind = {
     settings.Login = {
-      HandleLidSwitch = "suspend"; # Suspend when lid closes
-      HandleLidSwitchExternalPower = "suspend"; # Even on AC — saves energy
+      HandleLidSwitch = "suspend";
+      HandleLidSwitchExternalPower = "suspend";
       HandlePowerKey = "suspend";
       IdleAction = "suspend";
       IdleActionSec = "20min";
@@ -469,9 +494,8 @@
     shell = pkgs.zsh;
   };
 
-  # ==============================================================
-  # Tailscale — enabled in core; after first boot: sudo tailscale up
-  # ==============================================================
+  # Tailscale is enabled in core.nix (services.tailscale.enable). On a new machine, sign in once
+  # with: sudo tailscale up
 
   # ==============================================================
   # Zsh — enable system-wide so it's available as a login shell

@@ -10,18 +10,21 @@
 #   Alex-Desktop → "PikaOS"
 #   Alex-Laptop  → "PikaOS"
 #
-# Notable:
-#   - No sudo access (enforced at host level)
-#   - DNS filtering via Cloudflare 1.1.1.3 (host level)
-#   - Login time restrictions (host level)
-#   - Flatpak disabled system-wide except for Hytale (host level)
-#   - Terminal included — he'll grow into it
+# Contents: XDG dirs and default browser, wallpapers + avatar + fastfetch image
+# from the Assets input, shared kitty/fastfetch/starship/zsh setup, zoxide, fzf,
+# direnv, Hytale, ssh-agent. Applied through the Home Manager user list in flake.nix.
+#
+# Restrictions that live at host level, not here:
+#   - No sudo access
+#   - DNS filtering via Cloudflare 1.1.1.3
+#   - Login time restrictions (modules/users/alex/screen-time.nix)
+#   - Flatpak disabled system-wide except for the local Hytale bundle
 #   - Own Mojang account for Minecraft
-#   - Hytale from bundled flatpak from the Assets input
-#   - PikaOS wallpapers generate kid-friendly color schemes via matugen
+#   - PikaOS wallpapers generate colorful color schemes via matugen
 # ===========================================================================
 
-# Single function — wallpaperDir comes from extraSpecialArgs in flake.nix
+# Function arguments: config/pkgs/lib are the module set; inputs are the flake
+# inputs (assets, dotfiles, zsh); wallpaperDir comes from extraSpecialArgs in flake.nix.
 { config, pkgs, lib, inputs, wallpaperDir, ... }:
 
 {
@@ -33,14 +36,19 @@
   # =========================================================================
   # Home Manager basics
   # =========================================================================
+  # Account name, home path and the Home Manager release the state format
+  # follows (stateVersion: keep at the install-time release; do not bump for upgrades).
   home.username      = "alex";
   home.homeDirectory = "/home/alex";
   home.stateVersion  = "24.11";
 
-  programs.home-manager.enable = true;
+  programs.home-manager.enable = true; # install the home-manager CLI for this user
 
   # =========================================================================
   # Browser — per-user choice (shared app defaults live in graphical/graphical.nix)
+  # xdg.mimeApps.defaultApplications maps a MIME type or URL scheme to a .desktop
+  # file: here web links and HTML open in Firefox. Other entries (mail, pdf,
+  # image/*, ...) can be added the same way.
   # =========================================================================
   xdg.mimeApps.defaultApplications = {
     "x-scheme-handler/http"  = "firefox.desktop";
@@ -51,11 +59,18 @@
 
   # =========================================================================
   # XDG User Directories
+  #   enable               write ~/.config/user-dirs.dirs
+  #   createDirectories    create the folders below at activation
+  #   setSessionVariables  export XDG_*_DIR variables in the session
+  #   desktop/documents/download/music/pictures/projects/videos/templates/
+  #   publicShare          paths of the standard folders (null disables one)
+  #   extraConfig          extra XDG_<NAME>_DIR entries
+  #   package              xdg-user-dirs package (null to skip it)
   # =========================================================================
   xdg.userDirs = {
     enable            = true;
     createDirectories = true;
-    setSessionVariables = true; # Silence HM 26.05 default change warning
+    setSessionVariables = true; # export XDG_*_DIR variables (explicit, so no default-change warning)
 
     desktop    = "${config.home.homeDirectory}/Desktop";
     documents  = "${config.home.homeDirectory}/Documents";
@@ -69,6 +84,8 @@
 
   # =========================================================================
   # Extra directories
+  # systemd user tmpfiles rules, "type path mode user group age": d = create the
+  # directory if missing (age "-" = never cleaned).
   # =========================================================================
   systemd.user.tmpfiles.rules = [
     # Creative workspace
@@ -77,7 +94,10 @@
   ];
 
   # =========================================================================
-  # Migration — remove old plain dirs before HM creates symlinks in their place
+  # Asset directories — home.file below links Pictures/Avatar into the Assets
+  # input. This activation step (entryBefore checkLinkTargets, so it runs before
+  # Home Manager checks link targets) removes an empty plain directory at those
+  # paths, because a real directory would block the link.
   # =========================================================================
   home.activation.migrateAssetDirs = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
     # Old ~/Pictures/Avatar plain dir → now symlinked at ~/Pictures/Avatar
@@ -95,8 +115,9 @@
   '';
 
   # Starship prompt — copy-once seed (not a symlink) so matugen's post-hook
-  # can overwrite the live file after each wallpaper change. [ -L ] cleanup
-  # handles migrating off the old home.file symlink this replaces.
+  # can overwrite the live file after each wallpaper change. The template comes
+  # from the ZSH repo (flake input "zsh"). Runs after writeBoundary; a symlink
+  # at the target is removed first, an existing regular file is kept.
   home.activation.starshipSeed = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     _cfg="$HOME/.config/starship.toml"
     _template="${inputs.zsh}/starship/starship.toml"
@@ -111,14 +132,11 @@
 
   # =========================================================================
   # Dotfiles — shared terminal setup with the rest of the family
+  # home.file.<path>.source links a store path into $HOME. The starship config
+  # is not here: it is seeded by home.activation.starshipSeed above (same
+  # pattern as modules/users/linuxury/linuxury-home.nix).
   # =========================================================================
   home.file = {
-    # Starship prompt — deployed via home.activation.starshipSeed below
-    # (copy-once, not a symlink) so matugen can overwrite the live file
-    # after each wallpaper change. Same pattern as
-    # modules/users/linuxury/linuxury-home.nix; the template comes from the
-    # ZSH repo (flake input "zsh").
-
     # Kitty terminal — shared config
     ".config/kitty/kitty.conf".source = "${inputs.dotfiles}/kitty/kitty.conf";
 
@@ -126,8 +144,8 @@
     ".config/fastfetch".source = "${inputs.zsh}/fastfetch";
 
     # ~/Pictures/Wallpapers is a writable folder, filled from the Assets input
-    # by modules/users/wallpapers. Both his machines use "PikaOS" — set in
-    # flake.nix. matugen generates colorful kid-friendly themes from them.
+    # by modules/users/wallpapers. Both machines use "PikaOS" — set in
+    # flake.nix. matugen generates colorful themes from them.
 
     # ~/Pictures/Avatar → <assets>/Avatar (family profile photos)
     "Pictures/Avatar".source =
@@ -145,6 +163,12 @@
 
   # =========================================================================
   # Zsh shell
+  #   autosuggestion.enable  grey inline history suggestions
+  #   enableCompletion       tab completion
+  #   plugins                fast-syntax-highlighting (command colouring)
+  #   zsh-abbr.enable        fish-style abbreviations
+  #   shellAliases.ll        long eza listing with icons and git status
+  #   initContent            shared init from the ZSH repo (init.nix)
   # =========================================================================
   programs.zsh = {
     enable            = true;
@@ -169,14 +193,15 @@
   };
 
   # =========================================================================
-  # Starship prompt
+  # Starship prompt — enable installs it and hooks zsh; the config file itself
+  # is seeded by home.activation.starshipSeed.
   # =========================================================================
   programs.starship = {
     enable = true;
   };
 
   # =========================================================================
-  # Zoxide — smarter cd
+  # Zoxide — smarter cd (z <dir>); enableZshIntegration adds the zsh hook
   # =========================================================================
   programs.zoxide = {
     enable               = true;
@@ -184,7 +209,7 @@
   };
 
   # =========================================================================
-  # FZF — fuzzy finder
+  # FZF — fuzzy finder; enableZshIntegration adds Ctrl-R/Ctrl-T/Alt-C bindings
   # =========================================================================
   programs.fzf = {
     enable               = true;
@@ -193,6 +218,8 @@
 
   # =========================================================================
   # Direnv — auto-loads .envrc on cd (nix develop shells, project env vars)
+  #   enableZshIntegration  zsh hook
+  #   nix-direnv.enable     fast cached `use flake` / `use nix`
   # =========================================================================
   programs.direnv = {
     enable               = true;
@@ -202,16 +229,16 @@
 
   # =========================================================================
   # Hytale — auto-install + overrides (see modules/system/graphical/hytale.nix)
-  # Note: Flatpak is disabled system-wide on Alex's machines except for Hytale.
-  # This exception is handled in hosts/Alex-Desktop and hosts/Alex-Laptop.
+  # Flatpak is disabled system-wide on these machines except for the local Hytale
+  # bundle; that exception is handled in hosts/Alex-Desktop and hosts/Alex-Laptop.
   # =========================================================================
   programs.hytale.enable = true;
 
   # =========================================================================
-  # SSH agent — included for consistency
-  # Alex won't use SSH now but harmless to include
+  # SSH agent — keeps loaded keys for the session; enabled for parity with the
+  # other users, unused here
   # =========================================================================
   services.ssh-agent.enable = true;
 
-  # Personal packages live in modules/users/alex-packages.nix
+  # Per-user packages: none declared in this file.
 }

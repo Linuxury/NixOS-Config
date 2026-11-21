@@ -3,22 +3,23 @@
 #
 # Owner: babylinux
 # Hardware: AMD Ryzen 7 5800x, AMD Radeon RX 5700 XT
-# Type: Desktop — no encryption, stable and reliable
-# Role: Wife's daily driver desktop
+# Type: Desktop — no disk encryption
+# Role: babylinux's daily driver desktop
 #
-# Enabled modules:
-#   - AMD drivers
-#   - KDE (default DE)
-#   - COSMIC (disabled)
-#   - Gaming
+# Enabled modules (see imports below): core + graphical system, AMD drivers,
+# browsers and desktop apps, KDE Plasma, gaming, Claude Code + OpenCode, Zed,
+# auto-update, babylinux Syncthing, SSH keys and display name.
+# Disabled alternatives (COSMIC, GNOME, Hyprland, niri, snapper, ...) stay in
+# imports as commented lines: uncomment one to switch.
 #
+# Users: babylinux (main, wheel) and linuxury (remote admin, no home).
 # ===========================================================================
 
 { config, pkgs, ... }:
 
 {
   imports = [
-    # Disks, swap, LUKS and boot loader (written by the installer)
+    # Filesystems and swap (written by the installer)
     ./disk.nix
 
     # ==============================================================
@@ -40,6 +41,8 @@
     # Graphical Apps — all optional, comment out to remove
     #   firefox     — primary browser
     #   helium      — secondary browser (Firefox-based)
+    #   app-zennotes — ZenNotes notes app
+    #   craft-apps  — creative apps
     #   fluxer      — Discord client
     #   kdeconnect  — phone integration
     #   zen-browser — privacy-focused Firefox fork
@@ -88,7 +91,7 @@
 
     # ==============================================================
     # Gaming
-    #   Steam, Proton/Wine, Lutris, MangoHud, gamemode, controllers
+    #   Steam, Proton/Wine, Faugus, MangoHud, gamemode, controllers
     # ==============================================================
     ../../modules/gaming/gaming.nix
 
@@ -143,7 +146,7 @@
     # Users
     #   ssh         — authorized keys for this host
     #   description — GECOS display name (agenix secret)
-    #   packages    — per-user package set
+    #   (linuxury-ssh — the admin's key, for remote login)
     # ==============================================================
     ../../modules/users/babylinux/babylinux-ssh.nix
     ../../modules/users/babylinux/babylinux-description.nix
@@ -156,7 +159,8 @@
   networking.hostName = "Ryzen5800x";
 
   # ==============================================================
-  # GPU driver selection
+  # GPU driver selection (hardware.gpu, defined by modules/hardware/drivers.nix;
+  # "amd" = Radeon amdgpu/RADV stack)
   # ==============================================================
   hardware.gpu = "amd";
 
@@ -165,25 +169,36 @@
   #   openrgb          — RGB lighting: package + udev rules + daemon
   #   lemokey-keychron — WebHID udev rules for keyboard web configurators
   # ==============================================================
-  # OpenRGB off: its boot scan makes the HyperX Alloy Origins drop off USB (disconnect ~3 s after the
-  # scan, every boot), which resets NumLock and RGB. The "main" profile never existed on this host anyway.
-  # Re-enable only with the HyperX detector disabled + a real saved profile.
+  # OpenRGB off: its boot-time device scan disconnects the HyperX Alloy Origins
+  # keyboard from USB, which resets NumLock and its RGB. Re-enable only with the
+  # HyperX detector disabled and a saved OpenRGB profile.
   hardware.openrgb.enable = false;
   hardware.lemokey-keychron.enable = false;
 
+  # Primary user for the auto-update service: vault writes, notification
+  # ownership and the smtp-app-password secret are scoped to it (see
+  # modules/services/auto-update/auto-update.nix; default is linuxury).
   services.nixos-auto-update.primaryUser = "babylinux";
 
+  # Session started by the display manager by default (KDE Plasma).
   services.displayManager.defaultSession = "plasma";
 
   # ==============================================================
-  # Filesystem — BTRFS with subvolumes, no LUKS on desktop
+  # Filesystem — local disks are in ./disk.nix; only network mounts here
   # ==============================================================
   fileSystems = {
 
     # -----------------------------------------------------------------------
-    # Media-Server Samba share
-    # Automounts on first access, disconnects after 60s idle.
-    # nofail: non-fatal if the server is offline.
+    # Network shares (the three CIFS mounts below share one option set):
+    #   credentials=...      agenix secret with the SMB username/password
+    #   uid=babylinux        files appear owned by babylinux (gid=users)
+    #   nofail, _netdev      boot continues without it; waits for the network
+    #   noauto               not mounted at boot
+    #   x-systemd.automount  mounts on first access
+    #   idle-timeout=60      unmounts after 60 s idle
+    #   mount-timeout=2s     give up quickly if the server is down
+    # /mnt/Media-Server = Media-Server share; /mnt/MinisForum = GameServers share
+    # (MinisForum); /mnt/Torrents = Downloads share (Media-Server).
     # -----------------------------------------------------------------------
     "/mnt/Media-Server" = {
       device  = "//10.0.0.3/Media-Server";
@@ -224,7 +239,8 @@
   };
 
   # ==============================================================
-  # Mount point directory + CIFS tools
+  # Mount point directories (tmpfiles "d path mode owner group age") for the
+  # network mounts above and the local Warehouse disk (./disk.nix)
   # ==============================================================
   systemd.tmpfiles.rules = [
     "d /mnt/Media-Server 0755 babylinux users -"
@@ -234,7 +250,7 @@
   ];
 
   # ==============================================================
-  # Agenix secrets
+  # Agenix secrets — SMB credentials, readable by root only (mount.cifs)
   # ==============================================================
   age.secrets.smb-credentials = {
     file  = ../../secrets/network/smb-credentials.age;
@@ -245,56 +261,57 @@
   # ==============================================================
   # Kernel
   # ==============================================================
+  # Kernel package set: Zen (below). Alternatives (pick one):
   # boot.kernelPackages = pkgs.linuxPackages_latest;          # Vanilla
   # boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;  # XanMod
   boot.kernelPackages = pkgs.linuxPackages_zen;            # Zen
 
-  # NTFS3 kernel driver for the Warehouse HDD
+  # NTFS support (kernel ntfs3 driver and tools) for the Warehouse HDD
   boot.supportedFilesystems.ntfs = true;
 
   # ==============================================================
   # AMD Radeon RX 5700 XT specific settings
   #
-  # The 5700 XT is an RDNA1 card. It has mature driver support on Linux
-  # and works very reliably. CoreCtrl is available if she ever wants
-  # GPU monitoring but we keep it optional here.
+  # The 5700 XT is an RDNA1 card with mature Linux driver support.
+  # amdgpu.ppfeaturemask=0xffffffff unlocks all amdgpu power-play features
+  # (needed by overclocking/fan tools such as CoreCtrl, which is not installed).
   # ==============================================================
   boot.kernelParams = [
     "amdgpu.ppfeaturemask=0xffffffff"
   ];
 
-  # programs.affinity.enable = true;  # disabled 2026-10-08 — replaced by craft-apps
+  # programs.affinity.enable = true;  # off: craft-apps (imported above) provides these apps
 
   # ==============================================================
-  # Stability focused extras
-  #
+  # System packages — cifs-utils (SMB mounts), ntfs3g (NTFS tools), remote
+  # support (RustDesk), media (VLC), build output viewer (nom), Zoom.
   # ==============================================================
   environment.systemPackages = with pkgs; [
     cifs-utils
     ntfs3g
 
     # Remote support
-    # ponytail: drop the override once nixpkgs rustdesk-flutter builds again (libsodium-sys can't find libsodium.pc, 2026-11-10)
+    # ponytail: drop the override once nixpkgs' rustdesk-flutter builds again;
+    # the override adds libsodium + pkg-config so libsodium-sys finds libsodium.pc
     (rustdesk-flutter.overrideAttrs (o: {
       buildInputs = (o.buildInputs or [ ]) ++ [ libsodium ];
       nativeBuildInputs = (o.nativeBuildInputs or [ ]) ++ [ pkg-config ];
-    }))  # Open source remote desktop — lets you help her remotely
+    }))  # Open source remote desktop — remote support for this machine
 
     # Media
     vlc       # Reliable video player that plays anything
 
-    # babylinux — everyday tools
+    # Everyday tools
     nix-output-monitor # Progress bar + TUI for nix builds (nom)
     zoom-us            # Video conferencing
-    # obsidian           # Markdown-based knowledge base / note-taking app
+    # obsidian           # Markdown-based notes app (not installed)
 
     # ==============================================================
     # Host-specific apps
-    # Special tools only this machine needs — editors, design tools,
-    # video editors, image editors, etc. go here so each host can
-    # enable/disable them independently.
+    # Tools only this machine needs (editors, design/video/image tools) go here
+    # so each host can enable/disable them independently. None at the moment:
+    # craft-apps (imported above) supplies the creative apps.
     # ==============================================================
-    # affinity-v3 disabled above (replaced by craft-apps)
   ];
 
   # ==============================================================
@@ -302,8 +319,8 @@
   #
   # CUPS handles printer management on Linux. Most modern printers
   # are detected automatically once this is enabled. Network printer
-  # discovery (avahi) is enabled universally in
-  # system/graphical/graphical.nix, not duplicated here.
+  # discovery (avahi) is enabled in system/graphical/graphical.nix, not here.
+  #   drivers  gutenprint (wide range of printers), hplip (HP printers)
   # ==============================================================
   services.printing = {
     enable = true;
@@ -314,7 +331,8 @@
   };
 
   # ==============================================================
-  # User account
+  # User account — babylinux: normal user, zsh; groups: wheel (sudo),
+  # networkmanager, video, audio, input, gamemode (GameMode's helper rules)
   # ==============================================================
   users.users.babylinux = {
     isNormalUser = true;
@@ -329,8 +347,9 @@
     shell = pkgs.zsh;
   };
 
-  # linuxury user — remote admin: SSH + sudo (wheel), no home on this host.
-  # Password set by hand per host (mutableUsers), like every other machine.
+  # linuxury user — remote admin: SSH + sudo (wheel), no home on this host
+  # (home /var/empty, createHome false), group users, bash shell. The password
+  # is set by hand on each host (mutableUsers).
   users.users.linuxury = {
     isNormalUser = true;
     extraGroups  = [ "wheel" ];
@@ -340,8 +359,9 @@
     shell        = pkgs.bash;
   };
 
-  # Hide linuxury from the login screen — emergency account only
+  # Hide linuxury from the login screen (account is for remote admin only)
   services.displayManager.hiddenUsers = [ "linuxury" ];
 
+  # System-wide zsh (login shell for babylinux; the shell setup is in the user's Home Manager config)
   programs.zsh.enable = true;
 }

@@ -1,13 +1,17 @@
 # ===========================================================================
-# hosts/Media-Server/disk.nix — disks, swap, LUKS and boot loader for Media-Server
+# hosts/Media-Server/disk.nix — local filesystems and swap for the Media-Server
 #
-# Split out of Media-Server.nix so the installer can (re)write this file for a
-# new disk layout without touching the rest of the host config. Network
-# shares and pooled mounts (cifs, mergerfs) stay in Media-Server.nix.
+# Btrfs subvolumes on the OS "nixos" partition, an EFI system partition, a swapfile, and
+# the two ext4 HDDs that mergerfs pools into /data (in Media-Server.nix). There is no LUKS
+# layer on this server. The installer writes this file for a new disk layout. Boot loader
+# settings are not in this file.
 # ===========================================================================
 { config, lib, pkgs, ... }:
 
 {
+  # Btrfs subvolumes on the OS partition, mounted by label. Each uses zstd level 1
+  # compression and noatime, except /swap, which is not compressed. The snapshot subvolumes
+  # are for snapper, which this host does not import.
   fileSystems = {
     "/" = {
       device = "/dev/disk/by-label/nixos";
@@ -71,7 +75,8 @@
   };
 
   # ==============================================================
-  # Swap
+  # Swap — one swapfile on the @swap subvolume
+  #   device  path of the swapfile
   # ==============================================================
   swapDevices = [{
     device = "/swap/swapfile";

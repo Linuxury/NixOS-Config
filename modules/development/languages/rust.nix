@@ -15,7 +15,9 @@
 #   just          — command runner (like make, but readable) — popular in
 #                   Rust projects for scripting build/test/deploy tasks
 #
-# Environment:
+# Enable per host by importing this module; remove the import to turn it off.
+#
+# Environment (environment.variables, set for every login session):
 #   RUSTUP_HOME   — where rustup stores toolchains (~/.rustup)
 #   CARGO_HOME    — where cargo stores caches and installed binaries (~/.cargo)
 #   PATH          — ~/.cargo/bin added so compiled tools are accessible

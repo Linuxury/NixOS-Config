@@ -11,7 +11,10 @@
 #        systemctl status syncthing | grep "device id"
 #      OR open the web UI at http://localhost:8384
 #   2. Fill in the device ID below for that machine
-#   3. Rebuild all her machines so they know each other's IDs
+#   3. Rebuild all of babylinux's machines so they know each other's IDs
+#
+# Remove the import from a host to turn it off. Options are the same
+# services.syncthing.* set documented in syncthing.nix.
 # ===========================================================================
 
 { lib, ... }:
@@ -36,7 +39,7 @@
     settings = {
       gui.address = "127.0.0.1:8384";
 
-      # ── Devices — IDs verified 2026-05-09 ───────────────────────────────
+      # ── Devices ─────────────────────────────────────────────────────────
       devices = {
         "Ryzen5800x" = {
           id        = "KMIXV62-XWKZX73-I4D5TVY-QD4NQ5D-S4B4LSO-TGVU7V5-267HUAB-YDEGXQG";

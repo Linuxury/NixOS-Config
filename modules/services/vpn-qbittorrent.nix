@@ -44,14 +44,27 @@
 # Manual steps before first boot:
 #   1. Export WireGuard config from Mullvad app or web dashboard
 #        Account → WireGuard configuration → Generate key → Download config
-#   2. Save it to /etc/wireguard/vpnunlimited.conf  (wg-quick format)
-#        (file is still named vpnunlimited.conf for historical reasons)
+#   2. Save it to the path in configFile (default
+#        /etc/wireguard/vpnunlimited.conf), wg-quick format
 #   3. chmod 600 /etc/wireguard/vpnunlimited.conf
 #        (private key inside — must not be world-readable)
 #
 # To enable on a host, add to its imports and set:
 #   services.vpn-qbittorrent.enable = true;
-#   services.vpn-qbittorrent.user   = "babylinux";
+#   services.vpn-qbittorrent.user   = "<torrent user>";
+# Remove the import or set enable = false to turn it off.
+#
+# Options (services.vpn-qbittorrent.*):
+#   enable           start the namespace, tunnel, qBittorrent and helpers
+#   user             account qbittorrent-nox runs as (required)
+#   configFile       wg-quick config with the private key (default
+#                    /etc/wireguard/vpnunlimited.conf)
+#   webUIPort        Web UI port inside the namespace (default 8080)
+#   hostVethIP       host end of the veth pair (default 10.200.200.1)
+#   nsVethIP         namespace end, also the Web UI address (default 10.200.200.2)
+#   failoverServers  ordered [ { name publicKey endpoint } ] list; non-empty
+#                    adds the 5-minute health-check and failover timer
+#   watchedFolder    directory polled for .torrent files to add (null = off)
 # ===========================================================================
 
 { config, pkgs, lib, ... }:
@@ -619,7 +632,7 @@ in {
 
       # Ordering only, no Requires on vpn-qbt-netns: this script restarts that
       # unit, and Requires= would make systemd stop this service along with it
-      # (SIGTERM mid-failover, looped every cycle from 2026-08-25 to 10-25).
+      # (SIGTERM in the middle of a failover, on every cycle).
       after = [ "qbittorrent-vpn.service" ];
 
       serviceConfig = {

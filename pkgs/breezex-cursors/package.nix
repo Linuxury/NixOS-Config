@@ -1,3 +1,7 @@
+# BreezeX cursor themes (ful1e5/BreezeX_Cursor release tarball; BreezeX,
+# BreezeX-Black, BreezeX-Light, ...) installed to share/icons. Exposed as
+# pkgs.breezex-cursors by the overlay in flake.nix; used by the compositor,
+# greeter and theme modules. Bump: change version, url + sha256 below.
 { lib, stdenvNoCC, fetchzip }:
 
 stdenvNoCC.mkDerivation {

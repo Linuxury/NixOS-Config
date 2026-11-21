@@ -83,8 +83,8 @@ let
 
     # Nothing is compiled here — untar a prebuilt tree, then autoPatchelf it.
     # Without this, a remote builder gets picked and the transfer dwarfs the
-    # work: ~60-106 MB tarball up, ~127-195 MB output back, per app.
-    # On a wifi host (ThinkPad) that turned a seconds-long unpack into minutes.
+    # work: ~60-106 MB tarball up, ~127-195 MB output back, per app — minutes
+    # instead of seconds on a wifi host.
     preferLocalBuild = true;
 
     meta = {

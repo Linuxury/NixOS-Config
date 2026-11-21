@@ -14,13 +14,18 @@
 #   the default "auto" runs tools without asking).
 #
 # Requires: modules/development/ai-tools/claude.nix (logged-in claude)
+# Enable per host by importing this module; remove the import to turn it off.
 # ===========================================================================
 
 { pkgs, inputs, ... }:
 
 {
+  # System packages:
+  #   goose-cli         the agent, taken from the separate nixpkgs-goose input
+  #                     (flake.nix) so it is built from a pinned nixpkgs revision
+  #   claude-agent-acp  ACP adapter the claude-acp provider runs
   environment.systemPackages = with pkgs; [
-    # Pinned: unstable's goose-cli fails to build (see nixpkgs-goose in flake.nix)
+    # Taken from the nixpkgs-goose input rather than the main nixpkgs
     inputs.nixpkgs-goose.legacyPackages.${pkgs.stdenv.hostPlatform.system}.goose-cli
     claude-agent-acp  # ACP adapter Goose's claude-acp provider runs
   ];

@@ -1,11 +1,12 @@
 # ===========================================================================
 # modules/components/bar/waybar.nix — Waybar status bar
 #
-# Compositor-agnostic status bar.
-# Works on any wlr-layer-shell compositor (Hyprland, Niri, Sway…).
+# Status bar for any wlr-layer-shell compositor (Hyprland, Niri, Sway).
+# Turn it on by importing this file from a host; remove the import to turn
+# it off.
 #
 # When imported, this module:
-#   1. Adds waybar to system packages.
+#   1. Adds waybar to environment.systemPackages.
 #   2. Symlinks dotfiles/waybar/ → ~/.config/waybar/  (all users)
 #   3. If Hyprland is present: writes ~/.config/hypr/components/bar.lua
 #      (placeholder for Hyprland-specific bar keybinds; skipped on all

@@ -17,6 +17,9 @@
 # foreground-booster integrations (e.g. plasma-foreground-booster for KDE)
 # sit on top of this and tell the daemon which window is currently focused.
 #
+# Turn on: services.dmemcg-booster.enable = true; in the host file (off by
+# default). It starts at boot as a system service on the system D-Bus.
+#
 # Source: https://github.com/ngoquang2708/dmemcg-booster
 #         (mirror of upstream gitlab.steamos.cloud/holo/dmemcg-booster)
 # ===========================================================================
@@ -24,6 +27,8 @@
 { config, lib, pkgs, ... }:
 
 let
+  # Package built from the pinned GitHub revision (src hash + cargoHash must be
+  # updated together when rev changes); needs pkg-config and dbus to build.
   dmemcg-booster = pkgs.rustPlatform.buildRustPackage {
     pname = "dmemcg-booster";
     version = "0.1.2";
@@ -42,12 +47,15 @@ let
   };
 
 in {
+  # Option: services.dmemcg-booster.enable (mkEnableOption, default false).
   options.services.dmemcg-booster = {
     enable = lib.mkEnableOption "dmemcg-booster VRAM cgroup priority service";
   };
 
   config = lib.mkIf config.services.dmemcg-booster.enable {
 
+    # System service: wantedBy multi-user.target; Restart on-failure after 5 s;
+    # --use-system-bus connects to the system D-Bus.
     systemd.services.dmemcg-booster = {
       description = "dmemcg-booster — VRAM cgroup priority for foreground games";
       wantedBy    = [ "multi-user.target" ];

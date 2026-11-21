@@ -1,10 +1,9 @@
 # ===========================================================================
-# hosts/Alex-Desktop/Alex-Desktop.nix — Alex's Desktop
+# hosts/Alex-Desktop/Alex-Desktop.nix — child account desktop
 #
-# Owner: alex
-# Hardware: Older AMD CPU + AMD GPU
-# Type: Desktop — no encryption, gaming and education focused
-# Role: Kid's desktop
+# Hardware: older AMD CPU, AMD GPU (Radeon HD 3000, radeon driver)
+# Type: desktop with no disk encryption, for gaming and education
+# Role: desktop for the child account, with parental controls
 #
 # Enabled modules:
 #   - AMD drivers
@@ -15,7 +14,7 @@
 # Parental controls:
 #   - Declarative app control (only what we define is available)
 #   - DNS filtering via Cloudflare 1.1.1.3
-#   - Flatpak disabled
+#   - Flatpak installed, with all system remotes removed on each rebuild (see Flatpak below)
 #   - Login time restrictions (modules/users/alex/screen-time)
 #   - Firefox locked down via policies
 # ===========================================================================
@@ -150,15 +149,18 @@
 
   services.nixos-auto-update.primaryUser = "alex";
 
-  # Staggered off the 03:00 default — see MinisForum for the reasoning.
+  # Update timer (services.nixos-auto-update.schedule): 04:30 instead of the 03:00 default,
+  # so this host does not update at the same time as the others.
   services.nixos-auto-update.schedule = "*-*-* 04:30";
 
   # ==============================================================
   # GPU driver selection
-  # M5A78L-M LX has Radeon HD 3000 (760G chipset) — pre-GCN, needs radeon
-  # driver not amdgpu. Override the amd defaults from drivers.nix.
+  # The motherboard's Radeon HD 3000 (760G chipset) is pre-GCN, so it uses the radeon
+  # driver, not amdgpu. services.xserver.videoDrivers (mkForce) overrides the amd default
+  # set in drivers.nix.
   # ==============================================================
   hardware.gpu = "amd";
+  # Modules needed to read the disk and USB devices in the initrd (SATA AHCI, PATA, USB, SD).
   boot.initrd.availableKernelModules = [ "ahci" "ata_piix" "xhci_pci" "ehci_pci" "ohci_pci" "usb_storage" "sd_mod" ];
   boot.initrd.kernelModules = [];
   services.xserver.videoDrivers = lib.mkForce [ "radeon" ];
@@ -172,14 +174,16 @@
   hardware.lemokey-keychron.enable = false;
 
   # ==============================================================
-  # Filesystem — BTRFS with subvolumes, no LUKS on desktop
+  # Network shares — CIFS mounts, read-only for the child account
+  #   ro                  read-only: browse, but no deleting or changing files
+  #   uid=alex, gid=users owner of the files shown (the child account, group users)
+  #   Each share mounts on first access and unmounts after 60 s idle.
+  # The local disk layout is in disk.nix (no LUKS on this desktop).
   # ==============================================================
   fileSystems = {
 
     # -----------------------------------------------------------------------
-    # Media-Server Samba share
-    # Read-only for alex — he can browse media but not accidentally delete.
-    # Automounts on first access, disconnects after 60s idle.
+    # Media-Server share (//10.0.0.3/Media-Server), read-only.
     # -----------------------------------------------------------------------
     "/mnt/Media-Server" = {
       device  = "//10.0.0.3/Media-Server";
@@ -234,10 +238,10 @@
   environment.systemPackages = with pkgs; [
     cifs-utils
 
-    # alex — everyday tools
+    # Everyday tools for the child account
     nix-output-monitor # Progress bar + TUI for nix builds (nom)
-    gcompris           # 100+ educational activities — ages 2-10
-    freetube           # YouTube without ads, algorithm, or shorts
+    gcompris           # Educational activities for young children
+    freetube           # YouTube client without ads, the recommendation feed, or Shorts
 
     # ==============================================================
     # Host-specific apps
@@ -247,7 +251,7 @@
   ];
 
   # ==============================================================
-  # Agenix secrets
+  # Agenix secrets — the SMB login for the CIFS mounts above (root-only, mode 0400)
   # ==============================================================
   age.secrets.smb-credentials = {
     file  = ../../secrets/network/smb-credentials.age;
@@ -256,7 +260,8 @@
   };
 
   # ==============================================================
-  # Kernel
+  # Kernel — boot.kernelPackages (set here: linuxPackages_latest, the mainline latest)
+  #   pkgs.linuxPackages_xanmod_latest and pkgs.linuxPackages_zen are commented out.
   # ==============================================================
   boot.kernelPackages = pkgs.linuxPackages_latest;           # Vanilla
   # boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;  # XanMod
@@ -277,8 +282,11 @@
     "1.0.0.3"      # Cloudflare family DNS secondary
   ];
 
-  # Lock DNS so NetworkManager cannot override it
-  # mkForce needed because services.resolved sets this to "systemd-resolved"
+  # Lock DNS so NetworkManager cannot override it.
+  #   networking.networkmanager.dns  "none": NetworkManager leaves resolv.conf alone (mkForce,
+  #                                  because services.resolved sets it to "systemd-resolved")
+  #   services.resolved.enable       systemd-resolved as the resolver (set here)
+  #   settings.Resolve.FallbackDNS   servers used if the main ones fail (the same family-safe pair)
   networking.networkmanager.dns = lib.mkForce "none";
   services.resolved = {
     enable = true;
@@ -293,12 +301,15 @@
   # alex's home.nix uses `flatpak install --user` from a local bundle file,
   # which requires the flatpak binary to exist.
   #
-  # Instead of disabling Flatpak entirely, we wipe all configured remotes
-  # after every rebuild. With no remotes:
-  #   - COSMIC store shows a blank screen — nothing to browse or install
-  #   - Alex cannot add a remote without sudo (system remotes need root)
-  #   - User-level remotes would need terminal knowledge he doesn't have at 6
-  #   - Hytale still installs because it uses a local .flatpak file, not a remote
+  # Instead of disabling Flatpak entirely, the activation script below removes all configured
+  # system remotes on every rebuild. With no remotes:
+  #   - the COSMIC store shows nothing to browse or install
+  #   - the child account cannot add a system remote, because that needs root
+  #   - a user-level remote needs terminal knowledge the child account does not use
+  #   - a local .flatpak bundle still installs, because it does not need a remote
+  #
+  # The activation script (system.activationScripts.removeFlatpakRemotes) runs flatpak
+  # remote-list and remote-delete for each system remote.
   # ==============================================================
   system.activationScripts.removeFlatpakRemotes.text = ''
     # Remove all system-level Flatpak remotes so the app store is empty.
@@ -310,7 +321,7 @@
   '';
 
   # ==============================================================
-  # Kid-friendly packages
+  # Child-account packages
   #
   # Gaming packages (prismlauncher, jdk17) are in
   # modules/gaming/gaming.nix (imported above).
@@ -319,18 +330,18 @@
   # ==============================================================
 
   # ==============================================================
-  # Restrict sudo
+  # Sudo restriction
   #
-  # Alex should not have sudo access at all.
-  # wheel group membership is intentionally omitted from his user account.
-  # This prevents installing software or changing system settings.
+  # The child account has no sudo access. wheel is left out of its extraGroups, so it cannot
+  # install software or change system settings.
   # ==============================================================
 
   # ==============================================================
-  # User account
-  #
-  # Notice: no "wheel" group — alex cannot use sudo.
-  # You manage this machine remotely via your own account over SSH.
+  # Child account (users.users.alex)
+  #   isNormalUser  home directory and login account (set here)
+  #   extraGroups   supplementary groups; no wheel, so no sudo (set here)
+  #   shell         zsh (set here)
+  # The administrator manages this machine remotely over SSH from the linuxury account.
   # ==============================================================
   users.users.alex = {
     isNormalUser = true;
@@ -345,7 +356,10 @@
     shell = pkgs.zsh;
   };
 
-  # linuxury user — remote admin access (SSH + sudo for rebuilds)
+  # Administrator account (linuxury): remote admin access over SSH, with sudo for rebuilds.
+  #   home / createHome   home directory at /home/linuxury, created if missing
+  #   group               primary group users
+  #   extraGroups         wheel (sudo)
   users.users.linuxury = {
     isNormalUser = true;
     home         = "/home/linuxury";
@@ -355,12 +369,14 @@
     shell        = pkgs.zsh;
   };
 
-  # Hide linuxury from the login screen — emergency account only
+  # Hide the administrator account from the login screen (services.displayManager.hiddenUsers).
+  # It stays available for SSH and su.
   services.displayManager.hiddenUsers = [ "linuxury" ];
 
+  # zsh: enabled system-wide so it can be the login shell.
   programs.zsh.enable = true;
 
-  # Minimal HM config for linuxury — just the shared zshrc so nru/nr/ngc work
+  # Minimal Home Manager config for linuxury: the shared zshrc, so nru, nr and ngc work
   home-manager.users.linuxury = { lib, inputs, ... }: {
     home.stateVersion = "24.11";
     programs.zsh = {

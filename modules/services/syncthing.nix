@@ -1,7 +1,8 @@
 # ===========================================================================
 # modules/services/syncthing.nix — Syncthing file sync (all hosts)
 #
-# Imported by: all 9 hosts + phone
+# Imported by every host except babylinux's (Ryzen5800x, Asus-A15 use
+# syncthing-babylinux.nix). Remove the import to turn it off on a host.
 #
 # Fully declarative Syncthing config — devices and folders hardcoded.
 # No web UI setup needed after rebuild. Syncthing auto-pairs and syncs.
@@ -16,8 +17,16 @@
 #                 plugins, caches), conflict files and mcp-servers/ code are
 #                 excluded by ~/.agents/.stignore, written on every host by
 #                 the tmpfiles rule below (agentsStignore).
-# Device IDs generated fresh 2026-03-25 — no legacy config carried over.
-# Phone (Pixel Pro 8) ID obtained from Syncthing-Fork app.
+# Phone (Pixel Pro 8) ID comes from the Syncthing-Fork app.
+#
+# Options used (services.syncthing.*):
+#   enable / user / group     run the system service as this account
+#   dataDir / configDir       default folder root and config/keys location
+#   overrideDevices / overrideFolders  drop devices/folders not listed here
+#   settings                  config.xml content: gui, devices, folders, options
+#   Not set here: package, cert / key (pre-made identity), guiPasswordFile,
+#   guiAddress, systemService, databaseDir, extraFlags, openDefaultPorts
+#   (the firewall ports are opened by hand at the bottom instead).
 # ===========================================================================
 
 { lib, ... }:
@@ -92,9 +101,8 @@ in
       };
 
       # ── Devices ────────────────────────────────────────────────────────
-      # Each device gets a fresh identity. Tailscale IPs force direct
-      # connections instead of relays. Placeholders marked FILL-IN are
-      # for hosts that were offline when IDs were generated.
+      # Each device has its own identity. Tailscale IPs force direct
+      # connections instead of relays.
       devices = {
         "Ryzen5900x" = {
           id = "NOWQCM4-GKSAUGA-PWPLLPX-WPUWSD4-DOXLHTJ-QQ2GTVV-CE3IAKR-B5LWZAI";
@@ -126,9 +134,9 @@ in
           addresses = [ "tcp://100.114.95.99:22000" ];
         };
 
-        # babylinux and alex machines have their own Syncthing instances
-        # (syncthing-babylinux.nix, syncthing-alex.nix) but share the same
-        # "jarvis" folder ID so they participate in the single sync group.
+        # babylinux's machines run their own instance
+        # (syncthing-babylinux.nix) with the same "jarvis" folder ID, so
+        # they join the same sync group.
 
         "Pixel-Pro-8" = {
           id = "7PCGWBQ-DK3DAYL-A7ANW7E-TDWSUGW-IEVJHXH-34SAGCG-JEQ6ZH5-YRZL7A7";
@@ -137,8 +145,8 @@ in
       };
 
       # ── Folders ────────────────────────────────────────────────────────
-      # Single shared folder — the Obsidian vault. Devices with valid IDs
-      # are listed here. FILL-IN devices are added when their IDs are ready.
+      # Jarvis — the notes vault, shared with every device above.
+      # ai-config — ~/.agents, shared between linuxury's hosts only.
       folders = {
         "Jarvis" = {
           id    = "jarvis";

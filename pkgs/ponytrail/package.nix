@@ -1,3 +1,7 @@
+# ponytrail — prebuilt Bun CLI bundle plus its agent skill files. Exposed as
+# pkgs.ponytrail by the overlay in flake.nix; installed and wired up by
+# modules/development/ai-tools/claude.nix (remove it there).
+# Bump: change version + hash below.
 {
   lib,
   stdenv,

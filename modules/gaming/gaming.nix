@@ -1,16 +1,13 @@
 # ===========================================================================
 # modules/gaming/gaming.nix — Gaming stack
 #
-# This module sets up everything needed for a great Linux gaming experience.
-# It pulls bleeding edge versions from nixpkgs-unstable since gaming tools
-# move fast and you want the latest Proton, Mesa, and driver updates.
+# Everything needed for Linux gaming: Steam, gamescope, Proton, controller
+# support, the Big Picture launcher and Minecraft launcher. It follows
+# nixpkgs-unstable so Proton, Mesa and driver updates arrive quickly.
 #
-# Enable this module on any host where gaming is needed:
-#   - Your machines
-#   - Wife's machines
-#   - Kid's machines
-#
-# Servers never need this.
+# Enable by importing this module on any host where gaming is needed (all
+# graphical hosts: linuxury, babylinux and alex machines). Remove the import
+# to turn it off. Headless servers do not import it.
 # ===========================================================================
 {
   inputs,
@@ -28,12 +25,11 @@ let
   # wrapped inside a gamescope nested session.
   #
   # Why gamescope here: Steam's BPM uses gamescope --steam internally, which
-  # expects to own a display (standalone compositor mode). Running it nested
-  # inside Hyprland without this wrapper causes a black screen because
-  # gamescope can't take over the display. Wrapping it ourselves puts gamescope
-  # in nested mode where it renders correctly as a Hyprland window.
+  # expects to own a display (standalone compositor mode). Wrapping it in our
+  # own gamescope runs it nested, as a window inside Hyprland. gamescope flags:
+  # -W/-H output size, -w/-h game size, -r refresh rate, -e Steam integration.
   #
-  # Trigger: SUPER+CTRL+B keybind → lands on WS 2 via existing gamescope rule.
+  # Trigger: SUPER+CTRL+B keybind → lands on WS 2 via the gamescope window rule.
   # =========================================================================
   steamBpm = pkgs.writeShellScriptBin "steam-bpm" ''
     # Shut down Desktop Mode Steam if it's already running
@@ -74,9 +70,9 @@ if primary:
   # paths) in the session environment. Prism inherits it when launched from
   # the same session and passes it through to the JVM unchanged; the 32-bit
   # overlay fails to load (ELFCLASS32 on a 64-bit JVM) but the 64-bit one
-  # succeeds, hooking a rendering pipeline it was never designed for and
-  # tanking Minecraft's FPS (300+ down to under 5). Unsetting LD_PRELOAD on
-  # Prism itself means it has nothing inherited to pass through.
+  # succeeds and hooks a rendering pipeline it was not designed for, which
+  # drops Minecraft's frame rate. symlinkJoin + makeWrapper --unset LD_PRELOAD
+  # makes Prism start without the inherited variable.
   # =========================================================================
   prismLauncherClean = pkgs.symlinkJoin {
     name = "prismlauncher";
@@ -102,54 +98,41 @@ in
   # Gaming-only overlays — scoped here so headless hosts never fetch these
   # source tarballs during evaluation.
   #
-  # 2026-09-18: replaced by nixpkgs' own pkgs.proton-ge-bin / pkgs.proton-cachyos
-  # below — nixpkgs.proton-cachyos already tracked the exact same release
-  # this custom overlay had pinned, so it was pure redundant maintenance.
-  # proton-ge-bin trails upstream by roughly one release compared to this
-  # overlay's on-demand nru-driven bump, a tradeoff accepted to drop the
-  # custom fetchzip + hash-check script entirely. Left commented, not
-  # deleted, in case that lag ever matters enough to revert.
-  #
-  # proton-ge-custom uses inline pkgs.fetchzip (not a flake input)
-  # so headless servers never resolve this tarball when building from GitHub.
-  # nru updates the URL, version, and hash in this file directly.
+  # Three Proton builds, each an inline pkgs.fetchzip (not a flake input) of a
+  # prebuilt release, wrapped by a package in ../../pkgs/:
+  #   proton-ge-custom  GloriousEggroll's Proton-GE
+  #   proton-wineland   Proton Wineland (prebuilt releases come only from
+  #                     nanomatters/proton-salkim)
+  #   proton-cachyos    CachyOS Proton (nixpkgs has no package for it)
+  # The tag/url/hash lines carry "# proton-*-nru/-url/-hash" markers: nru
+  # rewrites those lines when it bumps a release, so keep the markers.
   #
   # HDR launch options are per-game, not global: Steam Linux Runtime (the
-  # pressure-vessel/bubblewrap container most modern Proton titles run in,
-  # including Diablo 4) sanitizes the sandbox environment, so
-  # programs.steam.package.extraEnv never reaches the game — only the
-  # per-game launch-options field does.
+  # pressure-vessel/bubblewrap container most modern Proton titles run in)
+  # sanitizes the sandbox environment, so programs.steam.package.extraEnv never
+  # reaches the game — only the per-game launch-options field does.
   #
-  # IMPORTANT: proton-cachyos and proton-ge-custom each have their OWN
-  # PROTON_ADD_CONFIG implementation with a DIFFERENT recognized-key table
-  # — not interchangeable. Verify against the installed build's source
-  # (grep utilities.py / proton for the token) before trusting a web list
-  # of "valid" keys; unrecognized keys are silently dropped, not an error,
-  # so check actual HDR/monitor state, not just the game's HDR toggle.
-  #   - proton-cachyos 11.0-20260703-slr (pinned here): _config_envvars
-  #     only maps wow64/dlss/xess/fsr3/fsr4/ffx3/ffx4/optiscaler. "hdr" and
-  #     "wayland" are NOT recognized on this build.
-  #   - proton-ge-custom GE-Proton11-7 (pinned here): wider key set
-  #     including hdr, wayland, fsr4, fsr4rdna3, wow64, optiscaler,
-  #     sdlinput. "hdr" only sets DXVK_HDR=1 — it does NOT imply
-  #     PROTON_ENABLE_WAYLAND, a separate "wayland" key.
+  # proton-cachyos and proton-ge-custom each have their own PROTON_ADD_CONFIG
+  # implementation with a different recognized-key table, so the two are not
+  # interchangeable. Unrecognized keys are silently dropped, not an error: check
+  # the installed build's source (grep utilities.py / proton for the token) and
+  # the actual HDR/monitor state, not just the game's HDR toggle.
+  #   - proton-cachyos: _config_envvars maps wow64, dlss, xess, fsr3, fsr4,
+  #     ffx3, ffx4, optiscaler; "hdr" and "wayland" are not recognized.
+  #   - proton-ge-custom: wider key set including hdr, wayland, fsr4, fsr4rdna3,
+  #     wow64, optiscaler, sdlinput. "hdr" only sets DXVK_HDR=1; it does not
+  #     imply PROTON_ENABLE_WAYLAND, which is the separate "wayland" key.
   #
-  # Diablo 4 + GE-Proton trade-off (real, not a bug):
-  #   - WITH PROTON_ENABLE_WAYLAND=1: Hyprland switches the monitor into
-  #     true compositor HDR (needs Wayland color-management-v1 — DXVK_HDR=1
-  #     alone under Xwayland doesn't get this, see hyprwm/Hyprland#10993).
-  #     But Steam Controller Puck L4/L5/R4/R5 back paddles stop working —
-  #     a gap in Wine's native Wayland driver.
-  #   - WITHOUT (settled on this): `PROTON_ADD_CONFIG=fsr4,fsr4rdna3,hdr,
-  #     wow64,optiscaler gamemoderun %command%` — paddles work, DXVK does
-  #     internal HDR tone-mapping, but the monitor isn't switched into true
-  #     HDR. Chose controller support over verified compositor HDR.
+  # HDR trade-off with proton-ge-custom:
+  #   - With PROTON_ENABLE_WAYLAND=1, Hyprland switches the monitor into true
+  #     compositor HDR (needs Wayland color-management-v1; DXVK_HDR=1 alone
+  #     under Xwayland does not get this, see hyprwm/Hyprland#10993), but the
+  #     Steam Controller Puck back paddles (L4/L5/R4/R5) stop working, a gap in
+  #     Wine's native Wayland driver.
+  #   - Without it: `PROTON_ADD_CONFIG=fsr4,fsr4rdna3,hdr,wow64,optiscaler
+  #     gamemoderun %command%` keeps the paddles working and DXVK does internal
+  #     HDR tone-mapping, but the monitor is not switched into true HDR.
   # =========================================================================
-  # proton-ge-custom overlay retired 2026-09-18 in favor of nixpkgs'
-  # pkgs.proton-ge-bin (see extraCompatPackages below). proton-cachyos stays
-  # custom — nixpkgs has no CachyOS-Proton package under any name (checked
-  # proton-cachyos, proton-cachyos-bin, cachyos-proton, protoncachyos; none
-  # exist in the pinned nixpkgs).
   nixpkgs.overlays = [
     (final: prev:
     let
@@ -166,8 +149,7 @@ in
       };
 
       # Proton Wineland: prebuilt x86_64 releases are published only by the
-      # author's own repo (nanomatters/proton-salkim, verified 2026-11-04:
-      # hotline1337/proton-wineland is a release-less fork of it).
+      # author's own repo (nanomatters/proton-salkim).
       proton-wineland = prev.callPackage ../../pkgs/proton-wineland/package.nix {
         tag = protonWinelandTag;
         proton-wineland-src = pkgs.fetchzip {
@@ -186,11 +168,13 @@ in
     })
   ];
 
-  # Single registry for every launcher: Steam, Faugus, Heroic, ProtonPlus all
-  # scan ~/.local/share/Steam/compatibilitytools.d. Dir names are fixed
-  # "<Name> Latest" so per-game choices survive version bumps (and match the
-  # runner names Faugus already stores). force = true lets HM replace the old
-  # real-files "Proton-GE Latest" copy; other entries in the dir are untouched.
+  # Home Manager modules applied to every user (home-manager.sharedModules):
+  #   1. Millennium seed (only where programs.steam.millennium.enable)
+  #   2. Proton tool registry: one directory for every launcher. Steam, Faugus,
+  #      Heroic and ProtonPlus all scan ~/.local/share/Steam/compatibilitytools.d.
+  #      Dir names are fixed "<Name> Latest" so per-game choices survive version
+  #      bumps. force = true lets HM replace an existing file at the path; other
+  #      entries in the directory are untouched.
   home-manager.sharedModules = [
     # Millennium seed-once (hosts with programs.steam.millennium.enable): copies
     # settings, plugins, theme and Quick CSS from the dotfiles pin, only when
@@ -223,8 +207,8 @@ in
     # HM-side `lib` (has lib.hm), not the NixOS-module lib captured above.
     ({ lib, ... }: {
       # HM can swap a file/symlink but not a real directory ("cannot overwrite
-      # directory"). Remove only those exact names, and only when they are real
-      # dirs (e.g. the old copied "Proton-GE Latest") so the links can land.
+      # directory"). Remove only those three names, and only when they are real
+      # dirs, so the links below can be created (entryBefore checkLinkTargets).
       home.activation.protonCompatMigrate = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
         for n in "Proton-GE Latest" "Proton-CachyOS Latest" "Proton-Wineland Latest"; do
           d="$HOME/.local/share/Steam/compatibilitytools.d/$n"
@@ -247,7 +231,9 @@ in
     })
   ];
 
+  # VRAM cgroup priority daemon (modules/gaming/dmemcg-booster.nix).
   services.dmemcg-booster.enable = true;
+
   # =========================================================================
   # Steam
   #
@@ -258,6 +244,10 @@ in
   programs.steam = {
     enable = true;
 
+    # Other programs.steam options: gamescopeSession.enable (boot into a Big
+    # Picture session), localNetworkGameTransfers.openFirewall, extraCompatPackages,
+    # extest.enable, protontricks.enable.
+    #
     # Opens firewall ports for Steam Remote Play and In-Home Streaming
     remotePlay.openFirewall = true;
 
@@ -265,18 +255,19 @@ in
     dedicatedServer.openFirewall = true;
 
     # No extraCompatPackages: it only reaches Steam. Proton tools are linked
-    # into ~/.local/share/Steam/compatibilitytools.d instead (protonTools,
-    # home-manager.sharedModules below) so Faugus and other launchers see the
-    # same copy and don't download their own.
+    # into ~/.local/share/Steam/compatibilitytools.d instead (home-manager
+    # sharedModules above) so Faugus and other launchers see the same copy and
+    # don't download their own.
 
-    # Adds a compatibility layer so Steam's own runtime libraries
-    # work correctly on NixOS's non-standard filesystem layout
+    # package: Steam's FHS wrapper, extended with extra libraries (extraPkgs)
+    # so Steam's own runtime libraries work on NixOS's non-standard filesystem
+    # layout; extraEnv sets environment variables inside that wrapper.
     #
     # Millennium: upstream's steam.nix wraps steam with its loader libs.
-    # callPackage'd with OUR pkgs so the FHS env tracks our nixpkgs; only the
-    # millennium lib comes from its pin. Disabling it leaves dangling
-    # ubuntu12_{32,64}/libXtst.so.6 symlinks in ~/.local/share/Steam — delete
-    # them and Steam restores its own.
+    # callPackage'd with this repo's pkgs so the FHS env tracks our nixpkgs; only
+    # the millennium lib comes from its pin. Turning Millennium off leaves
+    # dangling ubuntu12_{32,64}/libXtst.so.6 symlinks in ~/.local/share/Steam;
+    # delete them and Steam restores its own.
     package = (if config.programs.steam.millennium.enable
       then pkgs.callPackage "${inputs.millennium}/steam.nix" {
         inherit (inputs.millennium.packages.${pkgs.stdenv.hostPlatform.system}) millennium;
@@ -304,12 +295,11 @@ in
       # "Lemokey Link — Begin Setup" on the Controller page. Both SDL
       # hints are needed: GAMECONTROLLER_IGNORE_DEVICES for the classic
       # SDL_GameController scan, HIDAPI_IGNORE_DEVICES for Steam's own
-      # hidraw-based controller scan (what actually populates that page).
+      # hidraw-based controller scan (what populates that page).
       #
-      # PROTON_ADD_CONFIG is NOT set here — tried it, doesn't reach games
-      # run inside Steam Linux Runtime's container (see the HDR comment
-      # above this let-block for why). Set it per-game in Steam launch
-      # options instead.
+      # PROTON_ADD_CONFIG is not set here: it does not reach games run inside
+      # Steam Linux Runtime's container (see the HDR comment in the overlays
+      # block). Set it per-game in Steam launch options instead.
       extraEnv = {
         SDL_GAMECONTROLLER_IGNORE_DEVICES = "0x362d/0xd030";
         SDL_HIDAPI_IGNORE_DEVICES = "0x362d/0xd030";
@@ -318,7 +308,9 @@ in
   };
 
   # =========================================================================
-  # GameMode — Performance optimizer
+  # GameMode — Performance optimizer (programs.gamemode below: enable,
+  # settings.general, settings.gpu; the polkit rule lets group "gamemode" use
+  # the helper binaries without a password)
   #
   # GameMode is a daemon that temporarily optimizes system performance
   # when a game starts. It does things like:
@@ -378,10 +370,11 @@ in
   #
   # Enable per game in Steam launch options with:
   #   MANGOHUD=1 %command%
-  # Or globally with: mangohud <game>
+  # Or from a shell with: mangohud <game>
+  # There is no NixOS programs.mangohud option; the mangohud package is in
+  # systemPackages below, and its config file is linked by the user's home
+  # config (~/.config/MangoHud).
   # =========================================================================
-  # programs.mangohud.enable = true;  # not a NixOS module option; mangohud
-  #                                   # is already in systemPackages below
 
   # =========================================================================
   # Gaming packages
@@ -390,8 +383,8 @@ in
     # -----------------------------------------------------------------------
     # Launchers — for games outside of Steam
     # -----------------------------------------------------------------------
-    # lutris # Universal game launcher, supports many sources (off: unused; FHS env pulls broken gtk2)
-    # and has community install scripts for tricky games
+    # lutris — universal game launcher with community install scripts; not
+    # installed (unused; its FHS env pulls a broken gtk2).
     faugus-launcher # Lightweight launcher for Windows games via UMU/Proton
 
     # -----------------------------------------------------------------------
@@ -438,8 +431,8 @@ in
     # -----------------------------------------------------------------------
     # Launchers — non-Steam storefronts
     # -----------------------------------------------------------------------
-    # heroic # Epic Games + GOG launcher — wraps Proton/Wine the same way
-    # Steam does; uses UMU internally for compatibility.
+    # heroic — Epic Games + GOG launcher (wraps Proton/Wine, uses UMU
+    # internally); not installed.
 
     umu-launcher # Valve's universal compatibility tool (umu-run <exe>).
     # Faugus-launcher pulls this in transitively, but having it explicitly
@@ -453,38 +446,38 @@ in
     steamBpm
 
     # -----------------------------------------------------------------------
-    # Minecraft — all three family members play
+    # Minecraft — Java Edition (Prism) and Bedrock (BedrockOnLinux)
     # -----------------------------------------------------------------------
     prismLauncherClean # Java Minecraft launcher, wrapped to unset LD_PRELOAD
     # (strips Steam's overlay injection — see let-block comment above)
-    # Set up each user's Mojang account in Prism after first boot
+    # Each user signs in with their own Mojang account in Prism
     jdk17 # Java 17 runtime — required for Minecraft 1.17 and newer
     # Prism manages older Java versions internally for legacy versions
     inputs.bedrock-on-linux.packages.${pkgs.stdenv.hostPlatform.system}.default
-    # BedrockOnLinux — Minecraft Bedrock (Windows/GDK) through Wine. Flake input
-    # follows our nixpkgs so its steam-run/Mesa match the GPU driver (with its
-    # own nixpkgs it fell back to software rendering). Game + worlds live in
-    # ~/.local/share/bedrock-on-linux; `bedrock-on-linux doctor` if it misbehaves.
-
-    # Bedrock Edition — managed via Flatpak (io.mrarm.mcpelauncher)
-    # The nix package is incompatible with Bedrock 1.26.x on NixOS due to
-    # a fundamental conflict between the Android linker and NixOS's non-FHS
-    # library paths. The Flatpak version bundles its own libs and works correctly.
-    # Flathub is already configured via system/graphical/graphical.nix activation script.
-    # Users can install with: flatpak install flathub io.mrarm.mcpelauncher
+    # BedrockOnLinux — Minecraft Bedrock (Windows/GDK) through Wine. The flake
+    # input follows this repo's nixpkgs so its steam-run/Mesa match the GPU
+    # driver. Game + worlds live in ~/.local/share/bedrock-on-linux;
+    # `bedrock-on-linux doctor` diagnoses problems.
+    #
+    # Alternative for Bedrock: the Flatpak io.mrarm.mcpelauncher (bundles its own
+    # libraries; the nixpkgs mcpelauncher conflicts with NixOS's non-FHS library
+    # paths). Install with: flatpak install flathub io.mrarm.mcpelauncher
+    # (Flathub is configured by the system/graphical/graphical.nix activation script.)
   ];
 
   # =========================================================================
   # ntsync — NT synchronization primitives (kernel 6.14+)
   #
-  # Exposes /dev/ntsync with proper udev rules so non-root users can use it.
+  # boot.kernelModules loads the module; the udev rule below tags /dev/ntsync
+  # "uaccess" so the logged-in seat user (non-root) can use it.
   # Wine-staging and Proton-GE pick this up automatically for much lower
   # CPU overhead on synchronization-heavy Windows games.
   # No Steam launch option needed — Wine/Proton auto-detects it.
   # =========================================================================
   # pressure-vessel (Valve's container runtime used by umu-launcher / Faugus)
   # probes bubblewrap by exec-ing `true`. On NixOS /bin/true doesn't exist —
-  # this symlink satisfies the probe without touching the global FHS compat layer.
+  # this activation script (after "users") creates a symlink to coreutils' true,
+  # which satisfies the probe without touching the global FHS compat layer.
   system.activationScripts.bwrapBinTrue = lib.stringAfter [ "users" ] ''
     mkdir -p /bin
     [ -e /bin/true ] || ln -sf ${pkgs.coreutils}/bin/true /bin/true
@@ -498,12 +491,12 @@ in
   # =========================================================================
   # Kernel parameters for better gaming performance
   #
-  # These are well-known tweaks that reduce stuttering and improve
-  # frame pacing in games.
+  # vm.max_map_count raises the per-process memory-map limit; some games
+  # fail to start or crash when it is too low.
   # =========================================================================
   boot.kernel.sysctl = {
-    # Increase max map count — required by some games (notably DOTA 2)
-    # and helps with memory management under gaming workloads
+    # Maximum memory map areas per process; some games (notably DOTA 2) need
+    # a high value
     "vm.max_map_count" = 2147483642;
   };
 }

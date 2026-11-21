@@ -1,10 +1,12 @@
 # ===========================================================================
 # modules/system/graphical/app-zennotes.nix — ZenNotes desktop client
 #
-# Keyboard-first Markdown notes with Vim motions, live math/diagrams,
-# and MCP integration. Landed in nixpkgs as `zennotes-desktop` — ships its
-# own .desktop entry, icon, and MIME associations, so nothing else is needed
-# here (previously an AppImage requiring a manual desktop-entry workaround).
+# Installs ZenNotes, a keyboard-first Markdown notes app with Vim motions,
+# live math and diagrams, and MCP integration. Turn it on by importing this
+# file from a host; remove the import to turn it off.
+#
+#   environment.systemPackages   pkgs.zennotes-desktop; the package ships its
+#                                own .desktop entry, icon and MIME types
 #
 # After install, connect to the self-hosted server:
 #   Settings → Connect to Remote Vault → http://Media-Server:7879

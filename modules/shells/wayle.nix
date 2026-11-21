@@ -1,17 +1,26 @@
 # ===========================================================================
 # modules/shells/wayle.nix — Wayle shell layer
 #
-# GTK4/Rust desktop shell: top bar, notification center, on-screen display,
-# wallpaper management. Compositor-agnostic via wlr-layer-shell.
+# GTK4/Rust desktop shell: top bar, notification center, on-screen display
+# and wallpaper management, for any wlr-layer-shell compositor.
 #
-# pkgs.wayle is available in nixpkgs unstable (0.3.0).
-# home-manager services.wayle module not yet merged — autostart is wired
-# manually via a systemd user service below.
+# Importing this module turns Wayle on; there is no enable flag. To switch
+# shell, remove this import and import shells/noctalia instead. Wayle has no
+# login screen, so the host also needs a greeter (e.g. greeters/sddm).
 #
-# Importing this module activates Wayle. No enable flag needed.
-# Wayle does not provide a login screen — add greeters/sddm to your host.
+#   environment.systemPackages      wayle, plus awww for wallpaper cycling
+#   systemd.user.services.wayle     starts `wayle shell` with the graphical
+#                                   session, restarts on failure
+#   home.activation.shellActiveConf     Wayle keybinds for Hyprland
+#   home.activation.shellAutostartConf  empties shell-autostart.lua
 #
-# To switch shell: remove this import, add shells/noctalia.
+# Home Manager also has a services.wayle module that could replace the
+# hand-written unit:
+#   enable                    run wayle as a user service
+#   package                   wayle build (default pkgs.wayle)
+#   settings                  config written as TOML (bar, styling, palette…)
+#   autoInstallDependencies   install soft dependencies the config needs
+#                             (default true)
 # ===========================================================================
 
 { pkgs, ... }:
@@ -19,7 +28,7 @@
 {
   environment.systemPackages = with pkgs; [
     wayle
-    awww   # Wayle's wallpaper engine backend (required for wallpaper cycling)
+    awww   # wallpaper backend Wayle uses for wallpaper cycling
   ];
 
   # =========================================================================
@@ -27,8 +36,8 @@
   # =========================================================================
   home-manager.sharedModules = [
 
-    # Wayle shell — started as a systemd user service with the graphical session.
-    # Replace with `services.wayle.enable = true;` once the HM module lands.
+    # Wayle shell as a systemd user service, started and stopped with
+    # graphical-session.target.
     ({ pkgs, lib, ... }: {
       systemd.user.services.wayle = {
         Unit = {
@@ -45,8 +54,10 @@
       };
     })
 
-    # Write Wayle-specific Hyprland keybinds into shell-active.lua.
-    # These are shell-specific — wayle CLI is only available when this module is active.
+    # Writes Wayle keybinds (SUPER+W next wallpaper, SUPER+N do-not-disturb)
+    # into ~/dotfiles/hypr/shell-active.lua. They live here because the wayle
+    # CLI exists only when this module is imported. Skipped if the hypr
+    # directory is missing.
     ({ lib, ... }: {
       home.activation.shellActiveConf = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         _target="$HOME/dotfiles/hypr/shell-active.lua"
@@ -59,8 +70,8 @@
       '';
     })
 
-    # Clear shell-autostart.lua — Wayle self-starts via its systemd user
-    # service (WantedBy=graphical-session.target), no exec-once needed.
+    # Empties shell-autostart.lua: the systemd user service starts Wayle, so
+    # Hyprland needs no exec-once line for it.
     ({ lib, ... }: {
       home.activation.shellAutostartConf = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         _target="$HOME/dotfiles/hypr/shell-autostart.lua"

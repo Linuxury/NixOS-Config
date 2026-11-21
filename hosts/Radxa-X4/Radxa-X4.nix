@@ -9,20 +9,20 @@
 #        - Tailscale (management) bound to Ethernet interface
 #        - qBittorrent runs inside a VPN network namespace (killswitch)
 #
-# Enabled modules:
-#   - Intel drivers
-#   - system/core.nix
-#   - services/samba.nix (shares for completed/incomplete torrents)
+# Enabled modules (see imports below): core system, server shell, remote
+# builder, Intel drivers, Claude Code, Samba (Torrents share), WireGuard
+# killswitch for qBittorrent, Syncthing, weekly auto-update, linuxury SSH key.
 #
-# FreshRSS was migrated to Media-Server — see hosts/Media-Server/freshrss.nix
-# Data migration steps documented in that file.
+# Users: linuxury (admin), babylinux, alex (plain accounts, no sudo).
+# To add a module: add its path to imports; to disable one, comment out or
+# remove its line (commented lines below are the disabled alternatives).
 # ===========================================================================
 
 { config, pkgs, lib, ... }:
 
 {
   imports = [
-    # Disks, swap, LUKS and boot loader (written by the installer)
+    # Filesystems and swap (written by the installer)
     ./disk.nix
 
     # ==============================================================
@@ -95,7 +95,8 @@
   # ==============================================================
   networking.hostName = "Radxa-X4";
 
-  # Staggered off the 03:00 default — see MinisForum for the reasoning.
+  # Weekly auto-update start time (systemd OnCalendar format); the default is
+  # 03:00, hosts are staggered so they don't rebuild at the same time.
   services.nixos-auto-update.schedule = "*-*-* 04:00";
 
   # ==============================================================
@@ -116,33 +117,39 @@
     ipv4.addresses = [{ address = "10.0.0.5"; prefixLength = 24; }];
   };
 
-  # Disable IPv6 — not needed and reduces attack surface / complexity.
+  # Disable IPv6 — not needed, and reduces attack surface and complexity.
   # networking.enableIPv6 sets net.ipv6.conf.all/default.disable_ipv6,
-  # but NetworkManager re-enables IPv6 on interfaces it manages (wlp1s0).
-  # The per-interface sysctl overrides NM after it brings the interface up.
+  # but NetworkManager re-enables IPv6 on interfaces it manages (wlp1s0);
+  # the per-interface sysctl turns it off again after NM brings it up.
   networking.enableIPv6 = false;
   boot.kernel.sysctl."net.ipv6.conf.wlp1s0.disable_ipv6" = 1;
 
   # ==============================================================
-  # GPU driver selection
-  # Intel UHD integrated graphics (Alder Lake N)
+  # GPU driver selection (hardware.gpu, defined by modules/hardware/drivers.nix;
+  # "intel" = Intel UHD integrated graphics, Alder Lake N)
   # ==============================================================
   hardware.gpu = "intel";
 
   # ==============================================================
-  # Hardware toggles — option-gated modules (imported in flake.nix)
+  # Hardware toggles — option-gated modules (imported in flake.nix);
+  # both are off on this host (OpenRGB lighting, Lemokey/Keychron keyboard tools)
   # ==============================================================
   hardware.openrgb.enable = false;
   hardware.lemokey-keychron.enable = false;
 
   # ==============================================================
-  # Filesystem — BTRFS with subvolumes, no LUKS on server
+  # Filesystem — local disks are in ./disk.nix; only network mounts here
   # ==============================================================
   fileSystems = {
 
     # -----------------------------------------------------------------------
-    # Media-Server Samba share — for Obsidian vault and shared files
-    # Automounts on first access, disconnects after 60s idle.
+    # Media-Server Samba share — for the notes vault and shared files.
+    #   credentials=...      agenix secret with the SMB username/password
+    #   uid / gid=100        files appear owned by linuxury, group users
+    #   nofail, _netdev      boot continues without it; waits for the network
+    #   x-systemd.automount  mounts on first access
+    #   idle-timeout=60      unmounts after 60 s idle
+    #   mount-timeout=2s     give up quickly if the server is down
     # -----------------------------------------------------------------------
     "/mnt/Media-Server" = {
       device = "//10.0.0.3/Media-Server";
@@ -163,6 +170,7 @@
   # ==============================================================
   # Kernel
   # ==============================================================
+  # Kernel package set: latest mainline. Alternatives (pick one):
   boot.kernelPackages = pkgs.linuxPackages_latest;           # Vanilla
   # boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;  # XanMod
   # boot.kernelPackages = pkgs.linuxPackages_zen;            # Zen
@@ -170,16 +178,20 @@
   # ==============================================================
   # Intel N100 specific settings
   # ==============================================================
+  # intel_pstate=active: use the intel_pstate driver with hardware-managed P-states
   boot.kernelParams = [
     "intel_pstate=active"
   ];
 
-  hardware.cpu.intel.updateMicrocode = true;
+  hardware.cpu.intel.updateMicrocode = true;      # apply Intel CPU microcode updates
   hardware.enableRedistributableFirmware = true;  # required for Intel WiFi firmware
-  powerManagement.powertop.enable = true;
+  powerManagement.powertop.enable = true;         # powertop auto-tune power settings at boot
 
   # ==============================================================
-  # GPIO — Radxa X4 specific
+  # Packages — server tools: disk/IO/network monitoring (iotop, nethogs, ncdu,
+  # smartmontools, lsof, strace), transfer (rsync, rclone, cifs-utils for SMB
+  # mounts), tmux, and Radxa X4 GPIO/I2C/serial access (libgpiod, i2c-tools,
+  # minicom).
   # ==============================================================
   environment.systemPackages = with pkgs; [
     iotop
@@ -198,12 +210,13 @@
   ];
 
   # ==============================================================
-  # Disable audio — server doesn't need it
+  # Disable audio — headless, no sound server
   # ==============================================================
   services.pipewire.enable = lib.mkForce false;
 
   # ==============================================================
-  # Disable suspend/sleep
+  # Disable suspend/sleep — the targets are disabled and logind ignores the
+  # suspend/hibernate keys, lid switch and idle action.
   # ==============================================================
   systemd.targets.sleep.enable        = false;
   systemd.targets.suspend.enable      = false;
@@ -218,10 +231,10 @@
     IdleAction                   = "ignore";
   };
 
-  # Scheduled reboot (1x daily) — coarse backstop now that
-  # wifi-watchdog (below) handles routine recovery; also covers
-  # wifi-watchdog itself getting stuck. Persistent = true catches
-  # up once if the machine was off at the scheduled time.
+  # Scheduled reboot (1x daily) — coarse backstop behind wifi-watchdog
+  # (below), which handles routine recovery; also covers wifi-watchdog itself
+  # getting stuck. Persistent = true catches up once if the machine was off at
+  # the scheduled time.
   systemd.services.daily-reboot = {
     description = "Scheduled reboot";
     serviceConfig = {
@@ -241,7 +254,11 @@
   };
 
   # ==============================================================
-  # Server network optimizations
+  # Server network optimizations (sysctl)
+  #   net.core.rmem_max / wmem_max        max socket buffer size (128 MiB)
+  #   net.ipv4.tcp_rmem / tcp_wmem        TCP buffer min / default / max
+  #   net.core.netdev_max_backlog         packets queued when the NIC is faster than the CPU
+  #   fs.inotify.max_user_watches         file watches per user (large torrent trees)
   # ==============================================================
   boot.kernel.sysctl = {
     "net.core.rmem_max"           = 134217728;
@@ -254,7 +271,9 @@
 
   # ==============================================================
   # Tailscale — management access via Ethernet
-  # Auth key stored in agenix — no manual "tailscale up" or URL needed.
+  # Auth key stored in agenix — joins the tailnet without a manual "tailscale up".
+  #   authKeyFile    decrypted secret path
+  #   extraSetFlags  --ssh=false: Tailscale's SSH server is off (OpenSSH is used)
   # ==============================================================
   age.secrets.tailscale-auth-radxa = {
     file = ../../secrets/network/tailscale-auth-radxa.age;
@@ -293,21 +312,19 @@
     };
   };
 
-  # WiFi watchdog — reboots wlp1s0's NM connection (then the host)
-  # if real internet is unreachable. Checks 1.1.1.1/8.8.8.8, not the
-  # gateway directly: the gateway can silently drop direct pings from
-  # wlp1s0 while routing/NAT still works fine (router-side ICMP
-  # quirk, confirmed live 2026-08-29) — a gateway-only check
-  # false-positives on that and reboots for no reason. nmcli, not raw
-  # `ip link`, since wlp1s0 is NM-managed. Two attempts with backoff
-  # before rebooting, so a brief upstream blip doesn't reboot the
-  # host mid-torrent.
+  # WiFi watchdog — reconnects wlp1s0's NetworkManager connection, then reboots
+  # the host, if real internet is unreachable. Checks 1.1.1.1/8.8.8.8, not the
+  # gateway directly, because the gateway can drop direct pings from wlp1s0
+  # while routing/NAT still works, so a gateway-only check would give false
+  # alarms. Uses nmcli, not raw `ip link`, since wlp1s0 is NM-managed. Two
+  # attempts with backoff before rebooting, so a brief upstream outage doesn't
+  # reboot the host mid-torrent. Runs 2 min after boot, then every 60 s.
   systemd.services.wifi-watchdog = {
     description = "Recover wlp1s0 if it loses real internet connectivity";
     serviceConfig = {
       Type = "oneshot";
-      # ~156s worst case (2 internet checks + 2 bounded reconnect
-      # attempts + backoff) — default 90s TimeoutStartSec is too tight.
+      # ~156 s worst case (2 internet checks + 2 bounded reconnect
+      # attempts + backoff); the default 90 s TimeoutStartSec is too short.
       TimeoutStartSec = "240s";
       ExecStart = pkgs.writeShellScript "wifi-watchdog" ''
         IFACE="wlp1s0"
@@ -382,8 +399,8 @@
   # Web UI: http://Radxa-X4:8080  (LAN) or via Tailscale hostname:8080
   #
   # Setup steps:
-  #   1. Export WireGuard config from VPN Unlimited app
-  #      (already managed by agenix — decrypted to /etc/wireguard/vpnunlimited.conf)
+  #   1. The WireGuard config (Mullvad) is managed by agenix — decrypted to
+  #      /etc/wireguard/vpnunlimited.conf (secret and file keep that name)
   #   2. On first access, log in with a temporary password — modern qBittorrent
   #      no longer defaults to admin/adminadmin. It generates a random temp
   #      password on every service (re)start, logged only to journalctl:
@@ -410,9 +427,12 @@
     user          = "linuxury";
     watchedFolder = "/data/torrents/queued";
 
-    # Failover servers — tried in order when the active tunnel goes down.
-    # Primary (us-atl-wg-001) is in the agenix secret; these are the backups.
-    # Public keys are the Mullvad server keys (not sensitive).
+    # services.vpn-qbittorrent options used here (see the module header for all):
+    #   user            account qbittorrent-nox runs as
+    #   watchedFolder   directory polled for .torrent files to add
+    #   failoverServers ordered backups, tried when the active tunnel goes down.
+    # The primary server (us-atl-wg-001) is in the agenix secret; these are the
+    # backups. Public keys are the Mullvad server keys (not sensitive).
     failoverServers = [
       { name = "us-atl-wg-001"; publicKey = "nvyBkaEXHwyPBAm8spGB0TFzf2W5wPAl8EEuJ0t+bzs="; endpoint = "45.134.140.130:51820"; }
       { name = "us-dal-wg-001"; publicKey = "EAzbWMQXxJGsd8j2brhYerGB3t5cPOXqdIDFspDGSng="; endpoint = "146.70.211.66:51820"; }
@@ -422,8 +442,9 @@
     ];
   };
 
-  # Download directories — /data/ allows an NVMe to be mounted there later.
-  # If no extra drive is attached, these live on the eMMC/main BTRFS pool.
+  # Directories created at boot, "type path mode owner group age". /data is a
+  # plain directory here, so a separate disk can be mounted on it; without one
+  # these live on the main BTRFS filesystem.
   systemd.tmpfiles.rules = [
     "d /mnt/Media-Server                    0755 linuxury users -"
     "d /data                             0755 root     users -"
@@ -434,6 +455,8 @@
 
   # ==============================================================
   # Samba — share torrent directories for file management
+  #   Torrents  /data/torrents, read-write for "valid users" linuxury and
+  #             babylinux; new files 0664, new dirs 0775
   #
   # Access: \\Radxa-X4\Torrents
   # ==============================================================
@@ -457,11 +480,13 @@
     };
   };
 
+  # SMB ports: TCP 445 (SMB), 139 (NetBIOS session); UDP 137/138 (NetBIOS)
   networking.firewall.allowedTCPPorts = [ 445 139 ];
   networking.firewall.allowedUDPPorts = [ 137 138 ];
 
   # ==============================================================
-  # Users
+  # Users — accounts present on this host: linuxury (wheel = sudo, networkmanager,
+  # gpio), babylinux (networkmanager), alex (no extra groups); all use zsh.
   # ==============================================================
   users.users = {
     linuxury = {

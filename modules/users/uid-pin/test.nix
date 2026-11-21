@@ -1,9 +1,11 @@
 # ===========================================================================
 # modules/users/uid-pin/test.nix — VM test for modules/users/uid-pin
 #
-# Recreates the server situation (UIDs handed out alphabetically: alex 1000,
-# babylinux 1001, linuxury 1002 — plus container files written as raw 1000),
-# reboots, and checks the boot-time migration got everything right.
+# Recreates the alphabetical-UID situation (alex 1000, babylinux 1001,
+# linuxury 1002, plus container files written as raw 1000), reboots, and checks
+# the boot-time migration got everything right: file ownership after the UID
+# change, the home-directory rule, the users.uidMigrate.ownedBy rule, a second
+# boot being a no-op, and postponing when the user is logged in.
 #
 # Run: nix build -L .#checks.x86_64-linux.uid-migrate
 # ===========================================================================

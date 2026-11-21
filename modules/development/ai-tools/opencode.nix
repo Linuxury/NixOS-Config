@@ -10,6 +10,7 @@
 #                   (synced via Syncthing across all linuxury hosts)
 #
 # Requires: modules/development/ai-tools/ai-tools.nix (nix-ld)
+# Enable per host by importing this module; remove the import to turn it off.
 # ===========================================================================
 
 { pkgs, inputs, ... }:
@@ -19,10 +20,11 @@
   # OpenCode — system-wide binaries (available to all users on this host)
   # =========================================================================
   environment.systemPackages = [
-    # AI terminal agent — TUI + tool use + multi-model
-    # Hash override: nixpkgs' node_modules outputHash is stale for 2.2.5
-    # (mismatch seen 2026-11-04). Version-guarded so it drops out on the next
-    # nixpkgs bump — delete this block once nixpkgs fixes it.
+    # AI terminal agent — TUI + tool use + multi-model.
+    # overrideAttrs replaces the node_modules fixed-output hash, applied only
+    # while the packaged version is 2.2.5 (optionalAttrs on old.version), so the
+    # override disappears by itself when nixpkgs moves to another version.
+    # Delete the override when nixpkgs' own hash is correct.
     (pkgs.opencode.overrideAttrs (old: pkgs.lib.optionalAttrs (old.version == "2.2.5") {
       node_modules = old.node_modules.overrideAttrs {
         outputHash = "sha256-prx9dX7kUvs/E3zopkaPk5LXh3xJAy5sZeum/W8L7cA=";
@@ -32,12 +34,14 @@
 
   # =========================================================================
   # Home Manager — dotfiles injected into every user on this host
+  # (home-manager.sharedModules entries are merged into each user's config)
   # =========================================================================
   home-manager.sharedModules = [
     ({ config, ... }: {
       home.file = {
         # TUI color theme — matugen regenerates this on every wallpaper change
-        # force = true: matugen writes here; HM must not block with a collision
+        # force = true: replace an existing file at the path instead of failing
+        # on a collision (matugen rewrites it)
         ".config/opencode/tui.json" = {
           source = "${inputs.dotfiles}/opencode/tui.json";
           force  = true;
@@ -45,7 +49,7 @@
 
         # Settings — live symlink to Syncthing-managed file in ~/.agents/OpenCode/
         # Any change made in the app persists and syncs across hosts automatically
-        # Creates a dangling symlink for users without ~/.agents/OpenCode/ (harmless)
+        # The link dangles for users without ~/.agents/OpenCode/ (harmless)
         ".config/opencode/opencode.json".source =
           config.lib.file.mkOutOfStoreSymlink
             "${config.home.homeDirectory}/.agents/OpenCode/settings.json";

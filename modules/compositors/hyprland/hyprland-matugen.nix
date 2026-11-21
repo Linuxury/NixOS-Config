@@ -14,6 +14,9 @@
 #
 # matugen 4.0.0 HashMap iteration bug: crashes after 2–3 of 5 templates per
 # run — run 3× to ensure full coverage. hyprctl reload applies colors.lua.
+#
+# Home Manager module: hyprland.nix adds it to home-manager.sharedModules.
+# Remove it from that list to turn it off.
 # ===========================================================================
 { config, pkgs, ... }:
 

@@ -1,39 +1,47 @@
 # ===========================================================================
 # modules/shells/noctalia/shell-noctalia.nix — Noctalia shell layer (v5+)
 #
-# Noctalia v5 is a full C++ rewrite of the v4 Quickshell/QML shell.
-# Tracked via the noctalia flake input (not nixpkgs) so it isn't stuck behind
-# nixpkgs' own packaging cadence. inputs.noctalia.homeModules.default disables
-# home-manager's bundled programs/noctalia.nix module and points its package
-# option at this input's own build instead.
+# Noctalia is a C++ Wayland desktop shell (bar, launcher, lock screen,
+# idle, wallpaper, theming). It comes from the noctalia flake input, not
+# nixpkgs. inputs.noctalia.homeModules.default replaces Home Manager's own
+# programs/noctalia.nix module (disabledModules) and sets its package to
+# the input's build.
 #
 # What this module sets up:
-#   - programs.noctalia.enable     — installs the package
-#   - programs.noctalia.systemd    — starts as a systemd user service;
-#     upstream module wires graphical-session.target automatically
-#     (replaces the v4 exec-once launch via shell-autostart.lua)
-#   - programs.noctalia.settings   — declarative config.toml
-#     wallpaper_changed hook writes ~/.local/share/current-wallpaper so
-#     the matugen path unit (<compositor>-matugen.nix) fires as before
-#   - notification daemon disabled — swaync handles notifications
-#   - greeters/noctalia — noctalia-greeter (greetd), bundled automatically
-#     so hosts don't need a separate greeter import. It matches the shell's
-#     look natively; unlike wayle it does NOT need greeters/sddm.
+#   - programs.noctalia.enable          installs the package
+#   - programs.noctalia.systemd.enable  runs it as a systemd user service;
+#     the upstream module ties it to graphical-session.target
+#   - programs.noctalia.settings        declarative config.toml
+#     (wallpaper, theme templates, idle, lock screen, screenshots,
+#     session menu, plugins, hooks; see each block below). The
+#     wallpaper_changed hook writes ~/.local/share/current-wallpaper so the
+#     matugen path unit (themes/theme-matugen.nix) runs.
+#   - notification daemon disabled      swaync handles notifications
+#   - led-sync template                 on hosts with hardware.openrgb.enable
+#   - greeters/greeter-noctalia.nix     noctalia-greeter (greetd), imported
+#     here so hosts need no separate greeter import; unlike wayle it does
+#     not need greeters/sddm.
+# Upstream programs.noctalia options not set here:
+#   package          Noctalia build (default: the flake input's)
+#   extraPackages    extra commands on Noctalia's PATH (e.g. for plugins)
+#   checkConfig      validate config.toml at build time (default true)
+#   customPalettes   extra colour palettes
 #
 # Theming split: Noctalia's own templates own app theming (kitty, gtk, qt,
 # starship, umbriel, pywalfox, papirus-icons, ...). Thunderbird is themed
 # live through pywalfox (the add-on is force-installed by
-# system/graphical/thunderbird), not the `thunderbird` template: that one
-# is userChrome.css, only read at startup. Which templates are on is app
-# state: Settings → Theme → Templates, saved to
-# ~/.local/state/noctalia/settings.toml — not Nix. matugen
-# (themes/matugen) only covers Kvantum, which has no Noctalia template.
-# Templates need genuinely writable target files, so don't hand them
-# HM-managed (read-only store) paths — that's why fastfetch's is off.
+# system/graphical/thunderbird.nix), not the `thunderbird` template: that
+# one is userChrome.css, only read at startup. Which templates are on is
+# app state (Settings → Theme → Templates, saved to
+# ~/.local/state/noctalia/settings.toml), not Nix. matugen
+# (themes/theme-matugen.nix) only covers Kvantum, which has no Noctalia
+# template. Templates need writable target files, so they must not point at
+# Home Manager (read-only store) paths; that is why the fastfetch template
+# is off.
 #
-# Importing this module activates Noctalia (shell + greeter). No enable
-# flag needed. To switch shell: remove this import, add shells/wayle
-# (+ greeters/sddm).
+# Importing this module turns Noctalia on (shell + greeter); there is no
+# enable flag. To switch shell, remove this import and import shells/wayle
+# plus greeters/sddm.
 # ===========================================================================
 
 { config, inputs, pkgs, ... }:
@@ -58,18 +66,17 @@ in
       programs.noctalia = {
         enable = true;
 
-        # Systemd user service — replaces the v4 exec-once in shell-autostart.lua.
-        # Noctalia's upstream module handles the graphical-session.target dependency
-        # internally; we just enable the service here.
+        # Systemd user service; the upstream module adds the
+        # graphical-session.target dependency itself.
         systemd.enable = true;
 
-        # Declarative config.toml — only the fields we need to override.
-        # Everything else stays at noctalia defaults.
+        # Declarative config.toml — only the fields that differ from
+        # Noctalia's defaults.
         settings = {
           # ── Wallpaper ──────────────────────────────────────────────────────
-          # Point at the per-host wallpaper symlink that wallpaper-slideshow
-          # manages. On wallpaper change, write the new path to the handoff
-          # file that triggers the matugen path unit.
+          # Rotates wallpapers from ~/Pictures/Wallpapers (the per-host
+          # wallpaper symlink): random order, every 30 min, subfolders
+          # included. The wallpaper_changed hook (below) reports each change.
           wallpaper = {
             enabled   = true;
             directory = "~/Pictures/Wallpapers";
@@ -82,8 +89,10 @@ in
           };
 
           # ── Theme ──────────────────────────────────────────────────────────
-          # Derive accent colors from the active wallpaper so noctalia's own
-          # bar colors stay in sync with the matugen palette.
+          # Dark mode, accent colours taken from the active wallpaper.
+          # templates.user adds user templates (input_path rendered with the
+          # palette to output_path, optional post_hook) next to the built-in
+          # ones toggled in the app.
           theme = {
             mode   = "dark";
             source = "wallpaper";
@@ -133,9 +142,9 @@ in
           notification.enable_daemon = false;
 
           # ── Screenshots ────────────────────────────────────────────────────
-          # Native capture replaces the old grim/slurp/satty script. Every
-          # other field (save_to_file, copy_to_clipboard, freeze_screen, ...)
-          # already defaults to what that script did by hand.
+          # Built-in capture. Only the directory and format are set; other
+          # fields (save_to_file, copy_to_clipboard, freeze_screen, ...) keep
+          # their defaults.
           shell.screenshot.directory = "~/Pictures/Screenshots";
           # Lossless WebP (quality 100): smaller than PNG, same pixels.
           # Clipboard/pipe output stays PNG regardless.
@@ -171,10 +180,11 @@ in
 
           # ── Plugins ────────────────────────────────────────────────────────
           # nixos-updates: bar badge + panel for pending package/Flatpak updates.
-          # Its update_command stays in app state (Settings → Plugins → ⚙): it
+          # Its update_command is app state (Settings → Plugins → ⚙): it
           # opens a floating terminal via `umbriel msg spawn kitty --class
-          # nix-updates` (rule in umbriel's window-rules.toml) until
-          # noctalia-dev/community-plugins#1237 adds a terminal setting.
+          # nix-updates` (rule in umbriel's window-rules.toml), because the
+          # plugin has no terminal setting
+          # (noctalia-dev/community-plugins#1237).
           # Declaring any source replaces Noctalia's built-in list, so official
           # and community must be listed here too. Don't add/remove sources via
           # IPC or the GUI: that saves a full source list to the app-owned
@@ -194,7 +204,7 @@ in
 
           # ── Hooks ──────────────────────────────────────────────────────────
           # wallpaper_changed: write the new wallpaper path to the handoff
-          # file that the matugen path unit (hyprland/matugen) watches.
+          # file that the matugen path unit (themes/theme-matugen.nix) watches.
           # $NOCTALIA_WALLPAPER_PATH is set by noctalia before running this.
           hooks.wallpaper_changed =
             ''echo "$NOCTALIA_WALLPAPER_PATH" > "$HOME/.local/share/current-wallpaper"'';
@@ -203,9 +213,9 @@ in
     })
 
     # =========================================================================
-    # Clear shell-autostart.lua — v5 uses the systemd service above.
-    # Clear shell-active.lua   — noctalia manages its own layer directly.
-    # Both files are dofile()'d by hyprland.lua; empty = no-op.
+    # Empties shell-autostart.lua — the systemd service above starts Noctalia.
+    # Empties shell-active.lua   — Noctalia needs no extra Hyprland binds.
+    # hyprland.lua runs both with dofile(); an empty file does nothing.
     # =========================================================================
     ({ lib, ... }: {
       home.activation.noctaliaV5HyprFiles = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

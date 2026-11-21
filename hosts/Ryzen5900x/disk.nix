@@ -1,13 +1,18 @@
 # ===========================================================================
-# hosts/Ryzen5900x/disk.nix — disks, swap, LUKS and boot loader for Ryzen5900x
+# hosts/Ryzen5900x/disk.nix — local filesystems and swap for the Ryzen5900x desktop
 #
-# Split out of Ryzen5900x.nix so the installer can (re)write this file for a
-# new disk layout without touching the rest of the host config. Network
-# shares and pooled mounts (cifs, mergerfs) stay in Ryzen5900x.nix.
+# Btrfs subvolumes on the "nixos" partition, an EFI system partition, a swapfile and
+# two XFS drives. There is no LUKS layer: Btrfs sits directly on the partition.
+# The installer writes this file for a new disk layout. Network shares (CIFS) are in
+# Ryzen5900x.nix. Boot loader settings are not in this file.
 # ===========================================================================
 { config, lib, pkgs, ... }:
 
 {
+  # Btrfs subvolumes on the "nixos" partition, mounted by label. Each uses zstd level 1
+  # compression and noatime, except /swap, which is not compressed (the swapfile needs
+  # uncompressed Btrfs). The snapshot subvolumes (@snapshots, @home_snapshots) are for
+  # snapper, which this host does not import (services/snapper.nix is commented out).
   fileSystems = {
     "/" = {
       device = "/dev/disk/by-label/nixos";
@@ -27,10 +32,9 @@
         "noatime"
       ];
     };
-    # Steam's own subvolume — kept out of @home so /home btrfs snapshots
-    # never pin the 100s of GB a game library churns through. Snapper has
-    # no per-path exclude; a sibling subvolume boundary is the only real
-    # mechanism.
+    # Steam library, on its own subvolume (@steam). Keeping it out of @home means /home
+    # snapshots do not retain the large game files. Snapper cannot exclude a path, so a
+    # separate subvolume is the way to exclude it.
     "/home/linuxury/.local/share/Steam" = {
       device = "/dev/disk/by-label/nixos";
       fsType = "btrfs";
@@ -89,6 +93,7 @@
         "noatime"
       ];
     };
+    # EFI system partition (FAT, by label). fmask/dmask 0077: only root can read the files.
     "/boot" = {
       device = "/dev/disk/by-label/EFI";
       fsType = "vfat";
@@ -97,6 +102,8 @@
         "dmask=0077"
       ];
     };
+    # XFS drives, mounted by label. defaults: standard mount options. nofail: boot
+    # continues if the drive is absent. x-gvfs-show: list the drive in GVfs file managers.
     "/mnt/Warehouse" = {
       device = "/dev/disk/by-label/Warehouse";
       fsType = "xfs";
@@ -118,7 +125,8 @@
   };
 
   # ==============================================================
-  # Swap
+  # Swap — one swapfile on the @swap subvolume (swapDevices)
+  #   device  path of the swapfile
   # ==============================================================
   swapDevices = [
     {

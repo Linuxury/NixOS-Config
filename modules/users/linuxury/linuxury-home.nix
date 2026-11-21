@@ -8,9 +8,16 @@
 #   wallpaperDir     ThinkPad → "4k" | Ryzen5900x → "3440x1440"
 #   hypridleProfile  ThinkPad → "laptop" | Ryzen5900x → "desktop"
 #
+# Contents: session PATH/env vars, default browser, XDG dirs, dotfile links and
+# seeds (kitty, starship, hypr, fastfetch, MangoHud, topgrade, nano, wayle), AI
+# config symlinks into ~/.agents, Assets pictures, SSH client config, zsh, git,
+# zoxide, fzf, direnv, ssh-agent, Hytale, hypridle profile. Applied through the
+# Home Manager user list in flake.nix.
 # ===========================================================================
 
-# wallpaperDir and hypridleProfile come from extraSpecialArgs in flake.nix
+# Function arguments: config/pkgs/lib are the module set; inputs are the flake
+# inputs (assets, dotfiles, zsh); wallpaperDir and hypridleProfile come from
+# extraSpecialArgs in flake.nix.
 {
   config,
   pkgs,
@@ -26,17 +33,19 @@
     ../../system/graphical/hytale.nix
     ../wallpapers.nix
     ../../system/graphical/nautilus.nix
-    #../../system/graphical/thunar.nix   # disabled: dux-files is the default file manager
+    #../../system/graphical/thunar.nix   # alternative file manager, not imported (dux-files is the default)
   ];
 
   # =========================================================================
   # Home Manager basics
   # =========================================================================
+  # Account name, home path and the Home Manager release the state format
+  # follows (stateVersion: keep at the install-time release; do not bump for upgrades).
   home.username = "linuxury";
   home.homeDirectory = "/home/linuxury";
   home.stateVersion = "24.11";
 
-  programs.home-manager.enable = true;
+  programs.home-manager.enable = true; # install the home-manager CLI for this user
 
   # =========================================================================
   # Session PATH — expose Nix profile bin to GUI apps
@@ -46,8 +55,9 @@
   # Without this, apps like Zed can't find binaries installed via
   # Home Manager (e.g. claude-code, nil, nixfmt).
   #
-  # home.sessionPath writes to ~/.config/environment.d/ which systemd user
-  # sessions read automatically — no shell involved.
+  # home.sessionPath (list of directories prepended to PATH) writes to
+  # ~/.config/environment.d/ which systemd user sessions read automatically —
+  # no shell involved.
   # =========================================================================
   home.sessionPath = [
     "/run/wrappers/bin"
@@ -60,6 +70,8 @@
   #
   # Some apps (scripts, Claude Code, file managers' "Open Terminal Here",
   # language runtimes, etc.) use $BROWSER/$TERMINAL instead of xdg-open.
+  #   BROWSER   zen-beta (matches the xdg.mimeApps default below)
+  #   TERMINAL  kitty
   # home.sessionVariables writes to ~/.config/environment.d/ so every
   # app in the systemd user session inherits them — not just shell children.
   # =========================================================================
@@ -72,8 +84,9 @@
   # GSettings default apps — GNOME apps check this instead of mimeapps.list
   #
   # Nautilus "Open Terminal Here" reads terminal.exec from GSettings, not
-  # mimeapps.list. The schema default is xdg-terminal-exec which is not
-  # installed, so "Open Terminal Here" silently fails. Set kitty directly.
+  # mimeapps.list. The schema default is xdg-terminal-exec, which is not
+  # installed, so the entry would do nothing; exec/exec-arg set kitty directly
+  # (exec-arg "--" ends kitty's options before the command).
   # =========================================================================
   dconf.settings = {
     "org/gnome/desktop/default-applications/terminal" = {
@@ -86,8 +99,8 @@
   # XDG MIME type associations
   #
   # Tells the desktop environment which app opens each file type.
-  # =========================================================================
-  # Browser — per-user choice (shared app defaults live in graphical/graphical.nix)
+  # Browser — per-user choice (shared app defaults live in graphical/graphical.nix);
+  # xdg.mimeApps.defaultApplications maps a MIME type or URL scheme to a .desktop file.
   # =========================================================================
   xdg.mimeApps.defaultApplications = {
     "x-scheme-handler/http"  = "zen-beta.desktop";
@@ -98,11 +111,18 @@
 
   # =========================================================================
   # XDG User Directories
+  #   enable               write ~/.config/user-dirs.dirs
+  #   createDirectories    create the folders below at activation
+  #   setSessionVariables  export XDG_*_DIR variables in the session
+  #   desktop/documents/download/music/pictures/projects/videos/templates/
+  #   publicShare          paths of the standard folders (null disables one)
+  #   extraConfig          extra XDG_<NAME>_DIR entries
+  #   package              xdg-user-dirs package (null to skip it)
   # =========================================================================
   xdg.userDirs = {
     enable = true;
     createDirectories = true;
-    setSessionVariables = true; # Silence HM 26.05 default change warning
+    setSessionVariables = true; # export XDG_*_DIR variables (explicit, so no default-change warning)
 
     desktop = "${config.home.homeDirectory}/Desktop";
     documents = "${config.home.homeDirectory}/Documents";
@@ -116,6 +136,8 @@
 
   # =========================================================================
   # Extra directories
+  # systemd user tmpfiles rules, "type path mode user group age": d = create the
+  # directory if missing (age "-" = never cleaned).
   # =========================================================================
   systemd.user.tmpfiles.rules = [
     # ~/.agents — AI config root, synced via Syncthing
@@ -128,17 +150,19 @@
     "d ${config.home.homeDirectory}/.agents/backups          0755 linuxury users -"
     "d ${config.home.homeDirectory}/.agents/skills           0755 linuxury users -"
 
-    # SSH directory with correct permissions
+    # SSH directory with correct permissions (sshd refuses looser modes)
     "d ${config.home.homeDirectory}/.ssh  0700 linuxury users -"
   ];
 
   # =========================================================================
-  # Dotfiles — symlinked from dotfiles/ in your repo
+  # Dotfiles — links and seeds from the Dotfiles/ZSH/Assets inputs
+  # home.file.<path>.source links a store path (or, with mkOutOfStoreSymlink, a
+  # live path outside the store) into $HOME; .text writes content.
   # =========================================================================
   home.file = {
     # Starship prompt — deployed via home.activation.starshipSeed below
     # (copy-once, not a symlink) so Noctalia's native app-theming can patch
-    # the live file. See modules/shells/noctalia/shell-noctalia.nix for why.
+    # the live file. See modules/shells/noctalia/shell-noctalia.nix.
 
     # Fastfetch
     ".config/fastfetch".source = "${inputs.zsh}/fastfetch";
@@ -152,10 +176,10 @@
     # Kitty terminal — deployed via home.activation.kittyConfSeed below
     # (copy-once, not a symlink) so Noctalia's native app-theming can patch
     # the live file with its own color include. See
-    # modules/shells/noctalia/shell-noctalia.nix for why.
+    # modules/shells/noctalia/shell-noctalia.nix.
 
     # Hyprland — full config directory (entry point + all modules)
-    # Live symlink so edits in the repo take effect immediately via hyprctl reload
+    # Live symlink (mkOutOfStoreSymlink) so edits in the clone take effect via hyprctl reload
     ".config/hypr".source =
       config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/hypr";
 
@@ -164,8 +188,8 @@
 
     # -----------------------------------------------------------------------
     # AI config symlinks — source files live in ~/.agents/{Claude,OpenCode,Shared}/
-    # synced via Syncthing. home-manager only creates the outbound symlinks.
-    # On a fresh host: rebuild creates symlinks, Syncthing populates ~/.agents.
+    # synced via Syncthing. home-manager only creates the outbound symlinks:
+    # a rebuild creates them, Syncthing populates ~/.agents.
     #
     # ~/.claude is a full directory symlink to ~/.agents/Claude/ so all of
     # Claude Code's runtime data (history, sessions, projects, credentials)
@@ -209,9 +233,9 @@
     "Pictures/Avatar".source =
       "${inputs.assets}/Avatar";
 
-    # ~/.face.icon — SDDM reads this as the primary user avatar.  Points
-    # directly to the repo asset (not through ~/Pictures/Avatar) so it exists
-    # even before ~/Pictures/Avatar is symlinked on first HM activation.
+    # ~/.face.icon — SDDM reads this as the primary user avatar. Points
+    # directly to the Assets input (not through ~/Pictures/Avatar) so it does
+    # not depend on that link existing.
     ".face.icon".source =
       "${inputs.assets}/Avatar/linuxury.jpg";
 
@@ -298,18 +322,16 @@
     '';
   };
 
-  # Remove manually-created AI symlinks/files so home-manager can take ownership.
-  # Safe to run repeatedly — only acts on symlinks or plain files, never dirs.
-  # Remove the old mimeapps.list location so it never diverges from the
-  # HM-managed ~/.config/mimeapps.list. Apps that call `xdg-mime default`
-  # write here (old spec location), but ~/.config/mimeapps.list takes
-  # precedence. Having both risks apps reading conflicting data over time.
+  # Removes ~/.local/share/applications/mimeapps.list (the legacy-spec location
+  # that `xdg-mime default` writes) so it cannot diverge from the HM-managed
+  # ~/.config/mimeapps.list, which takes precedence. Runs before checkLinkTargets.
   home.activation.cleanupOldMimeApps = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
     rm -f "$HOME/.local/share/applications/mimeapps.list"
   '';
 
   # The live links (hypr, nvim, umbriel, ...) and the seeds below read from a
-  # clone of Linuxury/Dotfiles at ~/dotfiles. Cloned when missing, never updated.
+  # clone of Linuxury/Dotfiles at ~/dotfiles. Cloned when missing (a non-git
+  # path is left alone, a failed clone only warns), never updated.
   home.activation.dotfilesClone = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
     if [ ! -d "$HOME/dotfiles/.git" ]; then
       if [ -e "$HOME/dotfiles" ]; then
@@ -322,13 +344,18 @@
     fi
   '';
 
-  # Direct link to Claude's state file. A home.file link goes through the
-  # read-only Nix store, and Claude Code writes its temp file next to the
-  # first link target, so saves fail with EROFS.
+  # Direct link ~/.claude.json → ~/.agents/Claude/state.json. A home.file link
+  # goes through the read-only Nix store, and Claude Code writes its temp file
+  # next to the first link target, so saves would fail with EROFS.
   home.activation.claudeJsonLink = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
     ln -sfn "$HOME/.agents/Claude/state.json" "$HOME/.claude.json"
   '';
 
+  # Clears plain files/symlinks at the AI link targets (AGENTS.md, CLAUDE.md,
+  # opencode.json, Pi AGENTS.md) so home.file can create them; moves a real
+  # ~/.claude directory's data into ~/.agents/Claude before removing it (once,
+  # skipped when ~/.claude is already a symlink); deletes flat-layout files in
+  # ~/.agents that are not symlinks. Directories are never removed except ~/.claude.
   home.activation.migrateAiSymlinks = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
     # Clean up top-level symlinks/files so HM can recreate them
     for f in \
@@ -374,6 +401,12 @@
 
   # =========================================================================
   # Zsh shell
+  #   autosuggestion.enable  grey inline history suggestions
+  #   enableCompletion       tab completion
+  #   plugins                fast-syntax-highlighting
+  #   zsh-abbr               abbreviations (below)
+  #   shellAliases           ll
+  #   initContent            shared init from the ZSH repo (init.nix)
   # =========================================================================
   programs.zsh = {
     enable = true;
@@ -390,7 +423,7 @@
     ];
 
     # Abbreviations expand inline before running — you see the full command first.
-    # Managed declaratively by Home Manager via programs.zsh.zsh-abbr.
+    # Declared in programs.zsh.zsh-abbr.abbreviations.
     zsh-abbr = {
       enable = true;
       abbreviations = {
@@ -418,7 +451,8 @@
   };
 
   # =========================================================================
-  # Starship prompt
+  # Starship prompt — enable installs it and hooks zsh; the config file is
+  # seeded by home.activation.starshipSeed (copy-once, so it stays writable).
   # =========================================================================
   programs.starship = {
     enable = true;
@@ -426,10 +460,14 @@
 
   # =========================================================================
   # Git
+  #   signing.format  null = no commit signing configured
+  #   includes        extra config files; the email lives in an agenix secret
+  #   settings        user.name, init.defaultBranch, pull.rebase (false = merge),
+  #                   core.editor, alias.{st,co,br,lg}
   # =========================================================================
   programs.git = {
     enable = true;
-    signing.format = null; # Silence HM 25.05 default change warning (no signing configured)
+    signing.format = null; # no signing configured (explicit, so no default-change warning)
     # Email comes from an agenix secret ([user] email), so it stays out of the repo.
     includes = [ { path = "/run/agenix/git-email-linuxury"; } ];
     settings = {
@@ -446,14 +484,8 @@
     };
   };
 
-  # Neovim config is managed by the activation script in
-  # modules/development/editors/neovim/neovim-hm.nix — no overrides needed here.
-
-  # Neovim desktop entry and text editor MIME defaults are declared in
-  # modules/system/graphical/graphical.nix via home-manager.sharedModules.
-
   # =========================================================================
-  # Zoxide — smarter cd
+  # Zoxide — smarter cd (z <dir>); enableZshIntegration adds the zsh hook
   # =========================================================================
   programs.zoxide = {
     enable = true;
@@ -461,7 +493,7 @@
   };
 
   # =========================================================================
-  # FZF — fuzzy finder
+  # FZF — fuzzy finder; enableZshIntegration adds Ctrl-R/Ctrl-T/Alt-C bindings
   # =========================================================================
   programs.fzf = {
     enable = true;
@@ -470,6 +502,8 @@
 
   # =========================================================================
   # Direnv — auto-loads .envrc on cd (nix develop shells, project env vars)
+  #   enableZshIntegration  zsh hook
+  #   nix-direnv.enable     fast cached `use flake` / `use nix`
   # =========================================================================
   programs.direnv = {
     enable = true;
@@ -477,27 +511,31 @@
     nix-direnv.enable = true;
   };
 
-  # VSCodium — moved to modules/development/editors/vscodium/vscodium.nix
+  # VSCodium: see modules/development/editors/vscodium/vscodium.nix
 
   # =========================================================================
-  # SSH agent
+  # SSH agent — keeps loaded keys for the session (pairs with AddKeysToAgent in
+  # the SSH config above)
   # =========================================================================
   services.ssh-agent.enable = true;
 
   # =========================================================================
   # Hytale — auto-install + overrides (see modules/system/graphical/hytale.nix)
+  #   enable       install Hytale from the local bundle in the Assets input
+  #   cdnFallback  download from the CDN when the local bundle is not found
   # =========================================================================
   programs.hytale = {
     enable      = true;
-    cdnFallback = true;  # Download from CDN if local bundle not found
+    cdnFallback = true;  # download from the CDN if the local bundle is missing
   };
 
-  # VSCodium Claude wrapper — moved to modules/development/editors/vscodium/vscodium-hm.nix
+  # VSCodium Claude wrapper: see modules/development/editors/vscodium/vscodium-hm.nix
 
-  # hypridle — symlink the profile config into the .config/hypr directory.
-  # Since .config/hypr is a directory symlink to dotfiles/hypr/, we can't use
-  # home.file here. activation runs after writeBoundary and handles it cleanly.
-  # The symlink created here is gitignored (see .gitignore: dotfiles/hypr/hypridle.conf).
+  # hypridle — symlink the profile config (hypridle-<hypridleProfile>.conf,
+  # "laptop" or "desktop") to hypridle.conf inside the .config/hypr directory.
+  # Since .config/hypr is a directory symlink to dotfiles/hypr/, home.file
+  # cannot be used here; activation after writeBoundary does it. The symlink
+  # is gitignored in the Dotfiles clone (dotfiles/hypr/hypridle.conf).
   home.activation.hypridleConf = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     ln -sf "$HOME/dotfiles/hypr/hypridle-${hypridleProfile}.conf" \
            "$HOME/dotfiles/hypr/hypridle.conf"
@@ -506,9 +544,10 @@
   # Kitty + starship — copy-once instead of a symlink, so Noctalia's native
   # app-theming (enabled in its own settings.json, see
   # modules/shells/noctalia/shell-noctalia.nix) can patch the live file and reload
-  # the app. A Nix-store symlink blocks that write silently — see this
-  # session's investigation for the full story. Only seeds on first run;
-  # Nix never touches these files again afterward.
+  # the app; a Nix-store symlink would silently block that write. Seeds only
+  # when the file is missing (a symlink at the path is removed first); Nix never
+  # touches the files afterward. Kitty copies from ~/dotfiles, starship from the
+  # ZSH input.
   home.activation.kittyConfSeed = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     _cfg="$HOME/.config/kitty/kitty.conf"
     _template="$HOME/dotfiles/kitty/kitty.conf"
@@ -533,12 +572,12 @@
     fi
   '';
 
-  # Millennium seeding moved to modules/gaming/gaming.nix (applies to every
-  # host/user with programs.steam.millennium.enable).
-
-  # Firefox userChrome.css activation now lives in
-  # modules/system/graphical/firefox.nix (home-manager.sharedModules)
-  # so it applies to every user, not just linuxury.
-
-  # Personal packages live in modules/users/linuxury-packages.nix
+  # Related modules:
+  #   Millennium seeding: modules/gaming/gaming.nix (every user on a host with
+  #     programs.steam.millennium.enable)
+  #   Firefox userChrome.css: modules/system/graphical/firefox.nix
+  #     (home-manager.sharedModules, every user)
+  #   Neovim config: modules/development/editors/neovim/neovim-hm.nix
+  #   Neovim desktop entry and text MIME defaults: modules/system/graphical/graphical.nix
+  # Per-user packages: none declared in this file.
 }

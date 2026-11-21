@@ -1,29 +1,28 @@
 # ===========================================================================
-# hosts/MinisForum/MinisForum.nix — MinisForum UN1250
+# hosts/MinisForum/MinisForum.nix — MinisForum UN1250 game server
 #
-# Owner: managed by linuxury
 # Hardware: Intel Core i5-1250P, Intel Iris Xe integrated graphics
-# Type: Headless server — no DE, no display manager
-# Role: Game server host
-#   - Crafty Controller (Docker, web UI on port 8443)
-#       Manages Minecraft servers (Java) and the Hytale server (QUIC/UDP 5520)
-#       Access: https://MinisForum:8443  (or via Tailscale)
-#       First login: admin / crafty  (change immediately)
+# Type: headless server with no desktop environment and no display manager
+# Role: game server host
+#   - Crafty Controller (Docker, web UI on port 8443). It manages the Minecraft Java
+#     servers and the Hytale server (QUIC/UDP 5520).
+#       Access: https://MinisForum:8443 (or over Tailscale)
+#       Change the default Crafty login on first use.
 #
-# Storage layout:
-#   /data/gameservers/crafty/servers/  — Crafty-managed server files
-#   /data/gameservers/crafty/backups/  — Crafty backups
-#   /data/gameservers/crafty/config/   — Crafty config + SSL cert
-#   /data/gameservers/crafty/logs/     — Crafty logs
-#   /data/gameservers/crafty/import/   — Drop server ZIPs here to import
+# Storage layout (under /data/gameservers/crafty/):
+#   servers/  Crafty-managed server files
+#   backups/  Crafty backups
+#   config/   Crafty config and SSL certificate
+#   logs/     Crafty logs
+#   import/   drop server ZIP files here to import them
 #
-# Samba share: \\MinisForum\GameServers → /data/gameservers
-#   Access via /mnt/MinisForum on client machines (add CIFS mount per host)
+# Samba share: \\MinisForum\GameServers → /data/gameservers. Clients mount it at
+#   /mnt/MinisForum (see the fileSystems note in each client host file).
 #
-# Enabled modules:
-#   - Intel drivers
-#   - system/core.nix
-#   - services/samba.nix
+# Enabled here: Intel drivers, core and server-shell system modules, AI tools (Claude),
+# Samba, Syncthing, auto-update, SSH keys. Other modules in the imports block are commented out.
+#
+# To turn a module on or off, uncomment or comment out its line in the imports block.
 # ===========================================================================
 
 { config, pkgs, lib, ... }:
@@ -100,8 +99,8 @@
   # ==============================================================
   networking.hostName = "MinisForum";
 
-  # Staggered off the 03:00 default so the fleet does not hit GitHub (60
-  # calls/hour, shared home IP) and cache.nixos.org on the same second.
+  # Update timer (services.nixos-auto-update.schedule): 02:00 instead of the 03:00 default, so the
+  # hosts do not all fetch from GitHub and cache.nixos.org at the same moment.
   services.nixos-auto-update.schedule = "*-*-* 02:00";
 
   # ==============================================================
@@ -117,12 +116,13 @@
   hardware.lemokey-keychron.enable = false;
 
   # ==============================================================
-  # Filesystem — BTRFS with subvolumes, no LUKS on server
+  # Filesystems: the local disk layout is in disk.nix (Btrfs, no LUKS on this server).
+  # The network share to the Media-Server is below.
   # ==============================================================
 
   # ==============================================================
-  # Kernel — latest stable
-  # Servers benefit from stability over bleeding edge
+  # Kernel — boot.kernelPackages (set here: linuxPackages_latest, the mainline latest)
+  #   pkgs.linuxPackages_xanmod_latest and pkgs.linuxPackages_zen are commented out.
   # ==============================================================
   boot.kernelPackages = pkgs.linuxPackages_latest;           # Vanilla
   # boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;  # XanMod
@@ -148,8 +148,8 @@
   };
 
   # ==============================================================
-  # Disable audio — servers don't need it
-  # Overrides the PipeWire setup in common.nix
+  # Disable audio — servers don't need it.
+  # services.pipewire.enable = false is forced here; core.nix turns PipeWire on for all hosts.
   # ==============================================================
   services.pipewire.enable = lib.mkForce false;
 
@@ -176,11 +176,11 @@
   # Server packages
   #
   # Minimal set — only what you need to manage and monitor the server.
-  # Services get their own packages when we configure them.
+  # Services get their own packages when they are configured.
   # ==============================================================
   environment.systemPackages = with pkgs; [
     # Monitoring
-    htop          # Already in common.nix but worth noting
+    htop          # Interactive process viewer
     iotop         # Monitor disk I/O per process
     nethogs       # Monitor network usage per process
     ncdu          # Disk usage analyzer — find what's eating space
@@ -199,8 +199,11 @@
   ];
 
   # ==============================================================
-  # Agenix secrets
+  # Agenix secrets — decrypted at boot into /run/agenix/<name>
+  #   file, mode (default "0400"), owner (default root), group (default: the owner's group)
   # ==============================================================
+
+  # Samba login for the CIFS mount below. Readable by root only.
   age.secrets.smb-credentials = {
     file = ../../secrets/network/smb-credentials.age;
     mode = "0400";
@@ -208,8 +211,11 @@
   };
 
   # ==============================================================
-  # Media-Server Samba share — for Obsidian vault and shared files
-  # Automounts on first access, disconnects after 60s idle.
+  # Media-Server share (//10.0.0.3/Media-Server) for the Obsidian vault and shared files.
+  # Mounted at /mnt/Media-Server on first access, unmounted after 60 s idle. Options as in
+  # the client host files: credentials (agenix secret), uid/gid (gid 100 = users), nofail
+  # (boot continues if the server is absent), _netdev (network mount), x-systemd.automount,
+  # idle-timeout and mount-timeout.
   # ==============================================================
   fileSystems."/mnt/Media-Server" = {
     device = "//10.0.0.3/Media-Server";
@@ -229,7 +235,9 @@
   # ==============================================================
   # Game server directories
   #
-  # Crafty owns everything under crafty/ — Docker mounts these as volumes.
+  # Crafty owns everything under crafty/. Docker mounts these as volumes.
+  # Entries use "d <path> <mode> <owner> <group> -" (create the directory) or
+  # "Z <path> - <uid> <gid> - -" (recursively set owner and group on existing files).
   # ==============================================================
   systemd.tmpfiles.rules = [
     "d /mnt/Media-Server                    0755 linuxury users -"
@@ -255,7 +263,7 @@
   #
   # Web UI:  https://MinisForum:8443  (self-signed cert, click through)
   #          or https://<tailscale-ip>:8443
-  # Default credentials: admin / crafty  ← change on first login
+  # The default login must be changed on first use.
   #
   # Ports mapped to host:
   #   8443        — Crafty web UI (HTTPS)
@@ -314,6 +322,11 @@
   # Mount on client with: sudo mount /mnt/MinisForum
   # (Add CIFS mount to each client host's fileSystems config)
   # ==============================================================
+  # The GameServers share (services.samba.settings."GameServers"):
+  #   path             directory exported (/data/gameservers)
+  #   read only        "no": clients can write
+  #   valid users      accounts allowed to connect (linuxury, babylinux)
+  #   create mask      permissions for new files (0664); directory mask for new folders (0775)
   services.samba.settings = {
     "GameServers" = {
       path             = "/data/gameservers";
@@ -326,12 +339,15 @@
     };
   };
 
+  # Firewall: SMB (TCP 445, 139; UDP 137, 138 for NetBIOS), Crafty web UI (8443),
+  # Minecraft Java (25565, 25566), Simple Voice Chat (UDP 24454), Hytale (UDP 5520).
   networking.firewall.allowedTCPPorts = [ 445 139 8443 25565 25566 ];
   networking.firewall.allowedUDPPorts = [ 137 138 24454 5520 ]; # 24454 — Simple Voice Chat; 5520 — Hytale (QUIC/UDP only)
 
   # ==============================================================
-  # Tailscale — remote management
-  # After first boot: sudo tailscale up
+  # Tailscale — remote management (services.tailscale)
+  #   extraUpFlags  flags passed to "tailscale up" (here: advertise the tag:ssh tag)
+  # On a new machine, run once: sudo tailscale up
   # ==============================================================
   # First-boot checklist:
   #   1. sudo tailscale up
@@ -342,15 +358,19 @@
   services.tailscale.extraUpFlags = [ "--advertise-tags=tag:ssh" ];
 
   # ==============================================================
-  # Users
+  # Users — accounts on this host (each uses zsh as its shell)
+  #   isNormalUser  home directory and login account
+  #   extraGroups   wheel: sudo; networkmanager: network settings; docker: run containers
   # ==============================================================
   users.users = {
+    # Main account: administrator rights and Docker access.
     linuxury = {
       isNormalUser = true;
       extraGroups  = [ "wheel" "networkmanager" "docker" ];
       shell        = pkgs.zsh;
     };
 
+    # Secondary account: Docker access, no sudo.
     babylinux = {
       isNormalUser  = true;
       # No wheel — no server admin rights for this account
@@ -358,9 +378,10 @@
       shell         = pkgs.zsh;
     };
 
+    # Child account: no extra groups, so no sudo and no Docker.
     alex = {
       isNormalUser  = true;
-      # No wheel — kid definitely doesn't need server access
+      # No wheel — the child account has no server access
       extraGroups   = [];
       shell         = pkgs.zsh;
     };
@@ -397,10 +418,8 @@
   # clients. This list CONCATENATES with core.nix's
   # [ "root" "@wheel" ] rather than replacing it.
   #
-  # Dispatch is capped client-side (maxJobs = 2 in
-  # modules/system/remote-builder.nix), matching this host's own 2 x 16, so
-  # Crafty keeps headroom. The idle CPU/IO scheduling from f002d7ec
-  # means remote builds yield to the game server.
+  # Clients cap their dispatch at maxJobs = 2 (modules/system/remote-builder.nix), so builds
+  # leave CPU headroom for the game server.
   # ==============================================================
   nix.settings.trusted-users = [ "nixbuilder" ];
 }

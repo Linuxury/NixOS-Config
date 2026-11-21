@@ -7,8 +7,13 @@
 #
 # The NixOS module opens the required firewall ports (1714-1764) automatically.
 #
-# Enable per host by importing this module:
+# Enable per host by importing this module (remove the import to turn it off):
 #   ../../modules/services/kdeconnect.nix
+#
+# Options (programs.kdeconnect.*):
+#   enable        install KDE Connect and open its ports
+#   Not set here: package (default kdePackages.kdeconnect-kde; gnome
+#   hosts can use gnomeExtensions.gsconnect), openFirewall (default = enable).
 # ===========================================================================
 
 { pkgs, ... }:

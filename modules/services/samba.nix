@@ -28,6 +28,9 @@
 #
 # To verify shares are accessible from another machine:
 #   smbclient -L //<hostname> -U linuxury
+#
+# Turn on by importing this module in a host config; remove the import to
+# turn it off.
 # ===========================================================================
 
 { ... }:
@@ -42,6 +45,14 @@
   #
   # Protocol is locked to SMB2+ — SMB1 is ancient, insecure, and removed
   # from modern Windows anyway. SMB3 is preferred for newer clients.
+  #
+  #   enable                 run smbd (and the daemons below)
+  #   openFirewall           open TCP 139/445 and UDP 137/138
+  #   nmbd.enable            NetBIOS name service (default true)
+  #   settings               smb.conf as { global = {...}; <share> = {...}; }
+  #   Not set here: package, smbd.enable / smbd.extraArgs, nmbd.extraArgs,
+  #   winbindd.enable / extraArgs (domain membership), usershares.enable /
+  #   usershares.group (shares created by users), nsswins.
   # =========================================================================
   services.samba = {
     enable      = true;
@@ -110,7 +121,11 @@
   # (the modern replacement for the old NetBIOS broadcast discovery).
   # Without this, Windows 10/11 won't show the server in File Explorer
   # even when SMB is working perfectly.
-  # Renamed from services.wsdd → services.samba-wsdd in nixpkgs.
+  #
+  #   enable        run wsdd
+  #   openFirewall  open UDP 3702 and TCP 5357
+  #   Not set here: interface, hoplimit, workgroup, hostname, domain,
+  #   discovery (also find other wsdd hosts), listen, extraOptions.
   # =========================================================================
   services.samba-wsdd = {
     enable      = true;
@@ -136,9 +151,8 @@
     # "workstation" above only announces "this host exists" (_workstation._tcp,
     # not even SMB-specific) — gvfs's dnssd backend (Thunar/Nautilus "Browse
     # Network") specifically browses for _smb._tcp records to build smb://
-    # entries. Without this file, the client-side avahi fix alone still shows
-    # nothing: confirmed via `avahi-browse -r _smb._tcp` returning empty
-    # while `_workstation._tcp` listed the host fine.
+    # entries. Without this file clients list nothing: `avahi-browse -r
+    # _smb._tcp` comes back empty while `_workstation._tcp` lists the host.
     extraServiceFiles.smb = ''
       <?xml version="1.0" standalone='no'?>
       <!DOCTYPE service-group SYSTEM "avahi-service.dtd">

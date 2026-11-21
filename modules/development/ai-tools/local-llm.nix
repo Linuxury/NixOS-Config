@@ -12,6 +12,7 @@
 #   llm-log     — tail the Ollama server log
 #
 # Hardware requirement: AMD GPU with ROCm support (RDNA2+)
+# Turn on: services.localLlm.enable = true; in the host file. Off: omit/false.
 #
 # First-time setup after rebuild:
 #   ollama pull <model>
@@ -84,7 +85,9 @@
     users.users.${config.services.localLlm.user}.extraGroups = [ "render" ];
 
     # -------------------------------------------------------------------------
-    # Zsh shell functions — on-demand control, no systemd service, no sudo
+    # Zsh shell functions — on-demand control, no systemd service, no sudo.
+    # lib.mkAfter appends to programs.zsh.interactiveShellInit after other
+    # definitions. The server log goes to /tmp/ollama.log.
     # -------------------------------------------------------------------------
     programs.zsh.interactiveShellInit = lib.mkAfter ''
       llm-start() {

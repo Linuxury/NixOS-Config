@@ -15,7 +15,8 @@
 # picked.
 #
 # Shell layer: pair with modules/shells/noctalia/shell-noctalia.nix, same as
-# Hyprland. Import this module in a host config to make it selectable.
+# Hyprland. Import this module in a host config to make it selectable; remove
+# the import to turn it off.
 # ===========================================================================
 
 { inputs, pkgs, ... }:
@@ -44,10 +45,10 @@
   services.gnome.gnome-keyring.enable = true;
   security.pam.services.login.enableGnomeKeyring = true;
 
-  # Thunderbird: opaque window. Under Umbriel, Gecko's ARGB window left the
-  # header transparent after a live pywalfox recolor, so the wallpaper
-  # showed through as a pink bar until a forced repaint. Only matters on
-  # hosts that also import system/graphical/thunderbird.
+  # Thunderbird: opaque window. Under Umbriel, Gecko's ARGB window can leave
+  # the header transparent after a live pywalfox recolor, so the wallpaper
+  # shows through until a forced repaint. Only matters on hosts that also
+  # import system/graphical/thunderbird.
   programs.thunderbird.preferences."widget.transparent-windows" = false;
 
   # =========================================================================
@@ -70,17 +71,13 @@
       # configuration.md), plus noctalia-fixed.toml (gitignored, generated
       # by ./noctalia-bridge on every wallpaper change).
       #
-      # No more automatic `umbriel validate` at build time (that came from
-      # HM's programs.umbriel.settings, no longer used) — run it by hand
-      # after editing: `umbriel validate -c ~/.config/umbriel/config.toml`.
+      # Nothing validates the config at build time — run it by hand after
+      # editing: `umbriel validate -c ~/.config/umbriel/config.toml`.
       #
-      # Pre-clear: the prior generation deployed ~/.config/umbriel as a
-      # real directory (programs.umbriel.settings' xdg.configFile, plus
-      # Noctalia/matugen writing noctalia.toml etc into it directly) —
-      # HM's checkLinkTargets refuses to replace an existing non-symlink
-      # path with a symlink ("would be clobbered"), which broke the first
-      # switch after this change. Remove it once if it's not already the
-      # symlink; a no-op on every activation after that.
+      # Pre-clear: if ~/.config/umbriel exists as a real directory, HM's
+      # checkLinkTargets refuses to replace it with a symlink ("would be
+      # clobbered"). Remove it when it is not already the symlink; a no-op
+      # once the symlink is in place.
       # =====================================================================
       home.activation.clearUmbrielConfigDir = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
         _p="$HOME/.config/umbriel"
@@ -98,9 +95,9 @@
   # Umbriel companion tools — compositor-agnostic subset of the Hyprland
   # toolset.
   # =========================================================================
-  # sway-audio-idle-inhibit aborts (SIGABRT in Idle::block) intermittently when
-  # audio starts; as an umbriel autostart nothing restarted it, so idle locked
-  # mid-video. A user unit gives it Restart=.
+  # sway-audio-idle-inhibit can abort (SIGABRT in Idle::block) when audio
+  # starts. Running it as a user unit with Restart=always keeps the inhibitor
+  # alive so idle never locks mid-video.
   systemd.user.services.sway-audio-idle-inhibit = {
     description = "Inhibit idle while audio plays";
     wantedBy = [ "graphical-session.target" ];
@@ -148,7 +145,7 @@
     # Brightness control
     brightnessctl
 
-    # File manager — disabled 2026-11-10: dux-files is the default on this host.
+    # File manager — off: dux-files is the default on this host.
     # Nautilus + Thunar kept below, commented, to re-enable if needed.
     # File manager — Nautilus
     #nautilus
@@ -158,12 +155,12 @@
 
     # File manager — Thunar. Nautilus draws its own hardcoded folder graphic
     # instead of reading the icon theme, so Papirus's dynamic recolor never
-    # reaches it; Thunar reads icon themes normally and does. Won the trial
-    # against Nemo (which pulled in ~170MB of MATE stack as a dependency).
+    # reaches it; Thunar reads icon themes normally and does. (Nemo would
+    # also work but pulls in ~170MB of MATE stack as a dependency.)
     #
     # xfconf is xfconfd, the settings daemon Thunar needs to persist any
     # preference change at all — not installed by pkgs.thunar itself, so
-    # without this every settings-dialog change was silently lost on restart.
+    # without it every settings-dialog change is silently lost on restart.
     #
     # thunar-archive-plugin — right-click create/extract archives (Nautilus
     # gets this for free via gnome-autoar, Thunar needs it explicit).

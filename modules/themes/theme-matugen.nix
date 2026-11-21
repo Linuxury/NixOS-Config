@@ -1,30 +1,33 @@
 # ===========================================================================
 # modules/themes/theme-matugen.nix — matugen color sync (Kvantum only)
 #
-# Trimmed down to Kvantum — the one remaining app with no Noctalia native
-# theming template (confirmed by reading Noctalia's installed + community
-# template lists: no kvantum entry anywhere). Everything else that used to
-# live here (kitty, gtk, qt, starship, neovim, pywalfox, umbriel's own
-# colors) is handled by Noctalia's own app-theming now — see
-# modules/shells/noctalia/shell-noctalia.nix for how that's enabled.
+# Home Manager module that themes Kvantum (Qt) from the current wallpaper
+# with matugen. Kvantum is the one app Noctalia has no theming template for;
+# every other app is themed by Noctalia itself (see
+# modules/shells/noctalia/shell-noctalia.nix). It does not depend on the
+# compositor: turn it on by importing it from a compositor module
+# (umbriel.nix does); remove the import to turn it off.
 #
-# Moved out of modules/compositors/umbriel/ — Kvantum theming has nothing
-# to do with which compositor is running, it was only nested under Umbriel
-# by historical accident (copied from Hyprland's original matugen module).
-# Import this from any compositor module that wants Kvantum theming.
-#
-# Shell-agnostic color sync. Works with any shell that writes the two
-# handoff files below when the wallpaper changes:
-#
+# Works with any shell that writes these handoff files when the wallpaper
+# changes:
 #   ~/.local/share/current-wallpaper       — path to the active wallpaper
 #   ~/.local/share/current-wallpaper-color — dominant color hint (optional)
 #
-# Path unit watches current-wallpaper. If a color hint file exists, it is
-# used as the matugen input; otherwise ImageMagick extracts the dominant
-# color as a fallback.
+#   home.packages                  matugen, imagemagick
+#   systemd.user.services.matugen  oneshot: reads the wallpaper, takes the
+#                                  hint colour or the ImageMagick dominant
+#                                  colour, runs `matugen color hex`, copies
+#                                  the wallpaper to the SDDM background
+#                                  directory if it exists; skips a wallpaper
+#                                  it already processed
+#   systemd.user.paths.matugen     runs the service when current-wallpaper
+#                                  changes
+#   systemd.user.timers.matugen    runs it once 10s after session start
+#   ~/.config/matugen/config.toml  dark mode, two Kvantum templates
+#                                  (kvconfig + svg)
 #
-# matugen 4.0.0 HashMap iteration bug: crashes after 2–3 of 5 templates per
-# run — run 3× to ensure full coverage.
+# matugen is run three times per change: a HashMap iteration bug in matugen
+# 4.0.0 made it stop after 2–3 of its templates per run.
 # ===========================================================================
 { config, pkgs, ... }:
 
@@ -109,13 +112,17 @@
   };
 
   # Fires 10s after session start so the shell has time to set the initial
-  # wallpaper and write current-wallpaper before we read it.
+  # wallpaper and write current-wallpaper before the service reads it.
   systemd.user.timers.matugen = {
     Unit.Description = "Apply matugen colors on session start";
     Timer.OnActiveSec = "10s";
     Install.WantedBy  = [ "graphical-session.target" ];
   };
 
+  # matugen config.toml:
+  #   [config] mode          "dark" or "light" scheme
+  #   [config] reload_apps   false: matugen does not signal running apps
+  #   [templates.<name>]     input_path (template) -> output_path (result)
   home.file.".config/matugen/config.toml".text = ''
     [config]
     mode = "dark"

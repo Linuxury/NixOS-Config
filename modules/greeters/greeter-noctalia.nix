@@ -13,11 +13,9 @@
 #     NixOS module — see inputs.noctalia-greeter.nixosModules.default)
 #   - Default session — "Umbriel" (Name= from Umbriel's own session .desktop
 #     entry, registered automatically by modules/compositors/umbriel).
-#     session.default matches by picker label, not id. This module is shared
-#     across every host that imports shells/noctalia — currently only
-#     Ryzen5900x — so if a second Noctalia-shell host later runs a different
-#     compositor, this default needs to become per-host instead of hardcoded
-#     here. Not worth solving until there's a second such host.
+#     session.default matches by picker label, not id. The default is shared
+#     by every host that imports shells/noctalia (Ryzen5900x), so a host with
+#     a different compositor would need a per-host default instead.
 #   - Cursor theme (BreezeX-Light, matches the Hyprland/Noctalia session —
 #     see modules/themes/gtk.nix). Not in nixpkgs; provided by the
 #     breezex-cursors overlay (flake.nix). Installed system-wide below so the
@@ -31,6 +29,16 @@
 #     not something worth replicating declaratively (unlike hypr-sddm's
 #     matugen-driven wallpaper copy, which exists because SDDM has no
 #     native concept of "the shell's current theme").
+#
+# Options (services.displayManager.noctalia-greeter.*):
+#   enable                   run the greeter under greetd
+#   package                  greeter build (here from the flake input)
+#   passwordless-sync-users  users allowed the appearance-only sync without
+#                            a password prompt (Polkit rule)
+#   settings                 greeter config: session.default, appearance
+#                            (scheme, theme_mode), cursor (theme, size, path)
+#   Not set here: greeter-args (extra noctalia-greeter-session args),
+#   cursorTheme.package (deprecated, use settings.cursor.path).
 # ===========================================================================
 
 { config, inputs, lib, pkgs, ... }:

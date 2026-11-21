@@ -5,15 +5,15 @@
 #   1. pam_time blocks new logins outside those hours.
 #   2. Timers warn alex 5 minutes before the cutoff, then end his session.
 #
-# The rule is added to "login" as a structured rule, NOT via .text: .text
-# replaces the whole generated file, and greetd's own PAM file is nothing but
-# include/substack login — that's what broke greetd on 2026-09-13. PAM_SERVICE
-# stays "greetd" through the include, hence "greetd|login" in time.conf. Only
-# lines naming alex restrict anyone, so the cosmic-greeter account and the
-# other users pass through untouched.
+# The rule is added to "login" as a structured rule, not via .text: .text
+# replaces the whole generated PAM file, and greetd's own PAM file is only
+# include/substack login. PAM_SERVICE stays "greetd" through the include, hence
+# "greetd|login" in time.conf. Only lines naming alex restrict anyone, so the
+# cosmic-greeter account and the other users pass through untouched.
 #
+# To change hours: edit the let block (start, weekdayEnd/Warn, weekendEnd/Warn).
 # Imported by: Alex-Desktop, Alex-Laptop
-# Rollback: drop the import from the host file and switch.
+# To turn off: drop the import from the host file.
 # ===========================================================================
 
 { pkgs, ... }:
@@ -48,6 +48,11 @@ let
   '';
 in
 {
+  # PAM account rule (security.pam.services.<svc>.rules.account.<name>):
+  #   order       position in the stack, before pam_unix's account rule (11000)
+  #   control     required = deny the login if pam_time says no
+  #   modulePath  pam_time.so from linux-pam
+  #   args        conffile= points at the file below
   security.pam.services.login.rules.account.time = {
     order = 10900; # before pam_unix's account rule (11000)
     control = "required";
@@ -61,6 +66,8 @@ in
     greetd|login;*;${user};Wk${hhmm start}-${hhmm weekdayEnd}|Wd${hhmm start}-${hhmm weekendEnd}
   '';
 
+  # Warning: oneshot service fired by a timer 5 minutes before the cutoff;
+  # sends a critical desktop notification to the user's session bus.
   systemd.services.alex-screen-time-warn = {
     description = "Warn ${user} that screen time ends in 5 minutes";
     serviceConfig = { Type = "oneshot"; ExecStart = warnScript; };
@@ -73,6 +80,8 @@ in
     ];
   };
 
+  # Cutoff: oneshot service that terminates the user's session. Persistent = true
+  # makes a missed run (machine asleep or off at the cutoff) fire on wake/boot.
   systemd.services.alex-screen-time-logout = {
     description = "End ${user}'s session outside allowed hours";
     serviceConfig = { Type = "oneshot"; ExecStart = logoutScript; };

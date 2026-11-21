@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# Bump Media-Server's pinned Plex to the newest build on a channel.
-#   scripts/plex-bump            # Plex Pass beta (default)
-#   scripts/plex-bump public     # public release
-# Beta needs your Plex token: $PLEX_TOKEN, ~/.config/plex-token, or the server's Preferences.xml.
-# Rewrites hosts/Media-Server/plex.json only; commit and nru yourself.
+# Update the Plex Media Server version pinned for hosts/Media-Server (plex.json).
+# Usage:
+#   scripts/plex-bump            Plex Pass beta channel (default, "plexpass")
+#   scripts/plex-bump public     public release channel
+# The beta channel needs a Plex token, read from the first source that has one:
+#   $PLEX_TOKEN, ~/.config/plex-token, or PlexOnlineToken in the server's Preferences.xml.
+# Writes version and sha256 to hosts/Media-Server/plex.json only. Exits 0 if already current.
+# Commit the change and rebuild the host yourself (nru).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 channel=${1:-plexpass}

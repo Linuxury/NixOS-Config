@@ -1,28 +1,26 @@
 # ===========================================================================
-# hosts/Asus-A15/Asus-A15.nix — Asus TUF Gaming A15 FA506IU
+# hosts/Asus-A15/Asus-A15.nix — Asus TUF Gaming A15 FA506IU laptop
 #
-# Owner: babylinux
 # Hardware: AMD Ryzen 7 4800H, Nvidia GTX 1660 Ti (hybrid graphics)
-# Type: Laptop — LUKS encrypted, hybrid GPU, gaming focused
-# Role: Wife's laptop
+# Type: laptop with LUKS full-disk encryption (disk.nix), hybrid GPU, for gaming
+# Role: the babylinux account's laptop
 #
 # Enabled modules:
-#   - Nvidia hybrid drivers (AMD iGPU + Nvidia dGPU)
-#   - KDE (default DE)
-#   - COSMIC (disabled)
-#   - Gaming
+#   - AMD drivers (hardware.gpu = "amd", see the GPU section)
+#   - KDE Plasma desktop (the default session)
+#   - Gaming, Asus laptop control (asusctl, supergfxctl)
 #
 # Special considerations:
-#   - Hybrid graphics requires PRIME offloading
-#   - Asus battery management via asusctl
-#   - PCI bus IDs must be filled in manually (see docs/)
+#   - Hybrid graphics needs PRIME offloading. It stays commented out until the bus IDs are filled in.
+#   - Asus battery management and fan profiles come from asusctl.
+#   - The PCI bus IDs are placeholders and must be filled in on this machine (see the PRIME section).
 # ===========================================================================
 
 { pkgs, ... }:
 
 {
   imports = [
-    # Disks, swap, LUKS and boot loader (written by the installer)
+    # Local filesystems, LUKS, swap (disk.nix)
     ./disk.nix
 
     # ==============================================================
@@ -131,12 +129,9 @@
     #   auto-update         — weekly nixos-rebuild from GitHub
     #   syncthing-babylinux — vault + nixos-config sync (babylinux pair)
     #   snapper             — BTRFS automatic snapshots
-    # ==============================================================
-    # DISABLED 2026-09-16: this host still needs the @steam btrfs
-    # subvolume created before it's safe to switch (see PENDING.md) —
-    # auto-update would crash-loop the boot the moment it fires, same as
-    # it did on Ryzen5900x. Re-enable (uncomment this + the primaryUser
-    # line below) once @steam has been created+populated here.
+    # Auto-update is off on this host until the @steam Btrfs subvolume exists and holds the
+    # Steam library (disk.nix mounts it at the Steam path). Before then, auto-update would
+    # fail on boot. To re-enable: uncomment this line and the primaryUser line below.
     # ../../modules/services/auto-update/auto-update.nix
     ../../modules/services/syncthing-babylinux.nix
     #../../modules/services/snapper.nix
@@ -163,10 +158,11 @@
   networking.hostName = "Asus-A15";
 
   # ==============================================================
-  # GPU driver selection
-  # Nvidia hybrid triggers the PRIME offload setup in drivers.nix
+  # GPU driver selection (hardware.gpu)
+  #   "nvidia-hybrid"  AMD iGPU and Nvidia dGPU with PRIME offload (drivers.nix); needs the bus IDs below
+  #   "amd"            AMD only (set here)
+  # TODO: switch to "nvidia-hybrid" once the PCI bus IDs are filled in below.
   # ==============================================================
-  # TODO: switch back to "nvidia-hybrid" once PCI bus IDs are filled in above
   hardware.gpu = "amd";
 
   # ==============================================================
@@ -178,21 +174,16 @@
   hardware.lemokey-keychron.enable = false;
 
   # ==============================================================
-  # PRIME PCI Bus IDs
-  #
-  # These values are placeholders — you MUST replace them with the
-  # actual IDs from this specific machine.
-  #
-  # To find them, boot any Linux live USB on the Asus A15 and run:
+  # PRIME PCI bus IDs — hardware.nvidia.prime (commented out until filled in)
+  #   amdgpuBusId  the AMD iGPU
+  #   nvidiaBusId  the Nvidia dGPU
+  # The values below are placeholders. Replace them with this machine's IDs, then uncomment the block.
+  # To find them, boot a Linux live system on this laptop and run:
   #   lspci | grep -E "VGA|3D"
-  #
   # Example output:
   #   05:00.0 VGA compatible controller: Advanced Micro Devices [AMD/ATI] ...
   #   01:00.0 3D controller: NVIDIA Corporation TU116M [GeForce GTX 1660 Ti]
-  #
-  # Convert to Nix format: "05:00.0" becomes "PCI:5:0:0"
-  # Then fill in below and remove this comment block.
-  # This is tracked in docs/manual-steps.md
+  # Convert to Nix format: "05:00.0" becomes "PCI:5:0:0".
   # ==============================================================
   # hardware.nvidia.prime = {
   #   amdgpuBusId = "PCI:FILL:IN"; # AMD iGPU — replace with actual ID
@@ -200,19 +191,22 @@
   # };
   # TODO: fill in PCI bus IDs from: lspci | grep -E "VGA|3D"
 
-  # services.nixos-auto-update.primaryUser = "babylinux"; # see DISABLED note above
+  # services.nixos-auto-update.primaryUser = "babylinux"; # set this when auto-update is re-enabled (see the imports block)
 
+  # Session the display manager pre-selects (services.displayManager.defaultSession): Plasma (KDE).
   services.displayManager.defaultSession = "plasma";
 
   # ==============================================================
-  # Filesystem — BTRFS with subvolumes on top of LUKS
+  # Network shares — CIFS mounts from the home servers
+  #   uid=babylinux, gid=users owner of the files shown (group users)
+  #   nofail   boot continues if the server is offline (common away from home)
+  #   Each share mounts on first access and unmounts after 60 s idle.
+  # The local BTRFS-on-LUKS layout is in disk.nix.
   # ==============================================================
   fileSystems = {
 
     # -----------------------------------------------------------------------
-    # Media-Server Samba share
-    # Automounts on first access, disconnects after 60s idle.
-    # nofail: non-fatal if the server is offline (common on laptop away from home).
+    # Media-Server share (//10.0.0.3/Media-Server).
     # -----------------------------------------------------------------------
     "/mnt/Media-Server" = {
       device  = "//10.0.0.3/Media-Server";
@@ -252,7 +246,7 @@
 
   };
 
-  # Craft apps — Office + the old Design set (photo, graphics, 3d) on the laptop
+  # craft-apps suites installed on this laptop: office, photo, graphics, 3d (craftApps.suites)
   craftApps.suites = [ "office" "photo" "graphics" "3d" ];
 
   # ==============================================================
@@ -267,7 +261,7 @@
   environment.systemPackages = with pkgs; [
     cifs-utils
 
-    # babylinux — everyday tools
+    # Everyday tools for the babylinux account
     nix-output-monitor # Progress bar + TUI for nix builds (nom)
     zoom-us            # Video conferencing
     # obsidian           # Markdown-based knowledge base / note-taking app
@@ -278,11 +272,11 @@
     # video editors, image editors, etc. go here so each host can
     # enable/disable them independently.
     # ==============================================================
-    # affinity-v3  # re-enable when vc_redist.x64.exe CDN recovers (Microsoft 503s as of 2026-07-04)
+    # affinity-v3  # off: re-enable once the vc_redist.x64.exe download (Microsoft's CDN) works
   ];
 
   # ==============================================================
-  # Agenix secrets
+  # Agenix secrets — the SMB login for the CIFS mounts above (root-only, mode 0400)
   # ==============================================================
   age.secrets.smb-credentials = {
     file  = ../../secrets/network/smb-credentials.age;
@@ -291,45 +285,37 @@
   };
 
   # ==============================================================
-  # Kernel
+  # Kernel — boot.kernelPackages (set here: linuxPackages_latest, the mainline latest)
+  #   pkgs.linuxPackages_xanmod_latest and pkgs.linuxPackages_zen are commented out.
   # ==============================================================
   boot.kernelPackages = pkgs.linuxPackages_latest;          # Vanilla
   # boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;  # XanMod
   # boot.kernelPackages = pkgs.linuxPackages_zen;            # Zen
 
   # ==============================================================
-  # Asus TUF specific kernel modules
-  #
-  # asus-wmi and asus-nb-wmi handle Asus-specific hardware:
-  #   - Keyboard backlight control
-  #   - Fan boost modes
-  #   - ROG/TUF hotkeys
+  # Asus TUF kernel modules (boot.kernelModules)
+  #   asus-wmi, asus-nb-wmi  Asus WMI drivers: keyboard backlight, fan boost modes, hotkeys
   # ==============================================================
   boot.kernelModules = [ "asus-wmi" "asus-nb-wmi" ];
 
   # ==============================================================
-  # asusctl — Asus laptop control daemon
-  #
-  # asusctl gives you control over Asus-specific features:
-  #   - Battery charge limit (e.g. stop charging at 80%)
-  #   - Fan curves and performance profiles
-  #   - Keyboard backlight (if available)
-  #
-  # After first boot set battery limit with:
-  #   asusctl -c 80
+  # asusctl — Asus laptop control daemon (services.asusd.enable, set here)
+  #   charge limit   stop charging at a set percentage (for example 80)
+  #   fan curves     and performance profiles
+  #   keyboard backlight, where the hardware has one
+  # After first boot, set the charge limit with: asusctl -c 80
   # ==============================================================
   services.asusd.enable = true;
 
   # ==============================================================
-  # Power management for hybrid laptop
-  #
-  # supergfxctl works alongside asusctl to manage GPU switching.
-  # It handles powering down the Nvidia GPU when not in use which
-  # is critical for battery life on hybrid graphics laptops.
+  # Hybrid GPU power — supergfxctl (services.supergfxd.enable, set here)
+  # Works with asusctl to switch GPUs. It powers the Nvidia GPU down when it is not in use,
+  # which matters for battery life on hybrid graphics laptops.
   # ==============================================================
   services.supergfxd.enable = true;
 
-  # TLP for general power management
+  # TLP for general power management (services.tlp, written to tlp.conf).
+  # AC = on charger, BAT = on battery. See tlp.conf(5) for each key.
   services.tlp = {
     enable = true;
     settings = {
@@ -344,10 +330,16 @@
     };
   };
 
+  # power-profiles-daemon is off: TLP manages the power settings, and the two conflict.
   services.power-profiles-daemon.enable = false;
 
   # ==============================================================
-  # Touchpad
+  # Touchpad — libinput (services.libinput.touchpad)
+  #   tapping               tap to click (set here)
+  #   naturalScrolling      reverse scroll direction (set here)
+  #   scrollMethod          "twofinger": scroll with two fingers (set here)
+  #   middleEmulation       pressing left and right together acts as a middle click (set here)
+  #   disableWhileTyping    ignore the touchpad while typing (set here)
   # ==============================================================
   services.libinput = {
     enable = true;
@@ -372,7 +364,8 @@
   };
 
   # ==============================================================
-  # User account
+  # User accounts
+  # The babylinux account (daily user, with sudo through wheel) is the one used on this laptop.
   # ==============================================================
   users.users.babylinux = {
     isNormalUser = true;
@@ -387,8 +380,8 @@
     shell = pkgs.zsh;
   };
 
-  # linuxury user — remote admin: SSH + sudo (wheel), no home on this host.
-  # Password set by hand per host (mutableUsers), like every other machine.
+  # Administrator account (linuxury): remote admin over SSH with sudo (wheel). It has no home
+  # directory on this host. Its password is set by hand on each host (mutableUsers).
   users.users.linuxury = {
     isNormalUser = true;
     extraGroups  = [ "wheel" ];
@@ -398,7 +391,7 @@
     shell        = pkgs.bash;
   };
 
-  # Hide linuxury from the login screen — emergency account only
+  # Hide the administrator account from the login screen (emergency account only).
   services.displayManager.hiddenUsers = [ "linuxury" ];
 
   programs.zsh.enable = true;

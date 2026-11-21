@@ -1,3 +1,7 @@
+# Breeze Chameleon Dark icon theme (L4ki/Breeze-Chameleon-Icons), folder
+# colors follow the accent color. Exposed as pkgs.breeze-chameleon-dark-icons
+# by the overlay in flake.nix; installed by kde.nix (drop it there to remove).
+# Bump: change version + rev + hash below.
 { lib, stdenvNoCC, fetchFromGitHub }:
 
 stdenvNoCC.mkDerivation {

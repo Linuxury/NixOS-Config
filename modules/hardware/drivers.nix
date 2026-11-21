@@ -1,52 +1,50 @@
 # ===========================================================================
 # modules/hardware/drivers.nix — GPU and CPU driver configuration
 #
-# This module uses a simple option system. Each host declares which
-# hardware type it has, and this module enables the right drivers.
+# Picks GPU drivers, graphics libraries and CPU microcode from one host
+# option. Every host must set exactly one value (there is no default):
 #
-# In your host config file you'll set ONE of these:
-#
-#   hardware.gpu = "amd";          # AMD CPU + AMD GPU (most of your machines)
+#   hardware.gpu = "amd";          # AMD CPU + AMD GPU (most hosts)
 #   hardware.gpu = "intel";        # Intel CPU + Intel integrated graphics
 #   hardware.gpu = "nvidia-hybrid"; # AMD CPU + Nvidia GPU (e.g. Asus-A15)
 #
-# That's it. The rest is handled here automatically.
+# Upstream hardware.graphics options:
+#   enable / enable32Bit             OpenGL/Vulkan, plus 32-bit libs (Steam)
+#   extraPackages / extraPackages32  VA-API, OpenCL and other driver add-ons
+#   package / package32              Mesa build to use (not set here)
 # ===========================================================================
 
 { config, pkgs, lib, ... }:
 
-# lib.mkOption lets us define a custom option that host configs can set.
-# Think of it like a variable that this module reads to decide what to enable.
+# hardware.gpu — this module's one option; each block below is enabled by
+# its value.
 {
   options.hardware.gpu = lib.mkOption {
-    # The type must be one of these exact strings
     type = lib.types.enum [ "amd" "intel" "nvidia-hybrid" ];
-    # No default — every host MUST declare its GPU type or it will error.
-    # This prevents silent misconfiguration.
+    # No default: evaluation fails if a host forgets to set it.
     description = "GPU type for this host. Must be set in every host config.";
   };
 
-  # config is where the actual settings live.
-  # lib.mkMerge combines multiple conditional blocks cleanly.
+  # One lib.mkIf block per GPU type, combined with lib.mkMerge.
   config = lib.mkMerge [
 
     # =========================================================================
     # AMD — used by most desktops and laptops
     #
-    # amdgpu is the open source AMD driver. It's built into the Linux kernel
-    # and supports Vulkan, OpenGL, and hardware video decoding out of the box.
+    # amdgpu is the open-source AMD kernel driver; Mesa (RADV, radeonsi)
+    # provides Vulkan, OpenGL and VA-API video decoding on top of it.
     # =========================================================================
     (lib.mkIf (config.hardware.gpu == "amd") {
-      # Load the amdgpu kernel module early in the boot process.
-      # "early" loading means it's available before the filesystem mounts,
-      # which prevents a flash of black screen or framebuffer glitch on boot.
+      # Load amdgpu in the initrd, before the root filesystem mounts, so the
+      # console switches to the GPU's framebuffer early without a black flash.
       boot.initrd.kernelModules = [ "amdgpu" ];
 
       services.xserver.videoDrivers = [ "amdgpu" ];
 
       # AMD GPU firmware blobs (PSP, SMU, DCN, GFX) ship in linux-firmware,
-      # which is a redistributable package. Without this, amdgpu loads but
-      # finds no firmware and fails to initialize the GPU entirely.
+      # a redistributable package. Without them amdgpu loads but cannot
+      # initialise the GPU. (enableAllFirmware would add non-redistributable
+      # blobs too.)
       hardware.enableRedistributableFirmware = true;
 
       hardware = {
@@ -55,27 +53,27 @@
           enable = true;
           # 32-bit support is required for Steam and many games
           enable32Bit = true;
-          # Extra packages for hardware video decoding (AMD Video Codec Engine)
-          # This offloads video playback to the GPU instead of the CPU
+          # OpenCL for GPU compute through ROCm. VA-API video decoding needs
+          # nothing extra: Mesa's radeonsi driver includes it.
           extraPackages = with pkgs; [
             rocmPackages.clr # OpenCL support for GPU compute
             rocmPackages.clr.icd # registers clr with the OpenCL loader (/etc/OpenCL/vendors); without it: CL error -1001
           ];
-          # 32-bit support for Steam — RADV is included in mesa32 automatically
+          # 32-bit RADV comes with the 32-bit Mesa that enable32Bit installs
         };
 
-        # AMD-specific CPU microcode updates.
-        # Microcode patches fix CPU bugs without needing a BIOS update.
+        # AMD CPU microcode updates, loaded at boot; they fix CPU bugs
+        # without a BIOS update.
         cpu.amd.updateMicrocode = true;
       };
     })
 
     # =========================================================================
-    # INTEL — Used by MinisForum UN1250 and Radxa X4 (headless servers)
+    # INTEL — used by MinisForum UN1250 and Radxa X4 (headless servers)
     #
-    # Intel integrated graphics use the i915 kernel driver.
-    # For headless servers this mostly just enables the correct kernel module
-    # so the system boots cleanly without GPU errors in the logs.
+    # Intel integrated graphics use the i915 kernel driver. On headless
+    # servers this mainly loads the right module so boot logs no GPU errors,
+    # and gives VA-API decoding to services that transcode.
     # =========================================================================
     (lib.mkIf (config.hardware.gpu == "intel") {
       boot.initrd.kernelModules = [ "i915" ];
@@ -97,8 +95,8 @@
         # Intel CPU microcode updates
         cpu.intel.updateMicrocode = true;
 
-        # linux-firmware: i915 GuC/HuC/DMC blobs plus whatever WiFi/BT chip the
-        # board carries (MinisForum's MediaTek MT7902 BT reset-looped without it).
+        # linux-firmware: i915 GuC/HuC/DMC blobs plus the board's WiFi/BT
+        # firmware (MinisForum's MediaTek MT7902 Bluetooth needs it).
         enableRedistributableFirmware = true;
       };
     })
@@ -111,11 +109,25 @@
     #   - The Nvidia discrete GPU (more powerful, used for demanding tasks)
     #
     # PRIME offloading lets the system use the Nvidia GPU on demand
-    # (e.g., for a game) while the AMD iGPU handles everything else.
-    # This saves battery compared to keeping Nvidia always on.
+    # (e.g. for a game) while the AMD iGPU handles everything else, which
+    # saves battery compared to keeping Nvidia always on.
+    #
+    # hardware.nvidia options used below, and others available:
+    #   modesetting.enable          kernel modesetting (needed for PRIME)
+    #   prime.offload.enable        Nvidia only on request (nvidia-offload)
+    #   prime.sync.enable           always render on Nvidia (alternative)
+    #   prime.reverseSync.enable    Nvidia drives the external outputs
+    #   prime.amdgpuBusId / nvidiaBusId   PCI bus IDs, set per host
+    #   powerManagement.enable      save VRAM across suspend
+    #   powerManagement.finegrained power the dGPU off when idle (offload)
+    #   open                        open-source kernel module
+    #   package / branch            driver build (default branch "stable")
+    #   nvidiaSettings              install the nvidia-settings GUI
+    #   dynamicBoost.enable, nvidiaPersistenced, gsp.enable, videoAcceleration
     # =========================================================================
     (lib.mkIf (config.hardware.gpu == "nvidia-hybrid") {
-      # Load both GPU drivers
+      # amdgpu in the initrd for the display; the Nvidia modules come from
+      # videoDrivers = [ "nvidia" ].
       boot.initrd.kernelModules = [ "amdgpu" ];
 
       services.xserver.videoDrivers = [ "nvidia" ];
@@ -127,8 +139,8 @@
         };
 
         nvidia = {
-          # Use the stable Nvidia driver package.
-          # modesetting is required for PRIME to work correctly.
+          # Kernel modesetting, required for PRIME. The driver package is the
+          # default "stable" branch.
           modesetting.enable = true;
 
           # PRIME offloading — Nvidia GPU activates only when asked.
@@ -140,19 +152,18 @@
               enable = true;
               enableOffloadCmd = true; # Adds the `nvidia-offload` helper command
             };
-            # amdgpuBusId and nvidiaBusId are machine-specific.
-            # They must be set in the host config (e.g. hosts/Asus-A15/Asus-A15.nix).
-            # Setting them here would conflict with the host-level definition.
+            # amdgpuBusId and nvidiaBusId are machine-specific and are set in
+            # the host config (e.g. hosts/Asus-A15/Asus-A15.nix), not here.
           };
 
-          # Power management helps with suspend/resume on hybrid systems
+          # Saves VRAM across suspend/resume on hybrid systems
           powerManagement = {
             enable = true;
             finegrained = true; # Allows Nvidia GPU to fully power down when idle
           };
 
-          # Open source Nvidia kernel module (available since driver 515+)
-          # More stable on newer kernels than the fully proprietary module
+          # Open-source Nvidia kernel module (Turing and newer GPUs) instead
+          # of the proprietary one
           open = true;
         };
 

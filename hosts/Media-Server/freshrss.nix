@@ -1,20 +1,10 @@
 # ===========================================================================
-# hosts/Media-Server/freshrss.nix — FreshRSS feed reader
-#
-# Migrated from Radxa-X4.
+# hosts/Media-Server/freshrss.nix — FreshRSS feed reader (RSS and Atom)
 #
 # Web UI: http://Media-Server:8080  (LAN)
 #         http://media-server.<tailnet>.ts.net:8080  (Tailscale)
 #
-# Data migration from Radxa — run once after first deploy:
-#   On Radxa-X4:
-#     sudo systemctl stop freshrss freshrss-updater freshrss-config
-#     sudo tar -czf /tmp/freshrss-data.tar.gz /var/lib/freshrss
-#     scp /tmp/freshrss-data.tar.gz media-server:/tmp/
-#   On Media-Server:
-#     sudo tar -xzf /tmp/freshrss-data.tar.gz -C /
-#     sudo chown -R freshrss:freshrss /var/lib/freshrss
-#     sudo systemctl restart freshrss freshrss-updater
+# Imported by Media-Server.nix. To turn FreshRSS off, comment out its line in that imports block.
 # ===========================================================================
 
 { config, pkgs, lib, ... }:
@@ -59,13 +49,22 @@ let
 
 in
 {
-  # Agenix secret — same file, now decrypted for Media-Server's host key
+  # Admin password file for FreshRSS (agenix secret): owned by the freshrss user, mode 0400.
   age.secrets.freshrss-admin-password = {
     file  = ../../secrets/services/freshrss-admin-password.age;
     owner = "freshrss";
     mode  = "0400";
   };
 
+  # FreshRSS module (services.freshrss)
+  #   enable        run FreshRSS (set here)
+  #   baseUrl       URL the web UI is served at (set here)
+  #   defaultUser   default username (set here)
+  #   passwordFile  password for that user (set here: the agenix secret)
+  #   virtualHost   nginx virtual host name (set here)
+  #   api.enable    API for mobile apps and third-party clients (Google Reader and Fever APIs);
+  #                 each user sets an API password in their profile (set here)
+  #   extensions    extension packages to install (listed below)
   services.freshrss = {
     enable       = true;
     baseUrl      = "http://Media-Server:8080";
@@ -74,6 +73,8 @@ in
     virtualHost  = "freshrss";
     api.enable   = true;
 
+    # Extensions come from three sources: nixpkgs, the official FreshRSS/Extensions repo,
+    # and third-party GitHub repositories. The GitHub sources are pinned by commit and hash.
     extensions = with pkgs.freshrss-extensions; [
 
       # From nixpkgs
@@ -274,7 +275,9 @@ in
     ];
   };
 
-  # Serve on port 8080; the freshrss module handles PHP-FPM and locations
+  # Serve on port 8080 on all interfaces. The freshrss module sets up PHP-FPM and the locations.
+  #   listen      address and port (0.0.0.0:8080, marked default_server)
+  #   serverName  "_": the catch-all name, so any hostname reaches it
   services.nginx.virtualHosts.freshrss = {
     listen     = [{ addr = "0.0.0.0"; port = 8080; extraParameters = [ "default_server" ]; }];
     serverName = "_";  # catch-all — respond to any hostname on port 8080

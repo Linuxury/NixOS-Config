@@ -1,9 +1,12 @@
 # ===========================================================================
 # modules/users/uids.nix — fixed UID per person, identical on every host
 #
-# Without pins NixOS hands out UIDs alphabetically per host (alex < babylinux
-# < linuxury), so the same person got 1000 on one machine and 1002 on another.
-# Applied by modules/users/uid-pin; also read by the installer.
+# Plain attrset { <username> = <uid>; } imported (not a module) by
+# modules/users/uid-pin, which sets users.users.<name>.uid from it, and read by
+# the installer. Without pins NixOS assigns UIDs alphabetically per host
+# (alex < babylinux < linuxury), so one person could differ between machines.
+# To add a person: add a line here; to change a UID, see uid-pin.nix (existing
+# home directories need a migration).
 # ===========================================================================
 {
   linuxury  = 1000;

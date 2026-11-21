@@ -1,27 +1,31 @@
 # ===========================================================================
 # modules/system/graphical/helium.nix — Helium browser
 #
-# Helium is a privacy-focused Chromium-based browser with built-in ad/
-# tracker blocking, split-view, and !bang search shortcuts.
-# Not in nixpkgs — installed via the helium-browser community flake.
+# Helium is a privacy-focused Chromium-based browser with built-in ad and
+# tracker blocking, split view, and !bang search shortcuts. It is not in
+# nixpkgs; the package comes from the helium-browser flake input.
 #
-# The desktop entry override passes --password-store=gnome-libsecret so
-# Helium connects to the already-unlocked system keyring at login instead
-# of prompting for credentials on every launch.
-#
-# Enable per host by importing this module:
+# Turn it on by importing this module from a host:
 #   ../../modules/system/graphical/helium.nix
+# Remove the import to turn it off.
 #
-# By default also deploys the "de-slop" managed policy
-# (chromium/policies.json in the Dotfiles input) to
-# /etc/chromium/policies/managed/policies.json — telemetry/tracking/password-
-# manager off, uBlock Origin and Proton Pass force-installed, uBlock preloaded
-# with a hardened filter list plus the yt-shorts hider
-# (github.com/gijsdev/ublock-hide-yt-shorts). Helium
-# bundles its own uBlock Origin fork and its extension model (MV2 vs MV3,
-# and whether it even reads the standard Chromium policy path) hasn't been
-# confirmed live — check chrome://policy and chrome://extensions after
-# enabling. Set programs.helium.deSlop.enable = false; on a host to opt out.
+#   environment.systemPackages   Helium for every user on the host
+#   environment.etc."chromium/policies/managed/policies.json"
+#                                the managed policy, when deSlop is on
+#   home.file helium.desktop     desktop entry with
+#                                --password-store=gnome-libsecret, so Helium
+#                                uses the keyring unlocked at login instead
+#                                of asking for a password on every launch
+#
+# Option of this module:
+#   programs.helium.deSlop.enable   (default true) deploys
+#     chromium/policies.json from the dotfiles input: telemetry, tracking
+#     and password manager off, uBlock Origin and Proton Pass
+#     force-installed, uBlock preloaded with a hardened filter list plus the
+#     yt-shorts hider (github.com/gijsdev/ublock-hide-yt-shorts). Set false
+#     to opt out. Helium bundles its own uBlock Origin fork, and whether it
+#     reads the standard Chromium policy path is unverified; check
+#     chrome://policy and chrome://extensions after enabling.
 # ===========================================================================
 
 { config, pkgs, inputs, lib, ... }:
@@ -56,9 +60,9 @@ in
       # =======================================================================
       # Desktop entry override — bind Helium to the system keyring
       #
-      # Placed in ~/.local/share/applications/ so it shadows the package's entry
-      # in XDG_DATA_DIRS. Using home-manager.sharedModules applies it to every
-      # user on this host without a separate per-user import.
+      # Written to ~/.local/share/applications/, which comes before the
+      # package's entry in XDG_DATA_DIRS and so overrides it.
+      # home-manager.sharedModules applies it to every user on the host.
       # =======================================================================
       home-manager.sharedModules = [
         {

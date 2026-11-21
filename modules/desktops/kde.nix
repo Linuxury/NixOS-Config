@@ -7,13 +7,14 @@
 #
 # To enable it on a host, simply import this module alongside cosmic/cosmic.nix.
 # Both can coexist — the user picks which one to log into at the login screen.
+# Remove the import to turn it off.
 # ===========================================================================
 
 { config, pkgs, lib, ... }:
 
 {
   imports = [
-    ../greeters/sddm.nix  # SDDM + Catppuccin Mocha/Mauve login screen
+    ../greeters/sddm.nix  # SDDM + hypr-sddm login screen
   ];
 
   # =========================================================================
@@ -21,6 +22,10 @@
   #
   # plasma6 is the current generation of KDE.
   # enabling it automatically pulls in Qt6, KDE frameworks, and Plasma itself.
+  #
+  #   enable        install Plasma 6 and register its sessions
+  #   Not set here: notoPackage (font package Plasma pulls in); unwanted
+  #   default apps go in environment.plasma6.excludePackages.
   # =========================================================================
   services.desktopManager.plasma6.enable = true;
 
@@ -38,7 +43,7 @@
   # Display Manager (Login Screen) — KDE-specific SDDM overrides
   #
   # greeters/sddm.nix (imported above) handles: enable, wayland.enable,
-  # Catppuccin theme, PAM keyring, sddm user groups, and /run/user/175.
+  # hypr-sddm theme, PAM keyring, sddm user groups, and /run/user/175.
   #
   # KDE requires kwin_wayland as the greeter compositor instead of the
   # default weston. The CompositorCommand is forced here so it takes
@@ -69,6 +74,11 @@
   #
   # Same portal system as COSMIC but using KDE's implementation.
   # Handles file pickers, screen sharing etc for KDE apps.
+  #
+  #   enable        run xdg-desktop-portal
+  #   extraPortals  backends to install (here the KDE one)
+  #   Not set here: config (per-interface backend order), xdgOpenUsePortal,
+  #   configPackages.
   # =========================================================================
   xdg.portal = {
     enable = true;
@@ -93,7 +103,7 @@
     ant-dark-kde                  # Ant-Dark KDE theme (Aurorae, Plasma, color scheme, Kvantum)
     breeze-chameleon-dark-icons   # Breeze Chameleon Dark icon theme (adaptive folder colors)
     darkly                    # Window decoration + application style (fork of Lightly)
-    # kara: broken on Plasma 6.8 (libtaskmanager dropped xwindowtasksmodel.h) — re-enable when nixpkgs/upstream fixes it
+    # kara: does not build on Plasma 6.8 (libtaskmanager has no xwindowtasksmodel.h) — re-enable when it builds
     # kara                      # Desktop/workspace pager widget
     plasmusic-toolbar         # Now-playing + playback controls widget (Claudio Catterina)
     # shutdown_or_switch: not yet in nixpkgs — install via KDE Store (Kai Uwe Broulik / Davide Sandona)
@@ -106,7 +116,7 @@
     "f+ /var/lib/sddm/.config/kcminputrc 0644 sddm sddm - [Keyboard]\\nNumLock=0"
   ];
 
-  # Remove kde_settings.conf if sddm-kcm previously wrote it.
+  # Remove kde_settings.conf if sddm-kcm has written it.
   # That file contains [Theme] Current=breeze and sorts after 00-nixos.conf,
   # making it override our declarative theme on every boot.
   system.activationScripts.remove-kde-sddm-settings = ''

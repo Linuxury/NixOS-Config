@@ -121,6 +121,13 @@ in
   #
   # Requires agenix secret: smtp-app-password
   # Generate Gmail app password at: https://myaccount.google.com/apppasswords
+  #
+  #   enable        install msmtp and write /etc/msmtprc
+  #   setSendmail   point the system sendmail wrapper at msmtp
+  #   defaults      settings shared by every account (port, tls, aliases)
+  #   accounts      named SMTP accounts; "default" is used when none is given
+  #   package       msmtp build to install
+  #   extraConfig   raw lines appended to /etc/msmtprc
   # =========================================================================
   programs.msmtp = {
     enable = true;
@@ -164,6 +171,16 @@ in
   # plugin or nru.
   #
   # Persistent = true: a missed 3am slot (machine off) fires on next boot.
+  #
+  #   enable              add the nixos-upgrade service and timer
+  #   flake               flake URI of the config to build (replaces channel)
+  #   dates               OnCalendar schedule (here cfg.schedule)
+  #   allowReboot         reboot when the new generation changes kernel/initrd
+  #   randomizedDelaySec  random start delay so hosts don't all build at once
+  #   persistent          run a missed slot at next boot
+  #   Not set here: operation (switch | boot), flags (extra nixos-rebuild
+  #   args), channel / upgrade (channel-based hosts), fixedRandomDelay,
+  #   rebootWindow { lower upper }, runGarbageCollection.
   # =========================================================================
   system.autoUpgrade = lib.mkIf (cfg.enable && !cfg.isPrimary) {
     enable             = true;
@@ -511,8 +528,8 @@ in
   systemd.user.services.nixos-auto-update = {
     description = "NixOS automatic update check";
     after    = [ "graphical-session.target" ];
-    # Primary host uses a system timer instead — no session-start trigger
-    # so manual nru runs aren't shadowed by a background update on login.
+    # Not wanted on the primary host — it updates only on demand, so manual
+    # nru runs aren't shadowed by a background update on login.
     wantedBy = lib.optionals (cfg.enable && !cfg.isPrimary) [ "graphical-session.target" ];
     serviceConfig = {
       Type         = "oneshot";

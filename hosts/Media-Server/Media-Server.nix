@@ -1,21 +1,19 @@
 # ===========================================================================
-# hosts/Media-Server/Media-Server.nix — Media Server
+# hosts/Media-Server/Media-Server.nix — media server
 #
-# Owner: managed by linuxury
-# Hardware: AMD Ryzen 5 3600x, AMD Radeon RX 480
-# Type: Headless server — no DE, no display manager
-# Role: Media server — Plex, Arr stack, Immich, FreshRSS, file serving
+# Hardware: AMD Ryzen 5 3600x, AMD Radeon RX 480 (VAAPI transcoding)
+# Type: headless server with no desktop environment and no display manager
+# Role: media server for Plex, the Arr stack, Immich, FreshRSS and file sharing
 #
 # Storage:
-#   - NVMe 232.9G — OS drive (BTRFS)
-#   - 2x 3.6TB HDD — media storage via mergerfs (/data)
+#   - NVMe 232.9 GB OS drive (Btrfs; disk.nix)
+#   - two 3.6 TB HDDs pooled by mergerfs at /data (see fileSystems below)
 #
-# Enabled modules:
-#   - AMD drivers
-#   - system/core.nix
-#   - services/samba.nix (single Media-Server share → /data)
-#   - services/zennotes/service-zennotes.nix (self-hosted notes server, port 7879)
-#   - freshrss/ (migrated from Radxa-X4, local to this host)
+# Enabled here: AMD drivers, core and server-shell system modules, Claude and AI tools,
+# Samba (one share of /data), ntfy, Syncthing, auto-update, the ZenNotes server (port 7879),
+# FreshRSS (freshrss.nix), PostgreSQL with pgvector, Plex, the Arr services and Immich.
+#
+# To turn a module on or off, uncomment or comment out its line in the imports block.
 # ===========================================================================
 
 { pkgs, lib, ... }:
@@ -84,7 +82,7 @@
 
     # ==============================================================
     # Host-specific
-    #   freshrss — RSS reader (migrated from Radxa-X4)
+    #   freshrss — RSS reader
     # ==============================================================
     ./freshrss.nix
 
@@ -100,7 +98,8 @@
   # ==============================================================
   networking.hostName = "Media-Server";
 
-  # Staggered off the 03:00 default — see MinisForum for the reasoning.
+  # Update timer (services.nixos-auto-update.schedule): 02:30 instead of the 03:00 default,
+  # so the hosts do not all update at the same time.
   services.nixos-auto-update.schedule = "*-*-* 02:30";
 
   # ==============================================================
@@ -116,7 +115,11 @@
   hardware.lemokey-keychron.enable = false;
 
   # ==============================================================
-  # PostgreSQL with pgvector — for AI Memory database
+  # PostgreSQL with pgvector — database for the AI memory service
+  #   enable                    run PostgreSQL (set here)
+  #   package                   server version: postgresql_16 (set here)
+  #   settings.shared_preload_libraries  "vector": load pgvector at server start (set here)
+  #   extensions                pgvector, installed into the server (set here)
   # ==============================================================
   services.postgresql = {
     enable = true;
@@ -128,7 +131,7 @@
   };
 
   # ==============================================================
-  # Filesystem — NVMe OS drive with BTRFS subvolumes
+  # Filesystems — the OS disk layout is in disk.nix. The /data pool is below.
   # ==============================================================
   fileSystems = {
 
@@ -163,22 +166,24 @@
   };
 
   # ==============================================================
-  # Kernel
+  # Kernel — boot.kernelPackages (set here: linuxPackages_latest, the mainline latest)
+  #   pkgs.linuxPackages_xanmod_latest and pkgs.linuxPackages_zen are commented out.
   # ==============================================================
   boot.kernelPackages = pkgs.linuxPackages_latest;           # Vanilla
   # boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;  # XanMod
   # boot.kernelPackages = pkgs.linuxPackages_zen;            # Zen
 
+  # amdgpu power-management feature mask, set to all features (0xffffffff) for the RX 480.
   boot.kernelParams = [
     "amdgpu.ppfeaturemask=0xffffffff"
   ];
 
   # ==============================================================
-  # Hardware video transcoding — VAAPI
-  #
-  # The RX 480 handles hardware transcoding for Plex.
-  # Run `vainfo` after first boot to verify VAAPI is working.
-  # In Plex settings enable Hardware-Accelerated Transcoding.
+  # Hardware video transcoding — VAAPI on the RX 480 (hardware.graphics)
+  #   enable          graphics stack (set here)
+  #   enable32Bit     32-bit graphics libraries (set here)
+  #   extraPackages   ROCm OpenCL runtime (rocmPackages.clr)
+  # Run `vainfo` after first boot to check VAAPI. In Plex, enable Hardware-Accelerated Transcoding.
   # ==============================================================
   hardware.graphics = {
     enable      = true;
@@ -233,7 +238,7 @@
     "z /data/photos/backups               0750 immich immich -"
     "z /data/photos/encoded-video         0750 immich immich -"
 
-    # Shared workspace — accessible to all family via Samba
+    # Shared workspace — accessible to every account via Samba
     "d /data/shared                       0775 root media        -"
 
     # Service config directories — persistent app data
@@ -258,7 +263,7 @@
   ];
 
   # ==============================================================
-  # Samba credentials for mounting Radxa-X4's Torrents share
+  # Samba credentials for mounting Radxa-X4's Torrents share (agenix secret, root-only)
   # ==============================================================
   age.secrets.smb-credentials = {
     file = ../../secrets/network/smb-credentials.age;
@@ -277,8 +282,8 @@
   #     Remote path: /data/torrents/complete
   #     Local path:  /data/downloads/complete
   #
-  # Automounts on first access, disconnects after 60s idle.
-  # nofail: non-fatal if Radxa-X4 is offline.
+  # Mounts on first access and unmounts after 60 s idle. nofail: boot continues if Radxa-X4 is offline.
+  # Ownership: uid 0 (root) and gid 995 (media). file_mode 0664 and dir_mode 0775 for new files.
   # ==============================================================
   fileSystems."/data/downloads" = {
     device  = "//10.0.0.5/Torrents";
@@ -293,9 +298,13 @@
   };
 
   # ==============================================================
-  # Plex Media Server
-  #
-  # Web UI available at http://Media-Server:32400/web after first boot.
+  # Plex Media Server (services.plex)
+  #   enable        run Plex (set here)
+  #   openFirewall  open the Plex ports in the firewall (set here)
+  #   user, group   account and group Plex runs as (plex, media)
+  #   dataDir       configuration and metadata (/data/config/plex)
+  #   package       the Plex build, pinned via plex.json (below)
+  # Web UI: http://Media-Server:32400/web after first boot.
   #
   # After first boot:
   #   1. Open the Plex web UI and complete setup
@@ -327,7 +336,11 @@
   systemd.services.plex.serviceConfig.UMask = "0002";
 
   # ==============================================================
-  # Arr stack — automated media management
+  # Arr stack — automated media management (services.<name>)
+  #   enable   run the service (set here for each)
+  #   user     account it runs as (sonarr, radarr, lidarr, readarr, bazarr, prowlarr)
+  #   group    media, or arr-services for bazarr
+  #   dataDir  state directory under /data/config/arr-services (prowlarr keeps its default)
   #
   # Web UIs after first boot:
   #   Prowlarr → http://Media-Server:9696
@@ -378,9 +391,12 @@
   };
 
   # ==============================================================
-  # Immich — Self-hosted photo and video management
-  #
-  # Web UI available at http://Media-Server:2283 after first boot.
+  # Immich — self-hosted photo and video management (services.immich)
+  #   enable         run Immich (set here)
+  #   openFirewall   open its port in the firewall (set here)
+  #   mediaLocation  where uploaded media is stored: /data/photos (set here)
+  #   host           address to listen on: 0.0.0.0, all interfaces (set here)
+  # Web UI: http://Media-Server:2283 after first boot.
   #
   # After first boot:
   #   1. Create admin account at the web UI
@@ -416,18 +432,18 @@
   ];
 
   # ==============================================================
-  # Give Plex access to GPU for transcoding
+  # Give Plex access to the GPU for transcoding: plex joins the render and video groups.
   # ==============================================================
   users.groups.render.members = [ "plex" ];
   users.groups.video.members  = [ "plex" ];
 
   # ==============================================================
-  # Disable audio
+  # Disable audio — servers don't need it (services.pipewire.enable forced off).
   # ==============================================================
   services.pipewire.enable    = lib.mkForce false;
 
   # ==============================================================
-  # Disable suspend/sleep
+  # Disable suspend and sleep. A server must stay on.
   # ==============================================================
   systemd.targets.sleep.enable        = false;
   systemd.targets.suspend.enable      = false;
@@ -443,7 +459,13 @@
   };
 
   # ==============================================================
-  # Server network optimizations
+  # Server network tuning (boot.kernel.sysctl, Linux kernel keys)
+  #   net.core.rmem_max / wmem_max       largest socket receive and send buffers (128 MiB)
+  #   net.ipv4.tcp_rmem / tcp_wmem       TCP buffer sizes: min, default, max
+  #   net.core.netdev_max_backlog        packets queued per CPU before the kernel drops them
+  #   fs.inotify.max_user_watches        number of files services can watch
+  #   net.ipv4.tcp_congestion_control    "bbr": congestion control algorithm
+  #   net.core.default_qdisc             "fq": fair-queue packet scheduler (pairs with bbr)
   # ==============================================================
   boot.kernel.sysctl = {
     "net.core.rmem_max"               = 134217728;
@@ -532,7 +554,10 @@
   };
 
   # ==============================================================
-  # Users — three family accounts for Samba
+  # Users — three accounts, each with a Samba login (see the Samba section above)
+  #   linuxury   administrator (wheel), GPU and media access
+  #   babylinux  media and immich groups
+  #   alex       child account, media group only
   # ==============================================================
   users.users = {
     linuxury = {
@@ -555,8 +580,8 @@
   };
 
   # ==============================================================
-  # Tailscale — remote access to FreshRSS and management
-  # After first boot: sudo tailscale up
+  # Tailscale — remote access to FreshRSS and management (services.tailscale.extraUpFlags).
+  # The extra flag advertises the tag:ssh tag. On a new machine, run once: sudo tailscale up
   # ==============================================================
   services.tailscale.extraUpFlags = [ "--advertise-tags=tag:ssh" ];
 }

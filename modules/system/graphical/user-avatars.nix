@@ -1,41 +1,45 @@
 # ===========================================================================
 # modules/system/graphical/user-avatars.nix — user avatar setup
 #
-# Writes avatar icons to two locations so every greeter can find them:
+# Sets each user's login avatar. Imported by graphical.nix, so it runs on
+# every graphical host; remove that import to turn it off.
+#
+#   services.accounts-daemon.enable       AccountsService D-Bus daemon
+#   system.activationScripts.user-avatars copies each avatar on every
+#                                         activation (rebuild and boot)
+#
+# Each avatar is written to two places so every greeter can find it:
 #
 #   1. /var/lib/sddm-faces/${username}.face.icon
-#      SDDM's native FacesDir lookup — no accountsservice needed.
-#      NixOS builds SDDM without libaccountsservice, so this is the only
-#      path SDDM's UserModel actually reads.  The sddm module sets FacesDir
-#      to this directory.  Extension must end in .face.icon so SDDM finds
-#      it, and hypr-sddm's QML regex (patched to accept .icon) loads it.
+#      SDDM's FacesDir lookup, which needs no AccountsService. NixOS builds
+#      SDDM without libaccountsservice, so this is the only path SDDM's
+#      UserModel reads. The sddm module sets FacesDir to this directory. The
+#      name must end in .face.icon for SDDM, and hypr-sddm's QML regex
+#      (patched to accept .icon) then loads it.
 #
 #   2. /var/lib/AccountsService/icons/${username}.${ext}
-#      AccountsService — used by cosmic-greeter, gdm, and any D-Bus client
-#      querying org.freedesktop.Accounts.User.IconFile.
+#      plus /var/lib/AccountsService/users/${username} pointing at it.
+#      Used by cosmic-greeter, gdm, and any D-Bus client reading
+#      org.freedesktop.Accounts.User.IconFile.
 #
 # Avatar source layout (Avatar/ in the Assets input, flake input "assets"):
 #   linuxury.jpg     → linuxury
 #   babylinux.jpeg   → babylinux
 #   alexander.jpg    → alex
 #
-# Paths point directly into the Assets input rather than through the
-# HM-managed ~/Pictures/Avatar symlink.  NixOS system activationScripts run
-# BEFORE HM user activations — on the first rebuild the ~/Pictures/Avatar
-# symlink does not exist yet, so [ -f ] tests against that path fail silently
-# and no icons are ever written.  The input is a store path, so it is always
-# there and nothing needs cloning first.
-# The [ -f ] guard below skips users that have no avatar file.
-#
-# Imported by: modules/system/graphical/graphical.nix
+# Paths point straight into the Assets input, not the Home Manager
+# ~/Pictures/Avatar symlink: system activation scripts run before Home
+# Manager activation, so on a fresh install that symlink does not exist yet.
+# The input is a store path and is always present.
+# Only users defined as normal users on the host are handled, and the
+# [ -f ] guard skips any user whose avatar file is missing.
 # ===========================================================================
 
 { config, pkgs, lib, inputs, ... }:
 
 let
-  # Map each username to their avatar in the Assets flake input.
-  # Reading the input directly avoids the HM-symlink timing race described
-  # in the header comment above.
+  # Username -> avatar file in the Assets flake input (read directly, see
+  # the header for why).
   avatarMap = {
     linuxury  = "${inputs.assets}/Avatar/linuxury.jpg";
     babylinux = "${inputs.assets}/Avatar/babylinux.jpeg";

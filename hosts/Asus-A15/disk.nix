@@ -1,13 +1,17 @@
 # ===========================================================================
-# hosts/Asus-A15/disk.nix — disks, swap, LUKS and boot loader for Asus-A15
+# hosts/Asus-A15/disk.nix — local filesystems, LUKS and swap for the Asus-A15 laptop
 #
-# Split out of Asus-A15.nix so the installer can (re)write this file for a
-# new disk layout without touching the rest of the host config. Network
-# shares and pooled mounts (cifs, mergerfs) stay in Asus-A15.nix.
+# Btrfs subvolumes inside a LUKS container, an EFI system partition and a swapfile. The
+# installer writes this file for a new disk layout. Network shares (CIFS) are in
+# Asus-A15.nix. Boot loader settings are not in this file.
 # ===========================================================================
 { config, lib, pkgs, ... }:
 
 {
+  # Btrfs subvolumes on the "nixos" partition (inside LUKS, see below), mounted by label.
+  # Each uses zstd level 1 compression and noatime, except /swap, which is not compressed.
+  # The snapshot subvolumes (@snapshots, @home_snapshots) are for snapper, which this host does
+  # not import.
   fileSystems = {
     "/" = {
       device = "/dev/disk/by-label/nixos";
@@ -19,10 +23,9 @@
       fsType = "btrfs";
       options = [ "subvol=@home" "compress=zstd:1" "noatime" ];
     };
-    # Steam's own subvolume — kept out of @home so /home btrfs snapshots
-    # never pin the 100s of GB a game library churns through. Snapper has
-    # no per-path exclude; a sibling subvolume boundary is the only real
-    # mechanism.
+    # Steam library, on its own subvolume (@steam). Keeping it out of @home means /home
+    # snapshots do not retain the large game files. Snapper cannot exclude a path, so a
+    # separate subvolume is the way to exclude it.
     "/home/babylinux/.local/share/Steam" = {
       device = "/dev/disk/by-label/nixos";
       fsType = "btrfs";
@@ -66,7 +69,11 @@
   };
 
   # ==============================================================
-  # LUKS — Full disk encryption
+  # LUKS full-disk encryption (boot.initrd.luks.devices.cryptroot)
+  #   device        the raw encrypted partition, by label "nixos-luks" (set here)
+  #   allowDiscards pass TRIM through LUKS to the SSD (set here)
+  # The Btrfs partition sits inside this container. A passphrase prompt appears at boot,
+  # and after unlocking the device is /dev/mapper/cryptroot.
   # ==============================================================
   boot.initrd.luks.devices."cryptroot" = {
     device = "/dev/disk/by-label/nixos-luks";
@@ -74,7 +81,8 @@
   };
 
   # ==============================================================
-  # Swap
+  # Swap — one swapfile on the @swap subvolume
+  #   device  path of the swapfile
   # ==============================================================
   swapDevices = [{
     device = "/swap/swapfile";

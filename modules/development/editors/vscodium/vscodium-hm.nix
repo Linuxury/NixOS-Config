@@ -18,6 +18,8 @@
 #
 # Extensions not in nixpkgs are fetched from Open VSX (not VS Marketplace)
 # to comply with VSCodium's ToS.
+#
+# Imported for linuxury by vscodium.nix. To turn off, remove that import.
 # ===========================================================================
 
 { config, pkgs, lib, ... }:
@@ -25,6 +27,10 @@
 {
   # =========================================================================
   # VSCodium — declarative extensions
+  #   enable                enable programs.vscodium (the codium package)
+  #   mutableExtensionsDir  true = extensions can also be installed from the app
+  #                         (the directory stays writable)
+  #   profiles.default.extensions  extension packages for the default profile
   # =========================================================================
   programs.vscodium = {
     enable               = true;
@@ -35,10 +41,10 @@
         catppuccin.catppuccin-vsc  # Catppuccin Mocha color theme
         golang.go                  # Go language support
       ])
-      # Open VSX extensions pinned in extensions.json; update with
-      # scripts/vscodium-ext-bump (run by nru on the lock writer). Entries with a
-      # "hold" reason are bumped by hand. Claude Code uses the linux-x64 variant
-      # because nixpkgs' version has a stale hash.
+      # Open VSX extensions pinned in extensions.json (publisher, version, url,
+      # sha256 per extension); update with scripts/vscodium-ext-bump (run by nru
+      # on the lock writer). Entries with a "hold" reason are bumped by hand.
+      # Claude Code uses the linux-x64 variant of the extension.
       ++ lib.mapAttrsToList (name: e: pkgs.vscode-utils.buildVscodeMarketplaceExtension {
         mktplcRef = { inherit name; inherit (e) publisher version; };
         vsix = pkgs.fetchurl { inherit (e) url sha256; };
@@ -51,6 +57,8 @@
   #
   # Base settings: dotfiles/vscodium/settings.json (no secrets)
   # Final file:    ~/.config/VSCodium/User/settings.json (real file, not symlink)
+  # Adds claudeCode.claudeProcessWrapper and, when /run/agenix/flow-icons-license
+  # is readable, flow-icons.licenseKey.
   # =========================================================================
   home.activation.vscodiumSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     _base="$HOME/dotfiles/vscodium/settings.json"

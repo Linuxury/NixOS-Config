@@ -11,6 +11,9 @@
 #
 # Also runs matugen once on login via a timer so colors match the wallpaper
 # that was active when you last closed the session.
+#
+# Home Manager module: cosmic.nix adds it to home-manager.sharedModules, so
+# every user on a COSMIC host gets it. Remove it from that list to turn it off.
 # ===========================================================================
 
 { pkgs, lib, inputs, ... }:

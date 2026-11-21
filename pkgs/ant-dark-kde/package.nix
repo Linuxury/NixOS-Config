@@ -1,3 +1,8 @@
+# Ant-Dark KDE theme (EliverLara/Ant, kde/Dark) — Aurorae decorations, Plasma
+# desktop theme, global look-and-feel, color scheme, Kvantum theme, Konsole
+# colors. Exposed as pkgs.ant-dark-kde by the overlay in flake.nix; installed
+# where kde.nix lists it in environment.systemPackages (drop it there to remove).
+# Bump: change version + rev + hash below.
 { lib, stdenvNoCC, fetchFromGitHub }:
 
 stdenvNoCC.mkDerivation {

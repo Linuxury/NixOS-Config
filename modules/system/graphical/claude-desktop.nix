@@ -1,12 +1,18 @@
 # ===========================================================================
 # modules/system/graphical/claude-desktop.nix — Claude Desktop
 #
-# Official Linux beta, packaged from Anthropic's own .deb in
-# pkgs/claude-desktop/package.nix (version + hash live there).
-# Sign-in needs a Secret Service; Hyprland/Niri/Umbriel/COSMIC already
-# enable gnome-keyring.
+# Installs the Claude Desktop app for Linux. Turn it on by importing this
+# file from a host; remove the import to turn it off.
 #
-# Overlay is scoped here, so only hosts importing this module fetch it.
+# The package is built in pkgs/claude-desktop/package.nix from Anthropic's
+# .deb; its version and hash live there. Sign-in needs a Secret Service
+# provider; the Hyprland, Niri, Umbriel and COSMIC modules already enable
+# gnome-keyring.
+#
+#   nixpkgs.overlays             adds pkgs.claude-desktop; kept in this file so
+#                                only hosts that import it build the package
+#   environment.systemPackages   puts claude-desktop on PATH
+#   home.activation.registerVaultMcp   (linuxury only, see below)
 #
 # Vault MCP (linuxury only): a filesystem MCP server named "vault" is merged
 # into ~/.config/Claude/claude_desktop_config.json so Chat can read the live
@@ -33,8 +39,10 @@ in
 
   environment.systemPackages = [ pkgs.claude-desktop ];
 
-  # Same merge as registerCraftMcp (craft-apps): only the "vault" key is
-  # replaced, every other server is kept, and the write lands via tmp + mv.
+  # Merges the "vault" server into claude_desktop_config.json the same way
+  # registerCraftMcp (craft-apps.nix) does: only the "vault" key is replaced,
+  # every other server is kept, invalid JSON is left alone with a warning, and
+  # the write goes to a temp file first and is then moved into place.
   home-manager.users.linuxury = { lib, ... }: {
     home.activation.registerVaultMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       run mkdir -p "${home}/.config/Claude"

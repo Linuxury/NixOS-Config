@@ -1,31 +1,27 @@
 # ===========================================================================
 # modules/system/graphical/hytale.nix — Hytale launcher: auto-install + flatpak overrides
 #
-# Handles everything Hytale-related for a Home Manager user:
-#   - Installs from bundled flatpak on first login (symlinked from assets repo)
-#   - Optional CDN fallback (linuxury only — downloads if local bundle missing)
+# Home Manager module that installs the Hytale launcher Flatpak and sets its
+# sandbox overrides. Hytale is not on Flathub, so it installs from a bundled
+# .flatpak file.
+#   - Installs from the bundled flatpak on first login (Assets input)
+#   - Optional CDN fallback (downloads if the local bundle is missing)
 #   - Flatpak overrides applied on every rebuild:
-#       ELECTRON_OZONE_PLATFORM_HINT=x11  (prevents blank window on COSMIC)
+#       ELECTRON_OZONE_PLATFORM_HINT=x11  (prevents a blank window on COSMIC)
 #       --device=input                    (controller support)
 #       --filesystem=/run/udev:ro         (SDL2 udev enumeration)
 #
-# Steam Controller support: Hytale Update 5 added native controller support
-# (Xbox/PlayStation/Switch pads, auto-detected) but Steam Input translation
-# isn't in yet — it's on Hytale's own roadmap. A Steam Controller/Puck can't
-# be recognized until then, so there's no in-repo workaround for it; revisit
-# once Hytale ships Steam Input support.
+# Controllers: Hytale detects Xbox, PlayStation and Switch pads natively but
+# has no Steam Input translation, so a Steam Controller is not recognised.
+# Nothing in this repo can work around that.
 #
-# Usage (in user home.nix):
+# Turn it on in a user's home.nix:
 #   imports = [ ../../modules/system/graphical/hytale.nix ];
-#   programs.hytale.enable = true;
-#
-# For CDN fallback (linuxury — downloads from Hytale CDN if bundle not found):
-#   programs.hytale.cdnFallback = true;
-#
-# When Hytale lands on Flathub:
-#   1. Replace the service with a proper flatpak declaration
-#   2. Keep the activation override (Wayland + controller)
-#   3. Remove this module
+#   programs.hytale.enable = true;          # default false
+# Options:
+#   programs.hytale.cdnFallback = true;     # default false; download from the
+#                                           # Hytale CDN if the bundle is
+#                                           # missing (linuxury uses this)
 # ===========================================================================
 
 { config, pkgs, lib, inputs, ... }:
@@ -53,9 +49,10 @@ in
     # =========================================================================
     # Bundle path — ~/Documents/assets/flatpaks/hytale-launcher-latest.flatpak
     #
-    # Non-CDN users (babylinux, alex): symlink to the Assets input (read-only store path).
-    # CDN users (linuxury): plain dir created by the activation below so the
-    # downloaded file has a writable home (can't symlink into the read-only store).
+    # cdnFallback = false (babylinux, alex): symlink to the Assets input, a
+    #   read-only store path.
+    # cdnFallback = true (linuxury): a plain directory created by the
+    #   activation below, so the downloaded file can be written there.
     # =========================================================================
     home.file = lib.mkIf (!cfg.cdnFallback) {
       "Documents/assets/flatpaks".source =
@@ -68,10 +65,10 @@ in
       '');
 
     # =========================================================================
-    # Install service — runs once on first login after graphical session starts
+    # Install service — oneshot user unit started with the graphical session.
     #
-    # ConditionPathExists ensures it only runs when Hytale is not yet installed.
-    # After install the service is a no-op on all subsequent logins.
+    # ConditionPathExists skips it once Hytale is installed. With cdnFallback
+    # it also waits for network-online.target.
     # =========================================================================
     systemd.user.services.hytale-flatpak-install = {
       Unit = {
@@ -148,7 +145,8 @@ in
     };
 
     # =========================================================================
-    # Flatpak overrides — applied on every HM rebuild (idempotent)
+    # Flatpak overrides — `flatpak override --user`, applied on every Home
+    # Manager activation (repeat runs change nothing)
     #
     # ELECTRON_OZONE_PLATFORM_HINT=x11: forces XWayland mode so Hytale's
     #   Electron renderer doesn't use native Wayland GPU paths that produce

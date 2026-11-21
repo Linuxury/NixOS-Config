@@ -19,6 +19,17 @@
 #   sudo snapper -c home list           # list home snapshots
 #   sudo snapper -c root create --description "before update"  # manual snapshot
 #   sudo snapper -c root undochange 5..0 /etc/someconfig       # restore a file
+#
+# Turns itself off on non-btrfs roots (see the mkIf below); to turn it off on
+# a btrfs host, drop the import from core.nix.
+#
+# Options used (services.snapper.*):
+#   cleanupInterval     how often snapper-cleanup prunes snapshots
+#   snapshotInterval    OnCalendar for snapper-timeline (snapshot creation)
+#   configs.<name>      one snapper config per subvolume; keys are snapper's
+#                       own (SUBVOLUME, ALLOW_USERS, TIMELINE_*, FSTYPE, ...)
+#   Not set here: snapshotRootOnBoot (extra snapshot at each boot),
+#   persistentTimer (catch up a missed timeline run), filters.
 # ===========================================================================
 
 { config, lib, ... }:
@@ -84,6 +95,11 @@
   # errors even if it can't always repair them — you'd know to act.
   #
   # Once a month is the standard recommendation.
+  #
+  #   enable       add the btrfs-scrub timers
+  #   interval     OnCalendar schedule
+  #   fileSystems  mount points to scrub (one per device is enough)
+  #   Not set here: limit (throughput cap, bytes per second).
   # ===========================================================================
   services.btrfs.autoScrub = {
     enable = true;

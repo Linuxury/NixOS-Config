@@ -1,18 +1,23 @@
 # ===========================================================================
 # modules/system/core.nix — Shared base configuration for ALL hosts
 #
-# Every single machine in your setup (desktops, laptops, servers) imports
-# this file. Think of it as the foundation everything else builds on top of.
+# Base configuration that every host (desktops, laptops, servers) imports:
+# boot, networking, SSH, locale, audio, Nix settings, build memory limits,
+# fonts, base packages, polkit, sysctl, Bluetooth, firmware updates and
+# Tailscale. It has no enable flag; a host turns it off only by not
+# importing it.
 #
-# Rule of thumb: if every machine needs it, it lives here.
-# If only some machines need it, it belongs in a more specific module.
+# Anything every host needs lives here; anything only some hosts need
+# belongs in a more specific module. Most values are plain settings, so a
+# host overrides them with lib.mkForce; values wrapped in lib.mkDefault can
+# be overridden with a plain assignment.
 # ===========================================================================
 
 { config, pkgs, lib, inputs, ... }:
 
 {
   imports = [
-    # Automatic BTRFS snapshots + monthly scrub — runs on every host
+    # Automatic BTRFS snapshots + monthly scrub on every host
     ../services/snapper.nix
 
     # Per-host nix max-jobs/cores, derived from hosts/<host>/specs.nix
@@ -21,45 +26,47 @@
   # =========================================================================
   # BOOT — systemd-boot + Plymouth
   #
-  # systemd-boot is a simple, fast UEFI bootloader. Much simpler than GRUB
-  # and perfectly suited for modern machines. It reads entries from
-  # /boot/loader/entries/ and lets you pick a generation at boot.
+  # systemd-boot is a simple UEFI bootloader (GRUB is the alternative,
+  # boot.loader.grub). It reads entries from /boot/loader/entries/ and lists
+  # one per NixOS generation.
+  #   systemd-boot.configurationLimit  generations kept in the menu
+  #   efi.canTouchEfiVariables         let the installer write EFI boot vars
+  #   timeout                          menu wait in seconds (0 = hidden)
+  # Also available, not set here: systemd-boot.editor (kernel-line edit,
+  # default true), consoleMode, memtest86 / netbootxyz / edk2-uefi-shell
+  # entries, extraEntries, windows (dual-boot entries).
   #
-  # Plymouth handles the graphical boot splash so you see a clean animation
-  # instead of a wall of kernel messages during startup.
+  # Plymouth shows a graphical boot splash instead of kernel messages.
   # =========================================================================
   boot = {
     loader = {
-      # Use systemd-boot instead of GRUB
       systemd-boot = {
         enable = true;
-        # How many NixOS generations to keep in the boot menu.
-        # Older ones get cleaned up automatically. 10 is a safe number —
-        # you always have rollback options without filling up /boot.
+        # Generations kept in the boot menu; older entries are removed
+        # from /boot. 10 leaves room to roll back without filling /boot.
         configurationLimit = 10;
       };
-      # Allow NixOS to modify EFI variables so it can manage boot entries.
-      # Required for systemd-boot to work correctly.
+      # Let NixOS write EFI variables so it can register the boot entry.
       efi.canTouchEfiVariables = true;
 
-      # Boot immediately — no menu unless you hold Space at startup.
+      # Boot immediately — the menu shows only when Space is held at startup.
       timeout = 0;
     };
 
     # -----------------------------------------------------------------------
     # Plymouth — graphical boot splash
-    # The theme can be overridden per host if you want different looks.
+    # A host can set its own theme.
     # -----------------------------------------------------------------------
     plymouth = {
       enable = true;
-      # "spinner" shows a minimal loading animation — consistent across all hosts.
-      # Other options: "bgrt" (UEFI logo), "tribar", "fade-in", or a custom theme.
-      # mkDefault so per-host configs can override this without needing mkForce.
+      # "spinner" shows a minimal loading animation. Other built-in themes:
+      # "bgrt" (UEFI logo), "tribar", "fade-in"; boot.plymouth.themePackages
+      # adds more. mkDefault lets a host override it without mkForce.
+      # Also available, not set here: logo, font, extraConfig.
       theme = lib.mkDefault "spinner";
     };
 
-    # Make the boot process silent — hides kernel messages behind Plymouth.
-    # These kernel parameters tell the system to stay quiet during boot.
+    # Quiet boot — kernel and udev messages stay hidden behind Plymouth.
     consoleLogLevel = 0;
     kernelParams = [
       "quiet"
@@ -73,10 +80,10 @@
     # -----------------------------------------------------------------------
     # Kernel — Zen (default for all hosts)
     #
-    # Zen applies scheduler tweaks, lower latency preemption, and throughput
-    # patches on top of mainline — ideal for interactive/gaming workloads.
-    # mkDefault lets individual hosts override this (e.g. a server that
-    # needs a specific LTS kernel).
+    # Zen applies scheduler tweaks, lower-latency preemption and throughput
+    # patches on top of mainline, aimed at interactive and gaming workloads.
+    # mkDefault lets a host pick another kernel (e.g. linuxPackages for
+    # LTS, linuxPackages_latest for mainline).
     # -----------------------------------------------------------------------
     kernelPackages = lib.mkDefault pkgs.linuxPackages_zen;
   };
@@ -84,18 +91,19 @@
   # =========================================================================
   # NETWORKING
   #
-  # NetworkManager handles all network connections — wired, wireless, VPN.
-  # It's the standard for desktop Linux and works fine on servers too.
+  # NetworkManager handles wired, wireless and VPN connections on every
+  # host. The firewall is on, with no ports opened globally.
   # =========================================================================
   networking = {
-    # NetworkManager replaces the older networking.interfaces approach.
-    # It handles DHCP, WiFi, and more automatically.
+    # NetworkManager manages DHCP and WiFi instead of static
+    # networking.interfaces config.
     networkmanager = {
       enable = true;
 
-      # When ethernet comes up, disable WiFi to save power and avoid split routing.
-      # When ethernet goes down, re-enable WiFi so the machine stays connected.
-      # No-op on hosts with no WiFi interface — the interface pattern never matches.
+      # Dispatcher script: when an ethernet interface (en*, eth*, eno*) goes
+      # up, WiFi is turned off to save power and avoid split routing; when it
+      # goes down, WiFi is turned back on. On hosts without WiFi the nmcli
+      # call changes nothing.
       dispatcherScripts = [
         {
           source = pkgs.writeShellScript "ethernet-wifi-exclusive" ''
@@ -115,12 +123,12 @@
       ];
     };
 
-    # Enables the firewall. By default it blocks all incoming connections
-    # except what you explicitly open. SSH is handled below via services.openssh.
+    # nftables/iptables firewall: blocks all incoming connections except
+    # ports opened explicitly. services.openssh opens port 22 itself.
     firewall = {
       enable = true;
-      # Add ports here if you need to open them globally across all hosts.
-      # Host-specific ports should be opened in that host's own config file.
+      # Ports for every host would go here; host-specific ports are opened
+      # in that host's own file.
       # allowedTCPPorts = [ ];
       # allowedUDPPorts = [ ];
     };
@@ -129,18 +137,20 @@
   # =========================================================================
   # SSH — Secure Shell daemon
   #
-  # Runs on all machines so you can always reach them remotely.
-  # This is especially important for your headless servers.
+  # Runs on every host for remote access, which headless servers depend on.
+  #   PermitRootLogin = "no"           no root login over SSH
+  #   PasswordAuthentication = false   keys only
+  # Also available, not set here: ports (default [ 22 ]), openFirewall
+  # (default true), KbdInteractiveAuthentication, AllowUsers / AllowGroups,
+  # X11Forwarding, startWhenNeeded (socket activation), hostKeys.
   # =========================================================================
   services.openssh = {
     enable = true;
     settings = {
-      # Disable root login over SSH — always log in as your user instead.
-      # This is a basic security practice.
+      # No root login over SSH; log in as a user and use sudo.
       PermitRootLogin = "no";
-      # Disable password authentication — require SSH keys instead.
-      # Much more secure. Make sure you have your SSH key set up before
-      # enabling this, or you could lock yourself out.
+      # SSH keys only, no passwords. A host without an authorised key
+      # cannot be reached over SSH.
       PasswordAuthentication = false;
     };
   };
@@ -148,10 +158,10 @@
   # =========================================================================
   # LOCALE & TIME
   #
-  # Set your timezone and language here so every machine is consistent.
-  # Change these values to match your location.
+  # Same timezone and locale on every host. extraLocaleSettings sets each
+  # LC_* category separately (all en_US.UTF-8 here).
   # =========================================================================
-  time.timeZone = "America/New_York"; # Change to your timezone
+  time.timeZone = "America/New_York"; # IANA zone name
 
   i18n = {
     defaultLocale = "en_US.UTF-8";
@@ -171,24 +181,29 @@
   # =========================================================================
   # SOUND — PipeWire
   #
-  # PipeWire is the modern audio stack for Linux. It replaces PulseAudio
-  # and JACK while staying compatible with both. WirePlumber is the
-  # session manager that handles routing between apps and devices.
+  # PipeWire is the audio stack. It replaces PulseAudio and JACK while
+  # staying compatible with both; WirePlumber is the session manager that
+  # routes between apps and devices.
+  #   alsa.enable / alsa.support32Bit   ALSA apps, including 32-bit ones
+  #   pulse.enable                      PulseAudio server emulation
+  #   wireplumber.enable                session manager
+  #   extraConfig.pipewire.<file>       drop-in pipewire.conf fragments
+  # Also available, not set here: jack.enable (JACK emulation),
+  # extraConfig.pipewire-pulse / client, configPackages.
   #
-  # Disabled on servers — they don't need audio.
-  # That's handled by setting sound.enable = false in server host configs.
+  # Server hosts turn it off with services.pipewire.enable = lib.mkForce false.
   # =========================================================================
   services.pipewire = {
     enable = true;
-    # Backward compatibility layers so apps built for PulseAudio or ALSA
-    # work without any changes
+    # Compatibility layers so PulseAudio and ALSA apps work unchanged
     alsa.enable = true;
     alsa.support32Bit = true; # Needed for some games and older software
     pulse.enable = true;      # PulseAudio compatibility
     wireplumber.enable = true;
-    # x11-bell (plays the X11 beep) crashes the whole daemon with SIGSEGV when
-    # the X server goes away, e.g. Umbriel's lazy Xwayland restarting — that
-    # dropped every audio stream. Nothing here needs the X11 bell.
+    # x11-bell (plays the X11 beep) crashes the whole daemon with SIGSEGV
+    # when the X server goes away (e.g. Umbriel's on-demand Xwayland
+    # restarting), dropping every audio stream. Nothing needs the X11 bell,
+    # so the module is turned off.
     extraConfig.pipewire."99-no-x11-bell"."context.properties"."module.x11.bell" = false;
   };
 
@@ -196,20 +211,23 @@
   # NIX SETTINGS
   #
   # Configuration for the Nix package manager itself.
+  #   settings.*               nix.conf (features, caches, trust, fallback)
+  #   daemonCPUSchedPolicy / daemonIOSchedClass   build daemon priority
+  #   gc.*                     automatic garbage collection
+  #   optimise.automatic       periodic store hard-linking
   # =========================================================================
-  # Allow unfree packages (Steam, Nvidia drivers, etc.) system-wide.
-  # The flake.nix pkgs import also sets this, but that doesn't propagate
-  # into NixOS module evaluation — this option is the correct way to do it.
+  # Allow unfree packages (Steam, Nvidia drivers, etc.) system-wide. This
+  # NixOS option is what module evaluation reads; the flake.nix pkgs import
+  # setting does not carry over into it.
   nixpkgs.config.allowUnfree = true;
 
   nix = {
     settings = {
-      # Enables the new "nix" CLI commands and flakes support.
-      # Without this, flakes won't work at all.
+      # The `nix` command and flakes.
       experimental-features = [ "nix-command" "flakes" ];
 
-      # Binary caches — servers that provide pre-built packages.
-      # Without these, Nix would compile everything from source.
+      # Binary caches with pre-built packages, each with its signing key in
+      # trusted-public-keys.
       substituters = [
         "https://cache.nixos.org"           # Official NixOS cache
         "https://nix-community.cachix.org"  # Community packages
@@ -222,35 +240,36 @@
       ];
 
       # If a substituter is down or a narinfo lookup fails, build locally
-      # instead of hard-erroring the whole rebuild. Without this, a cache
-      # outage fails `nru` on every host, even ones that don't need the
-      # missing derivation from that cache.
+      # instead of failing the whole rebuild; otherwise a cache outage
+      # fails `nru` on every host.
       fallback = true;
 
-      # Allow your user to manage the Nix store without sudo for some operations
+      # Users allowed extra daemon rights (add caches, import unsigned
+      # paths): root and the wheel group
       trusted-users = [ "root" "@wheel" ];
 
-      # max-jobs and cores are set per host in ./build-capacity.nix, derived
-      # from that host's measured specs. A flat pair fleet-wide cannot be right
-      # for both a 24c/31G desktop and a 4c/7G mini PC — see that file's header.
+      # max-jobs and cores are set per host in ./build-capacity.nix from
+      # that host's specs; one fleet-wide pair cannot suit both a 24c/31G
+      # desktop and a 4c/7G mini PC.
     };
 
-    # Keep the build daemon out of the way of whatever else the machine is
-    # doing. idle scheduling only yields when something actively wants the CPU,
-    # so a 3am rebuild on an idle box still runs at full speed.
+    # Keep the build daemon out of the way of everything else. idle
+    # scheduling only yields when something else wants the CPU or disk, so a
+    # rebuild on an otherwise idle machine still runs at full speed.
     daemonCPUSchedPolicy = "idle";
     daemonIOSchedClass   = "idle";
 
-    # Automatically clean up old generations and unused packages.
-    # Keeps your disk from filling up with old builds over time.
+    # Weekly garbage collection of generations older than 30 days.
+    # Also available: randomizedDelaySec, persistent (run a missed job at
+    # next boot, default true).
     gc = {
       automatic = true;
-      dates = "weekly";      # Run cleanup every week
-      options = "--delete-older-than 30d"; # Remove anything older than 30 days
+      dates = "weekly";      # systemd OnCalendar expression
+      options = "--delete-older-than 30d"; # passed to nix-collect-garbage
     };
 
-    # Optimize the Nix store by hard-linking identical files.
-    # Saves disk space with no downside.
+    # Periodically hard-link identical files in the store to save space
+    # (optimise.dates sets when; default daily 03:45).
     optimise.automatic = true;
   };
 
@@ -264,9 +283,12 @@
   # kernel OOM-killer picking a victim. priority 100 puts it ahead of the
   # disk swapfile (-1), which is far too slow to absorb compiler pressure.
   #
-  # MemoryHigh is a SOFT limit: crossing it throttles the daemon's cgroup
-  # into reclaim. Deliberately not MemoryMax, which is a hard kill — that
-  # would just move the OOM from the kernel into systemd.
+  # zramSwap also offers algorithm (default zstd), memoryMax and
+  # writebackDevice; not set here.
+  #
+  # MemoryHigh is a soft limit: crossing it throttles the daemon's cgroup
+  # into reclaim. MemoryMax would be a hard kill, which only moves the OOM
+  # from the kernel into systemd.
   # =========================================================================
   zramSwap = {
     enable = true;
@@ -279,13 +301,13 @@
   # =========================================================================
   # FONTS
   #
-  # Full Nerd Fonts collection — every patched font family in one go.
-  # builtins.attrValues converts the nerd-fonts attrset into a list so
-  # all families (JetBrainsMono, FiraCode, CascadiaCode, Hack, etc.) are
-  # installed. nerd-fonts.symbols-only is the dedicated icon-only font
-  # that acts as a system-wide fallback for Nerd Font glyph codepoints.
+  # Full Nerd Fonts collection, every patched family. builtins.attrValues
+  # turns the nerd-fonts attrset into a list (lib.isDerivation drops
+  # non-package entries), so all families (JetBrainsMono, FiraCode,
+  # CascadiaCode, Hack, etc.) are installed. nerd-fonts.symbols-only is the
+  # icon-only font that acts as a system-wide fallback for Nerd Font glyphs.
   #
-  # noto-fonts-color-emoji is intentionally excluded — it would claim
+  # noto-fonts-color-emoji is left out on purpose: it would claim
   # the private-use-area codepoints that Nerd Fonts uses for icons,
   # causing fastfetch and terminal apps to render colored emoji boxes
   # instead of the actual icon glyphs.
@@ -295,13 +317,13 @@
   # =========================================================================
   # BASE PACKAGES
   #
-  # Packages installed on every single machine — desktops, laptops, AND servers.
-  # Keep this list to tools that are genuinely useful everywhere.
-  # Desktop/graphical packages belong in modules/system/graphical.
+  # Packages installed on every host, desktops, laptops and servers alike.
+  # Only tools useful everywhere belong here; desktop packages go in
+  # modules/system/graphical.
   # =========================================================================
   environment.systemPackages = with pkgs; [
     # Core utilities
-    git          # Version control — needed for managing this config itself
+    git          # Version control — needed to manage this config
     curl         # HTTP requests from the command line
     wget         # File downloads
     htop         # Interactive process viewer
@@ -310,18 +332,18 @@
     tree         # Directory tree viewer
     jq           # JSON processor — used by Claude Code hooks and shell scripts
 
-    # Firefox Theming
+    # Native host for the pywalfox Firefox/Thunderbird extension
     pywalfox-native
 
 
     # Network tools
     iproute2     # ip command for network management
-    nmap         # Network scanner (useful for finding your machines on the network)
+    nmap         # Network scanner (finds hosts on the network)
     dig          # DNS lookup tool
     rsync        # Fast file sync — local copies, remote backups, deploy scripts
 
     # Text editors (minimal, for emergency server access)
-    nano         # Simple editor, always good to have available
+    nano         # Simple editor, available on every host
     # Shell tools
     fastfetch    # System info display — useful on desktops AND servers via SSH
 
@@ -344,14 +366,14 @@
   # =========================================================================
   # POLKIT — allow wheel group to manage systemd units without interactive auth
   #
-  # systemd 257+ requires polkit authorization for `systemd-run` transient
-  # unit creation even when called as root. nixos-rebuild passes
-  # --no-ask-password, which means polkit can't prompt — it just fails.
-  # This rule grants the wheel group implicit YES for systemd unit management
-  # so nixos-rebuild switch works without requiring a polkit agent session.
-  #
-  # Also covers login1 inhibit actions so systemd-inhibit (used by nru/nrb
-  # to hold a sleep lock during rebuilds) doesn't prompt for a password.
+  # systemd requires polkit authorisation for `systemd-run` transient units
+  # even when called as root, and nixos-rebuild passes --no-ask-password,
+  # so polkit cannot prompt and the call fails. The first rule grants the
+  # wheel group YES for systemd1 actions, so nixos-rebuild switch works
+  # without a polkit agent. It also covers login1 inhibit actions, so
+  # systemd-inhibit (used by nru/nrb to block sleep during rebuilds) does
+  # not ask for a password. The second rule lets fwupd-refresh refresh LVFS
+  # metadata.
   # =========================================================================
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
@@ -375,33 +397,34 @@
   # =========================================================================
   # KERNEL SYSCTL TWEAKS
   #
-  # fs.inotify.max_user_watches — how many filesystem watchers the kernel
-  # allows per user. VSCode, the Claude Code extension, and Obsidian all
-  # register watches for every file in open folders. With large repos +
-  # the vault open simultaneously, 524288 (the NixOS default) gets exhausted.
-  # 1048576 (1M) gives comfortable headroom. mkDefault so server host configs
-  # can keep their explicit lower values if needed.
+  # fs.inotify.max_user_watches — how many filesystem watches the kernel
+  # allows per user. VSCode, the Claude Code extension and Obsidian watch
+  # every file in open folders; with large repos and the vault open at once,
+  # 524288 (the NixOS default) runs out. 1048576 (1M) leaves headroom.
+  # Set with lib.mkForce, so it wins over the plain 524288 that the server
+  # host files set.
   # =========================================================================
   boot.kernel.sysctl."fs.inotify.max_user_watches" = lib.mkForce 1048576;
 
   # =========================================================================
   # BLUETOOTH
   #
-  # Enabled system-wide — desktops, laptops, and servers that have a BT
-  # adapter. powerOnBoot = false leaves the adapter off until the user
-  # turns it on, avoiding unnecessary radio activity at startup.
-  # btusb loaded at boot so /sys/class/bluetooth exists before bluetoothd
-  # evaluates its ConditionPathIsDirectory check.
+  # Enabled on every host that has an adapter.
+  #   powerOnBoot = false (mkDefault)   adapter stays off until turned on;
+  #                                     graphical.nix sets it true
+  #   btusb in boot.kernelModules       /sys/class/bluetooth exists before
+  #                                     bluetoothd checks
+  #                                     ConditionPathIsDirectory
   #
   # blueman: provides the Bluetooth management GUI and D-Bus activation.
   # The blueman package ships /etc/xdg/autostart/blueman.desktop which would
   # auto-start the tray applet in every graphical session. We suppress it
-  # system-wide via environment.etc — /etc/xdg is first in XDG_CONFIG_DIRS
-  # so this Hidden=true file shadows the package's copy in
-  # /run/current-system/sw/etc/xdg/autostart/. Each DE provides its own BT
-  # management UI (COSMIC panel, KDE system tray, Noctalia bar widget);
-  # no secondary tray icon is needed. blueman-manager is still launchable
-  # manually when pairing new devices.
+  # system-wide via environment.etc: /etc/xdg comes first in
+  # XDG_CONFIG_DIRS, so this Hidden=true file shadows the package's copy in
+  # /run/current-system/sw/etc/xdg/autostart/. Each DE has its own
+  # Bluetooth UI (COSMIC panel, KDE tray, Noctalia bar), so no second tray
+  # icon is needed; blueman-manager can still be started by hand for
+  # pairing.
   # =========================================================================
   hardware.bluetooth.enable = true;
   hardware.bluetooth.powerOnBoot = lib.mkDefault false;
@@ -415,8 +438,8 @@
   # =========================================================================
   # FWUPD — firmware update daemon
   #
-  # Lets you update firmware (BIOS, SSD, peripherals) via LVFS directly
-  # from the command line or a GUI (e.g. GNOME Software / KDE Discover).
+  # Updates firmware (BIOS, SSD, peripherals) from LVFS, from the command
+  # line or a GUI (GNOME Software, KDE Discover).
   # Run: fwupdmgr refresh && fwupdmgr update
   # =========================================================================
   services.fwupd.enable = true;
@@ -424,18 +447,20 @@
   # =========================================================================
   # TAILSCALE — mesh VPN
   #
-  # Runs on every machine so you can reach all of them (desktops, laptops,
-  # servers) from anywhere without port-forwarding or opening firewall ports.
-  # After first boot on each machine: sudo tailscale up
+  # Runs on every host so all of them are reachable from anywhere without
+  # port forwarding. After first boot on each host: sudo tailscale up
+  # Also available, not set here: openFirewall, useRoutingFeatures
+  # ("client" / "server" / "both" for exit nodes and subnet routes),
+  # authKeyFile (log in unattended), extraUpFlags, port.
   # =========================================================================
   services.tailscale.enable = true;
 
   # =========================================================================
   # SYSTEM STATE VERSION
   #
-  # This tells NixOS which version's defaults to use for stateful data.
-  # Set it to the NixOS version you first installed with and NEVER change it.
-  # Changing it does NOT upgrade your system — it can break things.
+  # The NixOS release whose defaults apply to stateful data (databases,
+  # state directories). It stays at the release first installed with;
+  # changing it does not upgrade anything and can break existing state.
   # =========================================================================
   system.stateVersion = "24.11";
 }

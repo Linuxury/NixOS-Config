@@ -1,11 +1,11 @@
 # ===========================================================================
 # modules/components/launcher/wofi.nix — Wofi application launcher
 #
-# Compositor-agnostic application launcher.
-# Works on any Wayland compositor.
+# Application launcher for any Wayland compositor. Turn it on by importing
+# this file from a host; remove the import to turn it off.
 #
 # When imported, this module:
-#   1. Adds wofi and rofi-wayland to system packages.
+#   1. Adds wofi and rofi-wayland to environment.systemPackages.
 #   2. Symlinks dotfiles/wofi/ → ~/.config/wofi/  (all users)
 #              dotfiles/rofi/ → ~/.config/rofi/  (all users)
 #   3. If Hyprland is present: writes ~/.config/hypr/components/launcher.lua

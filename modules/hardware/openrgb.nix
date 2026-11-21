@@ -1,19 +1,26 @@
 # ===========================================================================
 # modules/hardware/openrgb.nix — OpenRGB RGB lighting control
 #
-# Option-gated module — imported for ALL hosts in flake.nix (mkHost).
-# Dormant until a host enables it:
+# Wrapper around nixpkgs services.hardware.openrgb. flake.nix (mkHost)
+# imports it for every host; it does nothing until a host turns it on:
 #
 #   hardware.openrgb.enable = true;
 #
-# Enabling pulls in everything at once: the openrgb package, the udev
-# rules (device access for non-root users), and the `openrgb --server`
-# systemd service on boot.
+# Enabling installs the openrgb package, its udev rules (device access for
+# non-root users) and the `openrgb --server` systemd service.
 #
-# Optional: set `hardware.openrgb.profile` to load a saved profile
-# (/var/lib/OpenRGB/profiles/<name>.json) on boot. Leave it null when something
-# else (Noctalia led-sync) owns the colours — a startup profile is applied after
-# device detection and overrides whatever that pushed first.
+# Options of this wrapper:
+#   enable        turn the whole module on (default false)
+#   motherboard   "amd" (default) or "intel"; loads i2c-piix4 or i2c-i801
+#                 for SMBus RGB devices
+#   profile       profile file under /var/lib/OpenRGB loaded at startup;
+#                 null (default) loads none. Leave it null when something
+#                 else sets the colours (Noctalia led-sync): a startup profile
+#                 is applied after device detection and overrides it.
+#
+# Upstream services.hardware.openrgb also offers, not set here:
+#   package       OpenRGB build to use (default pkgs.openrgb)
+#   server.port   SDK server port (default 6742)
 # ===========================================================================
 
 { config, lib, ... }:

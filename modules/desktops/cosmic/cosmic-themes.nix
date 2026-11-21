@@ -9,6 +9,9 @@
 #
 # For the cursor, icon theme, GTK dark mode, and dconf base, see:
 #   modules/themes/gtk.nix
+#
+# Home Manager module: cosmic.nix adds it to home-manager.sharedModules for
+# every user on a COSMIC host. Remove it from that list to turn it off.
 # ===========================================================================
 
 { ... }:
@@ -30,8 +33,8 @@
   # Values are RON (Rusty Object Notation) — plain strings are quoted,
   # integers are bare numbers.
   #
-  # Writing these declaratively means COSMIC always starts with the correct
-  # theme regardless of what its UI may have previously set.
+  # Writing these declaratively (force = true overwrites any existing file)
+  # means COSMIC always starts with this theme, whatever its UI last saved.
   # =========================================================================
   home.file.".config/cosmic/com.system76.CosmicTk/v1/icon_theme"   = { force = true; text = ''"Tela-dark"''; };
   home.file.".config/cosmic/com.system76.CosmicTk/v1/cursor_theme" = { force = true; text = ''"BreezeX-Light"''; };

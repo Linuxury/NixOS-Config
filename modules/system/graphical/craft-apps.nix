@@ -1,11 +1,12 @@
 # ===========================================================================
 # modules/system/graphical/craft-apps.nix — storytold Craft apps
 #
-# (https://getartcraft.com/apps). Not in nixpkgs yet; packaged
-# from upstream's prebuilt release tarballs in pkgs/craft-apps/package.nix
-# (versions + hashes live there).
+# Installs storytold's Craft apps (https://getartcraft.com/apps). They are
+# not in nixpkgs; pkgs/craft-apps/package.nix builds them from upstream's
+# prebuilt release tarballs (versions and hashes live there). Turn it on by
+# importing this file from a host; remove the import to turn it off.
 #
-# Grouped into suites mirroring Microsoft/Adobe. Hosts pick with:
+# Option of this module, grouped into suites that mirror Microsoft/Adobe:
 #   craftApps.suites = [ "office" ];   # default: every suite except ai
 #
 #   office   — WordCraft, GridCraft, DeckCraft, PdfCraft  (Word/Excel/PowerPoint/Acrobat)
@@ -17,7 +18,10 @@
 #   cad      — CADCraft                                   (AutoCAD)
 #   ai       — ArtCraft, Craft Anything                   (AI-driven; opt-in only)
 #
-# Overlay is scoped here, so only hosts importing this module fetch them.
+#   nixpkgs.overlays             adds pkgs.craft-apps; kept in this file so
+#                                only hosts that import it build the apps
+#   environment.systemPackages   the apps of the chosen suites
+#   home.activation.registerCraftMcp   (Claude Desktop hosts, see below)
 #
 # Claude Desktop: on hosts that also import claude-desktop, each installed
 # app's `<app>-cli mcp` (headless stdio MCP server) is merged into

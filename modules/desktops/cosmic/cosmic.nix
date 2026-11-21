@@ -2,10 +2,11 @@
 # modules/desktops/cosmic/cosmic.nix — COSMIC Desktop Environment
 #
 # COSMIC is System76's Rust-based desktop environment.
-# Available natively in nixpkgs as of NixOS 25.05 — no external flake needed.
+# Packaged in nixpkgs — no external flake needed.
 #
 # This module is the DEFAULT desktop for all non-server hosts.
-# It gets enabled in every desktop and laptop host config.
+# It gets enabled in every desktop and laptop host config; remove the import
+# to turn it off.
 # ===========================================================================
 
 { config, pkgs, ... }:
@@ -13,6 +14,11 @@
 {
   services.desktopManager.cosmic.enable = true;
 
+  # COSMIC (services.desktopManager.cosmic.*):
+  #   enable                   install COSMIC and its bundled apps
+  #   xwayland.enable          XWayland in the COSMIC session (default true)
+  #   showExcludedPkgsWarning  warn when a core package is excluded
+  #   environment.cosmic.excludePackages  bundled apps to leave out
   # =========================================================================
   # COSMIC Data Control — Wayland clipboard protocol
   #
@@ -28,7 +34,8 @@
   #
   # The display manager is the login screen you see before the desktop loads.
   # cosmic-greeter is COSMIC's own login screen, designed to match the DE.
-  # We disable any other display manager to avoid conflicts.
+  #   enable   run cosmic-greeter (via greetd)
+  #   package  greeter build (not set here)
   # =========================================================================
   services.displayManager.cosmic-greeter.enable = true;
 
@@ -63,8 +70,8 @@
   #
   # COSMIC apps (files, text-editor, store, terminal, etc.) are bundled
   # automatically by services.desktopManager.cosmic.enable — no need to
-  # list them here. Adding them explicitly causes "undefined variable" errors
-  # when package names change in the nixos-cosmic flake.
+  # list them here. Listing them explicitly breaks evaluation with
+  # "undefined variable" whenever a package is renamed.
   #
   # Community COSMIC extensions available in nixpkgs go here.
   # Still on Flatpak (not yet in nixpkgs — migrate when they land):

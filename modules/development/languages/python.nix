@@ -20,8 +20,11 @@
 #   ruff      — extremely fast linter written in Rust, replaces flake8/isort
 #   httpie    — friendly HTTP client for API testing from the terminal
 #
-# Note: pyright (LSP) lives in editors/neovim/hm.nix since it is an editor
-# concern, not a language runtime concern.
+# Note: pyright (LSP) lives in editors/neovim/neovim-hm.nix since it is an
+# editor concern, not a language runtime concern.
+#
+# Enable per host by importing this module; remove the import to turn it off.
+# To add a library to the bundled interpreter, append it to the withPackages list.
 # ===========================================================================
 
 { pkgs, ... }:

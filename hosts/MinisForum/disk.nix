@@ -1,13 +1,16 @@
 # ===========================================================================
-# hosts/MinisForum/disk.nix — disks, swap, LUKS and boot loader for MinisForum
+# hosts/MinisForum/disk.nix — local filesystems and swap for the MinisForum server
 #
-# Split out of MinisForum.nix so the installer can (re)write this file for a
-# new disk layout without touching the rest of the host config. Network
-# shares and pooled mounts (cifs, mergerfs) stay in MinisForum.nix.
+# Btrfs subvolumes on the "nixos" partition, an EFI system partition and a swapfile.
+# There is no LUKS layer on this server. The installer writes this file for a new disk
+# layout. Network shares (CIFS) are in MinisForum.nix. Boot loader settings are not in this file.
 # ===========================================================================
 { config, lib, pkgs, ... }:
 
 {
+  # Btrfs subvolumes on the "nixos" partition, mounted by label. Each uses zstd level 1
+  # compression and noatime, except /swap, which is not compressed. The snapshot subvolumes
+  # (@snapshots, @home_snapshots) are for snapper; this host does not import it.
   fileSystems = {
     "/" = {
       device = "/dev/disk/by-label/nixos";
@@ -57,7 +60,8 @@
   };
 
   # ==============================================================
-  # Swap
+  # Swap — one swapfile on the @swap subvolume
+  #   device  path of the swapfile
   # ==============================================================
   swapDevices = [{
     device = "/swap/swapfile";

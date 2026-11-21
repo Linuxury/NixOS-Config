@@ -1,54 +1,66 @@
 # ===========================================================================
 # modules/system/remote-builder.nix — offload Nix builds to MinisForum
 #
-# Importing this file IS the opt-in; there is no enable flag. Currently
-# imported by Radxa-X4 only: a 2026-10-23 stress test (noctalia + umbriel)
-# showed ThinkPad (584 s) and Media-Server (562 s) build locally as fast as
-# MinisForum does remotely (~627 s); Radxa-X4 takes 2283 s on its own.
+# Sends Nix builds from a low-RAM host to MinisForum (16 cores, 31 GB,
+# always on). Importing this file turns it on; there is no enable flag.
+# Remove the import to turn it off. Imported by Radxa-X4, which
+# build-capacity.nix limits to 1 job x 4 cores on 7 GB; the other hosts
+# build locally about as fast as the builder does.
 #
-# Why: modules/system/build-capacity.nix caps each host's parallelism to what
-# its RAM survives, which fixed the rebuild OOMs but left the weak hosts
-# deliberately slow (Radxa-X4 at 1 x 4 on 7 GB). MinisForum is online 24/7
-# with 16c/31G, so it absorbs the heavy derivations instead.
+#   age.secrets.nix-builder-key       SSH key nix-daemon uses to log in
+#   programs.ssh.knownHosts.minisforum  pinned builder host key
+#   nix.distributedBuilds             use nix.buildMachines
+#   nix.buildMachines                 the builder (see below)
+#   nix.settings.builders-use-substitutes, fallback
 #
-# Trust: the key below logs into `nixbuilder` on MinisForum, which is a
-# trusted-user there — it can insert arbitrary paths into that host's store.
-# That makes this key root-equivalent ON THE BUILDER, which is why it is NOT
-# deployed to the Alex machines. See secrets/secrets.nix.
+# Trust: the key logs into `nixbuilder` on MinisForum, a trusted-user there
+# that can add any path to that host's store. The key is therefore
+# root-equivalent on the builder, so it is not deployed to child-account
+# hosts. See secrets/secrets.nix.
 #
-# The builder is NOT a single point of failure: max-jobs stays whatever
-# build-capacity.nix derived (never 0), and `fallback` lets a host build
-# locally when MinisForum is unreachable.
+# The builder is not a single point of failure: max-jobs keeps the value
+# build-capacity.nix sets (never 0), and `fallback` builds locally when
+# MinisForum is unreachable.
 # ===========================================================================
 
 { config, ... }:
 
 {
-  # Private half of the fleet-builder keypair. nix-daemon runs as root, so
-  # root must own it; agenix defaults to root but it is spelled out here to
-  # match the pattern in hosts/Radxa-X4/Radxa-X4.nix.
+  # Private half of the builder keypair. nix-daemon runs as root, so root
+  # owns it, read-only (0400). Owner root is agenix's default, written out to
+  # match hosts/Radxa-X4/Radxa-X4.nix.
   age.secrets.nix-builder-key = {
     file  = ../../secrets/services/nix-builder-key.age;
     mode  = "0400";
     owner = "root";
   };
 
-  # Pin the builder's host key declaratively instead of relying on
-  # StrictHostKeyChecking=accept-new on first contact. Writes
-  # /etc/ssh/ssh_known_hosts, which root's ssh reads. Preferred over
-  # buildMachines.publicHostKey, whose base64 encoding is easy to get wrong.
-  # The attribute name IS the matched hostname, which is exactly the name
-  # buildMachines dials below. Value is MinisForum's host key, already
-  # recorded in secrets/secrets.nix.
+  # Pins the builder's host key instead of trusting it on first contact.
+  # Writes /etc/ssh/ssh_known_hosts, which root's ssh reads. The attribute
+  # name is the hostname matched, the same name buildMachines dials below.
+  # The key is MinisForum's host key, also listed in secrets/secrets.nix.
+  # Alternative: buildMachines.publicHostKey (base64 of the key line,
+  # easy to get wrong).
   programs.ssh.knownHosts.minisforum.publicKey =
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM/HPvxQY35jS4VDZRy4viIfHIGjUqkCgFhRVNcIsZRG";
 
   nix = {
     distributedBuilds = true;
 
+    # One builder. nix.buildMachines.* options:
+    #   hostName           host to ssh to
+    #   sshUser / sshKey   login user and private key
+    #   protocol           "ssh-ng" (newer protocol) or "ssh"
+    #   systems / system   platforms it builds for
+    #   maxJobs            parallel builds sent to it
+    #   speedFactor        preference among several builders (default 1)
+    #   supportedFeatures  features it offers (big-parallel, kvm, …)
+    #   mandatoryFeatures  features a build must require to be sent there
+    #   publicHostKey      base64 host key (knownHosts is used instead)
     buildMachines = [{
-      # Tailscale MagicDNS resolves this system-wide, not just via a user's
-      # ~/.ssh/config, so nix-daemon (root) reaches it by name on LAN or away.
+      # Tailscale MagicDNS resolves this system-wide, not only through a
+      # user's ~/.ssh/config, so nix-daemon (root) reaches it by name on the
+      # LAN or away.
       hostName   = "minisforum";
       sshUser    = "nixbuilder";
       sshKey     = config.age.secrets.nix-builder-key.path;
@@ -58,12 +70,11 @@
       # Matches MinisForum's own 2 x 16; each remote build gets 16 threads,
       # and the idle CPU/IO scheduling keeps Crafty (Minecraft) responsive.
       maxJobs = 2;
-      # speedFactor left at its default — it only orders builders relative to
+      # speedFactor stays at its default: it only orders builders against
       # each other, and MinisForum is the only one.
 
-      # big-parallel is the one that matters: it is what lets the large
-      # packages — the ones that used to OOM these hosts — go remote. kvm
-      # covers anything needing /dev/kvm.
+      # big-parallel lets large packages (the ones that run a low-RAM host
+      # out of memory) build remotely; kvm covers builds needing /dev/kvm.
       supportedFeatures = [ "big-parallel" "kvm" ];
     }];
 
@@ -72,10 +83,8 @@
       # substitutes proxied through the weak client's uplink.
       builders-use-substitutes = true;
 
-      # Build locally if MinisForum is unreachable, instead of failing the
-      # rebuild outright. This is what keeps one builder from becoming a
-      # single point of failure — and what build-capacity.nix's header
-      # assumes when it justifies the floor tier.
+      # Build locally if MinisForum is unreachable instead of failing the
+      # rebuild. build-capacity.nix's floor tier relies on this.
       fallback = true;
     };
   };

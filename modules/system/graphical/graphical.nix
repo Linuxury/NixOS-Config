@@ -1,15 +1,15 @@
 # ===========================================================================
 # modules/system/graphical/graphical.nix — Shared base for all graphical machines
 #
-# Import this in every host that runs a desktop environment — desktops and
-# laptops. Do NOT import on headless servers.
+# Shared base for every host with a desktop: network-share browsing,
+# Flatpak, Qt/GTK glue, NumLock, Bluetooth tuning, backlight, shared apps,
+# default applications and fonts. Turn it on by importing it from a desktop
+# or laptop host; headless servers never import it, so they get none of
+# these graphical tools.
 #
-# Deliberately DE-agnostic: this module works identically whether the host
-# runs COSMIC, KDE, Hyprland, Niri, or any other DE. When you add a new
-# DE module to a host, graphical/graphical.nix stays in the imports unchanged.
-#
-# Servers stay clean — they never import this file, so they never get
-# Wayland tools, terminal emulators, or media players they can't use.
+# It does not depend on the DE: it works the same under COSMIC, KDE,
+# Hyprland, Niri or any other, and stays in a host's imports when the DE
+# module changes.
 #
 # The following are intentionally NOT imported here — they are per-host:
 #   firefox, helium, fluxer, openrgb, kdeconnect,
@@ -27,8 +27,9 @@
 { config, lib, pkgs, ... }:
 
 let
-  # Shared Flatpak updater — used by nru (_nru_flatpak_bar in the ZSH repo)
-  # and by the weekly timers below, so the update + failure logic lives in one place.
+  # Shared Flatpak updater — used by nru (_nru_flatpak_bar in the zsh repo)
+  # and by the weekly timers below, so the update and failure logic lives in
+  # one place. Usage: nixos-flatpak-update --user | --system
   # Prints one machine-readable line per result, prefixed with the scope:
   #   <scope> skipped <reason> | <scope> uptodate
   #   <scope> updated <app-id> <name> | <scope> failed <app-id> <error message>
@@ -74,17 +75,16 @@ let
 in
 {
   imports = [
-    # Fast-fail pre-check for the Torrents CIFS automount.
-    # Self-activating: only applies to hosts that have /mnt/Torrents
-    # in fileSystems. No-op on hosts without it.
+    # Fast-fail pre-check for the Torrents CIFS automount. Applies only to
+    # hosts with /mnt/Torrents in fileSystems; a no-op elsewhere.
     ./torrents-precheck.nix
 
-    # AccountsService avatars — copies per-user icons from
-    # /home/linuxury/Pictures/Avatar/ so they appear in the greeter.
+    # Login avatars — copies each user's icon from the Assets flake input
+    # into the SDDM and AccountsService locations so greeters show it.
     ./user-avatars.nix
 
-    # Affinity v3 overlay — graphical hosts only.
-    # Makes pkgs.affinity-v3 available; nothing is installed unless explicitly added.
+    # Affinity v3 (Wine) — inactive until a host sets
+    # programs.affinity.enable = true.
     ./affinity.nix
   ];
 
@@ -97,8 +97,9 @@ in
   # Works with any file manager that uses GIO/GVfs as a backend:
   #   COSMIC Files, Dolphin (KDE), Nautilus (GNOME), Thunar (XFCE), etc.
   #
-  # The gvfs package in nixpkgs is compiled with samba support.
-  # The samba package below provides libsmbclient which gvfs needs at runtime.
+  # The gvfs package in nixpkgs is built with Samba support; the samba
+  # package below provides the libsmbclient it needs at runtime.
+  # (services.gvfs.package could swap in another gvfs build.)
   # =========================================================================
   services.gvfs.enable = true;
 
@@ -108,9 +109,12 @@ in
   # gvfs's network:// backend (gvfsd-dnssd) discovers SMB/FTP/etc. hosts
   # over mDNS by querying a local avahi-daemon via D-Bus — without one
   # running on this machine, the Network pane stays empty no matter how
-  # correctly gvfs/Samba are configured otherwise. Universal here so every
-  # DE/WM gets working network browsing the same way, instead of each
-  # compositor/desktop module needing its own copy.
+  # correctly gvfs/Samba are configured otherwise. Set here so every DE/WM
+  # gets network browsing the same way.
+  #   nssmdns4      resolve .local names through NSS (IPv4)
+  #   openFirewall  open UDP 5353 for mDNS
+  # Also available, not set here: nssmdns6, publish settings (advertise this
+  # host), wideArea, extraServiceFiles.
   # =========================================================================
   services.avahi = {
     enable       = true;
@@ -121,9 +125,10 @@ in
   # =========================================================================
   # Flatpak — App distribution for packages not in nixpkgs
   #
-  # Required by user-level services like hytale-flatpak-install.
-  # Available on all graphical hosts regardless of DE.
-  # The activation script adds Flathub at system scope on first boot.
+  # Needed by user services such as hytale-flatpak-install and
+  # fluxer-flatpak-install. The activation script adds the Flathub remote at
+  # system scope (keeps an existing one) and imports the pinned Flathub
+  # signing key into an existing remote that has none.
   # =========================================================================
   services.flatpak.enable = true;
   system.activationScripts.flatpak-flathub = let
@@ -146,11 +151,11 @@ in
     deps = [ "specialfs" ];
   };
 
-  # zsh-abbr's scratch dir and its job queue default to shared /tmp/zsh-abbr and
-  # /tmp/zsh-job-queue, owned by whichever user started zsh first — every other
-  # user then gets "permission denied" on each prompt (babylinux on Ryzen5800x,
-  # 2026-10). Per-user dirs instead. /etc/zshenv runs before Home Manager's
-  # .zshrc loads the plugin.
+  # zsh-abbr's scratch dir and its job queue default to shared /tmp/zsh-abbr
+  # and /tmp/zsh-job-queue, owned by whichever user started zsh first, so
+  # every other user gets "permission denied" on each prompt. These point
+  # them at per-user dirs. /etc/zshenv runs before Home Manager's .zshrc
+  # loads the plugin.
   programs.zsh.shellInit = ''
     export ABBR_TMPDIR="''${XDG_RUNTIME_DIR:-/tmp/$USER}/zsh-abbr"
     export JOB_QUEUE_TMPDIR="''${XDG_RUNTIME_DIR:-/tmp/$USER}/zsh-job-queue"
@@ -159,16 +164,18 @@ in
   # would run it again and rewrite the completion dump: ~0.9 s per shell.
   programs.zsh.enableGlobalCompInit = false;
 
-  # NetworkManager-wait-online held graphical.target ~4 s (via tailscaled's
-  # network-online ordering); Ryzen5900x userspace 8.6 s -> 4.9 s without it.
-  # Safe on desktops/laptops: CIFS mounts are automount, nixos-upgrade skips
-  # the first 20 min after boot (auto-update.nix). Servers keep it, since
-  # Radxa-X4's VPN killswitch needs a real network-online.
+  # NetworkManager-wait-online delays graphical.target by a few seconds
+  # (through tailscaled's network-online ordering), so it is off on desktops
+  # and laptops. That is safe there: CIFS mounts are automounts, and
+  # nixos-upgrade skips the first 20 min after boot (auto-update.nix).
+  # Servers keep it, since Radxa-X4's VPN killswitch needs a real
+  # network-online.
   systemd.services.NetworkManager-wait-online.enable = false;
 
   # Weekly unattended Flatpak updates — the "nobody ran nru in a while"
-  # backstop. Same script nru uses; skips gracefully where Flathub is absent
-  # (e.g. Alex's machines).
+  # backstop. Same script nru uses; skips cleanly where Flathub is absent
+  # (child-account hosts). Both timers run Sundays 04:00, Persistent = true
+  # (a missed run happens at next boot).
 
   # nru runs the system-scope update unattended — passwordless for exactly
   # this command (both paths: sudo may see either the store or the profile one).
@@ -219,9 +226,9 @@ in
   };
 
 
-  # Qt theming — makes Qt apps follow the active GTK theme automatically.
-  # qtbase ships the gtk3 platform theme plugin itself (qt6gtk2 was removed
-  # from nixpkgs), so no extra package or Qt configurator tool is needed.
+  # Qt theming — makes Qt apps follow the active GTK theme.
+  # qtbase ships the gtk3 platform theme plugin itself, so no extra package
+  # or Qt configurator tool is needed.
   # mkDefault: DE modules win (upstream COSMIC sets qt5ct, KDE sets "kde").
   # Set on environment.variables, not sessionVariables — sessionVariables is
   # copied into variables at normal priority, which drops the mkDefault.
@@ -233,7 +240,7 @@ in
   # Writes the LED state directly to the kernel before display-manager starts.
   # This is the universal approach: SDDM, cosmic-greeter, and all Wayland
   # compositors read the initial numlock state from the kernel at startup.
-  # SDDM hosts also get Numlock = "on" in greeters/sddm as belt-and-suspenders.
+  # SDDM hosts also set Numlock = "on" in greeters/sddm.
   # =========================================================================
   systemd.services.numlock-on = {
     description = "Enable NumLock";
@@ -265,8 +272,11 @@ in
   #   AutoEnable      — re-enables the adapter if bluetoothd restarts (e.g.
   #                     after a suspend/resume cycle that resets the adapter).
   #
-  # DE-specific BT management (COSMIC panel, KDE system tray, Noctalia bar)
-  # is handled by each DE — no compositor module needs to set these.
+  # Also available, not set here: package, disabledPlugins, input / network
+  # (settings for the input.conf / network.conf files).
+  #
+  # The Bluetooth UI (COSMIC panel, KDE tray, Noctalia bar) comes from each
+  # DE; no compositor module needs to set these.
   # =========================================================================
   hardware.bluetooth = {
     powerOnBoot = true;
@@ -294,8 +304,7 @@ in
   # =========================================================================
   # Shared graphical packages
   #
-  # Installed on every machine that runs a desktop environment.
-  # Servers never get these — they have no graphical session to use them.
+  # Installed on every host that imports this module (not on servers).
   # =========================================================================
   environment.systemPackages = with pkgs; [
     flatpakUpdate  # nixos-flatpak-update — see the let block above
@@ -346,30 +355,23 @@ in
     # Network share client
     #
     # Provides libsmbclient — the library gvfs (above) links against at
-    # runtime to browse SMB/Samba shares. Without this, clicking
-    # "Network" in any file manager will fail to connect to your servers.
+    # runtime to browse SMB/Samba shares. Without it, the "Network" view in
+    # any file manager cannot connect to the servers.
     # -----------------------------------------------------------------------
     samba
 
   ];
 
   # =========================================================================
-  # Fonts — Basic font set for a readable desktop experience
-  #
-  # These are system-wide fonts available to all graphical hosts,
-  # regardless of which DE/WM is running. Declared here so every host
-  # (COSMIC, Hyprland, KDE, Niri, etc.) gets the same font stack.
-  # Users can add more fonts in their own home.nix.
-  # =========================================================================
-  # =========================================================================
   # Default applications — shared across all graphical users on this host
   #
-  # Using home-manager.sharedModules so these defaults travel with the
-  # packages that provide them. When an optional app module is not imported,
-  # its MIME entries simply don't exist — no dangling declarations.
-  #
+  # Set through home-manager.sharedModules so the defaults travel with the
+  # packages that provide them. Optional apps set their own MIME defaults in
+  # their own modules, so a module that is not imported leaves no entries.
   # Per-user choices (browser) stay in each user's home.nix.
-  # Optional app defaults live in their own modules.
+  #
+  # Also added here: keybinds.nix (shared keybinds) and an nvim desktop
+  # entry.
   # =========================================================================
   home-manager.sharedModules = [
     ./keybinds.nix
@@ -469,11 +471,19 @@ in
       ];
     };
 
-    # Allow HM to take ownership of mimeapps.list even if it was previously
-    # edited manually. Without this, HM silently skips the file.
+    # Replace an existing hand-edited mimeapps.list instead of failing the
+    # activation on the file collision.
     xdg.configFile."mimeapps.list".force = true;
   }];
 
+  # =========================================================================
+  # Fonts — basic system-wide font set for every graphical host, whatever
+  # the DE/WM. Users can add more in their own home.nix.
+  #   enableDefaultPackages   NixOS's default set (DejaVu, Liberation, …)
+  #   packages                the fonts below
+  # Also available, not set here: fontDir.enable (/run/current-system/sw/
+  # share/X11/fonts for X11/Flatpak apps), fontconfig.defaultFonts.
+  # =========================================================================
   fonts = {
     enableDefaultPackages = true;
     packages = with pkgs; [

@@ -7,8 +7,9 @@
 #
 # Display manager: GDM (GNOME's native login screen, Wayland-first)
 #
-# To enable on a host, import this module. Use one DE at a time —
-# do not import alongside kde.nix or cosmic.nix (display manager conflict).
+# Not imported by any host. To enable on a host, import this module; remove
+# the import to turn it off. Use one DE at a time — do not import alongside
+# kde.nix or cosmic.nix (display manager conflict).
 # ===========================================================================
 
 { pkgs, ... }:
@@ -19,6 +20,14 @@
   #
   # Enables GNOME Shell plus all core GNOME apps (Files, Text Editor,
   # Calendar, Contacts, etc.). Extras go in environment.systemPackages below.
+  #
+  #   enable        GNOME Shell session plus core services and apps
+  #   Not set here: sessionPath, favoriteAppsOverride,
+  #   extraGSettingsOverrides / extraGSettingsOverridePackages, debug,
+  #   flashback.* (Metacity / custom WM sessions);
+  #   environment.gnome.excludePackages drops bundled apps;
+  #   services.gnome.{core-apps,core-developer-tools,games}.enable toggle
+  #   the app groups.
   # =========================================================================
   services.desktopManager.gnome.enable = true;
 
@@ -26,6 +35,12 @@
   # Display Manager — GDM
   #
   # GDM is GNOME's native display manager. Wayland session is the default.
+  #
+  #   enable   run GDM
+  #   wayland  removed in the pinned nixpkgs ("no longer supported with
+  #            GNOME 50") — evaluation fails while it is set
+  #   Not set here: debug, autoLogin.delay, autoSuspend, banner, settings
+  #   (custom.conf), extraPackages.
   # =========================================================================
   services.displayManager.gdm = {
     enable   = true;

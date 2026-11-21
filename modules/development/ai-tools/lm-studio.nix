@@ -8,7 +8,8 @@
 # Requires: modules/development/ai-tools/ai-tools.nix (nix-ld)
 # LM Studio ships as a prebuilt binary — nix-ld must be enabled for it to run.
 #
-# Enable per host by importing this module alongside ai-tools/ai-tools.nix:
+# Enable per host by importing this module alongside ai-tools/ai-tools.nix
+# (remove the imports to turn it off):
 #   ../../modules/development/ai-tools/ai-tools.nix
 #   ../../modules/development/ai-tools/lm-studio.nix
 # ===========================================================================
@@ -17,7 +18,8 @@
 
 {
   # =========================================================================
-  # LM Studio — prebuilt GUI app, requires nix-ld (ai-tools/ai-tools.nix)
+  # LM Studio — prebuilt GUI app, requires nix-ld (ai-tools/ai-tools.nix).
+  # Only the package is installed; models and settings live in the user's home.
   # =========================================================================
   environment.systemPackages = [ pkgs.lmstudio ];
 }

@@ -1,20 +1,21 @@
 # ===========================================================================
 # modules/themes/gtk.nix — Shared GTK and cursor base theme
 #
-# Home Manager module imported by all compositor and desktop theme modules.
-# Provides:
+# Home Manager module with the shared cursor and GTK theme. It has no
+# enable flag: the compositor and desktop theme modules import it, and
+# removing it from them turns it off. Provides:
 #   - BreezeX-Light cursor (Wayland env + GTK + X11 fallback)
-#   - adw-gtk3-dark GTK theme + Tela-dark icons + BreezeX cursor via GTK config
+#   - adw-gtk3-dark GTK theme + Papirus-Dark icons + BreezeX cursor via GTK
 #   - dconf dark mode + cursor settings for libadwaita / GSettings apps
 #   - dconf button-layout for Firefox CSD window buttons
+#   - gtk3 on PATH for gtk-update-icon-cache
 #
-# Each compositor/desktop imports this and adds only its unique config:
+# Importers add only their own config on top:
 #   compositors/hyprland/hyprland-themes.nix  → + gtk-decoration-layout
-#   desktops/cosmic/cosmic-themes.nix       → + CosmicTk files + favorites
-#   desktops/gnome/gnome-themes.nix        → (base is sufficient for GNOME)
-#
-# Extracted from the 4 separate theme modules to eliminate the BreezeX
-# derivation duplication. One sha256 to update, one place to change.
+#   compositors/umbriel/umbriel-themes.nix
+#   desktops/cosmic/cosmic-themes.nix         → + CosmicTk files + favorites
+#   desktops/gnome/gnome-themes.nix           → (base is enough for GNOME)
+#   greeters/greeter-noctalia.nix
 # ===========================================================================
 
 { pkgs, config, lib, ... }:
@@ -24,11 +25,11 @@ let
   # BreezeX cursor theme — not in nixpkgs, fetched from GitHub releases
   #
   # BreezeX is a refined KDE Breeze cursor with larger sizes and cleaner
-  # rendering. The v2.0.1 bundle ships three variants: Black, Dark, Light.
-  # BreezeX-Light is used here as the default.
+  # rendering. The release bundle ships three variants: Black, Dark, Light;
+  # BreezeX-Light is used here.
   #
   # To upgrade: run nix-prefetch-url --unpack <new release URL> and update
-  # the sha256 below. Update it here and all theme modules benefit at once.
+  # version, url and sha256 below; every theme module uses this derivation.
   # =========================================================================
   breezex-cursors = pkgs.stdenv.mkDerivation {
     pname   = "breezex-cursor-theme";
@@ -60,6 +61,8 @@ in
   #      so Wayland compositors (COSMIC, Hyprland, Niri) pick it up
   #   2. Creates ~/.icons/default/index.theme for X11 / XWayland fallback
   #   3. Writes cursor settings to GTK config (gtk.enable = true below)
+  # Also available, not set here: dotIcons.enable (~/.icons link),
+  # hyprcursor.enable / sway.enable (per-compositor cursor config).
   # =========================================================================
   home.pointerCursor = {
     enable     = true;
@@ -75,7 +78,11 @@ in
   #
   # GTK3, GTK4, and libadwaita apps all read from settings.ini.
   # Compositor/desktop-specific modules extend gtk3/gtk4.extraConfig
-  # with additional keys (e.g. gtk-decoration-layout) — HM merges them.
+  # with additional keys (e.g. gtk-decoration-layout); HM merges them.
+  #   theme / iconTheme / cursorTheme   name + package for all GTK versions
+  #   gtk3/gtk4.extraConfig             extra settings.ini keys
+  # Also available, not set here: font, colorScheme ("dark" / "light"),
+  # gtk3/gtk4.extraCss, gtk3.bookmarks.
   # =========================================================================
   gtk = {
     enable = true;
@@ -94,7 +101,7 @@ in
     };
     gtk3.extraConfig.gtk-application-prefer-dark-theme = 1;
     gtk4 = {
-      theme = config.gtk.theme; # Silence HM 26.05 default change warning
+      theme = config.gtk.theme; # set explicitly; HM's default for gtk4.theme depends on stateVersion
       extraConfig.gtk-application-prefer-dark-theme = 1;
     };
   };

@@ -1,12 +1,15 @@
 # ===========================================================================
 # modules/system/graphical/keybinds.nix — Shared terminal keybinds
 #
-# Declares the standard terminal keybinds for every graphical host,
-# regardless of which DE/WM is active. This is the canonical source of truth
-# for keybind parity across all desktops:
+# Home Manager module with the shared terminal and close-window keybinds,
+# written for every desktop at once whichever DE/WM is active. graphical.nix
+# adds it to home-manager.sharedModules, so every user on every graphical
+# host gets it; remove that entry to turn it off. Keybinds that must match
+# across desktops are defined here:
 #
 #   SUPER+Return       → kitty (tiled)
 #   SUPER+SHIFT+Return → kitty --class floating-term (floating quick terminal)
+#   SUPER+Q            → close window (KDE and GNOME, set below)
 #
 # DE coverage:
 #   Hyprland — dotfiles/hypr/modules/keybinds.lua (managed in dotfile; Hyprland's
@@ -19,11 +22,8 @@
 #              (programs.niri HM option only exists when NixOS niri module is enabled,
 #              so it cannot be set here safely)
 #
-# Files written for inactive DEs are harmless — they are simply never read.
-# This makes adding or switching DEs on any host a zero-extra-config operation.
-#
-# Foundation for the Universal Keybind Viewer (pending): all binds will live
-# here so the viewer can source a single module for the complete keybind map.
+# Files written for inactive DEs are never read, so a host can add or
+# switch DEs without extra keybind config.
 # ===========================================================================
 
 { lib, pkgs, ... }:
@@ -32,9 +32,9 @@
   # =========================================================================
   # COSMIC shortcuts
   #
-  # COSMIC merges custom/ on top of its built-in defaults — only overrides
-  # need to be listed. system_actions maps System(Terminal) (SUPER+T default)
-  # to kitty so that shortcut is also consistent.
+  # COSMIC merges custom/ on top of its built-in defaults, so only overrides
+  # are listed. system_actions maps the System(Terminal) action (SUPER+T by
+  # default) to kitty too. force = true replaces files COSMIC wrote itself.
   # =========================================================================
   home.file.".config/cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom" = {
     force = true;
@@ -61,10 +61,13 @@
   # kitty-floating needs a .desktop entry so KDE can register it as a
   # shortcut target. NoDisplay=true keeps it out of the app launcher.
   #
-  # kglobalshortcutsrc is writable at runtime (KDE edits it via System
-  # Settings) so home.file / xdg.configFile would create a read-only symlink
-  # that silently blocks KDE's writes. Instead, home.activation appends only
-  # the kitty sections if absent, leaving all other user shortcuts intact.
+  # KDE edits kglobalshortcutsrc at runtime (System Settings), so a
+  # home.file / xdg.configFile read-only symlink would block its writes.
+  # Instead two activation scripts edit it in place:
+  #   kdeCloseWindowShortcut   kwriteconfig6 sets kwin "Window Close" to
+  #                            Meta+Q and Alt+F4
+  #   kdeKittyShortcuts        appends the kitty sections only if absent,
+  #                            leaving all other shortcuts untouched
   # =========================================================================
   home.file.".local/share/applications/kitty-floating.desktop".text = ''
     [Desktop Entry]
@@ -97,9 +100,12 @@
   # =========================================================================
   # GNOME shortcuts
   #
-  # GNOME uses dconf for keybindings. Custom app-launch shortcuts are stored
-  # as numbered entries under custom-keybindings. The list at the parent key
-  # must enumerate every active custom binding path.
+  # GNOME keeps keybindings in dconf (dconf.settings).
+  #   org/gnome/desktop/wm/keybindings.close   window close key
+  #   custom-keybindings/customN               app-launch shortcuts, each
+  #                                            with name, command, binding
+  # The custom-keybindings list on the parent key must name every customN
+  # path, or GNOME ignores it.
   # =========================================================================
   dconf.settings = {
     "org/gnome/desktop/wm/keybindings" = {

@@ -1,24 +1,30 @@
 # ===========================================================================
 # modules/components/notifications/swaync/swaync.nix — SwayNC notification daemon
 #
-# Compositor-agnostic notification daemon with a slide-in control center.
-# Works on any wlr-layer-shell compositor (Hyprland, Niri, Sway…).
+# Notification daemon with a slide-in control center, for any
+# wlr-layer-shell compositor (Hyprland, Niri, Sway). Turn it on by importing
+# this file from a host; remove the import to turn it off.
 #
 # When imported, this module:
-#   1. Adds swaync to system packages.
-#   2. Injects hm.nix into every user via home-manager.sharedModules,
+#   1. Adds swaynotificationcenter to environment.systemPackages.
+#   2. Adds swaync-hm.nix to every user via home-manager.sharedModules,
 #      which generates ~/.config/swaync/config.json from host options.
 #   3. If Hyprland is present: writes ~/.config/hypr/components/notifications.lua
 #      (layer rules for the slide-in animation). Skipped on all other
 #      compositors — this module itself is compositor-agnostic.
 #
-# Set these options in your host config (hosts/<name>/<name>.nix):
+# Options, set in the host config (hosts/<name>/<name>.nix):
 #   myModules.swaync.hasBacklight      = true;
 #   myModules.swaync.backlightDevice   = "amdgpu_bl1";  # ls /sys/class/backlight/
 #   myModules.swaync.hasKbBacklight    = true;
 #   myModules.swaync.kbBacklightDevice = "tpacpi::kbd_backlight";
 #   myModules.swaync.hasWifi           = true;   # default true
 #   myModules.swaync.hasBluetooth      = true;   # default true
+# hasBacklight / hasKbBacklight default to false and add the matching
+# slider; the device names default to "".
+#
+# Home Manager's own services.swaync (enable, package, settings, style) is
+# not used; swaync-hm.nix writes config.json directly.
 # ===========================================================================
 
 { pkgs, lib, ... }:
@@ -69,8 +75,8 @@
       # Generate ~/.config/swaync/config.json from host options.
       ./swaync-hm.nix
 
-      # If Hyprland is present: write layer rules for the swaync slide animation.
-      # Skipped silently on all other compositors.
+      # On Hyprland hosts (~/.config/hypr exists): writes layer rules that
+      # slide the swaync windows in from the right. Other hosts skip it.
       ({ lib, ... }: {
         home.activation.swayncHyprRules = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
           # Only run on Hyprland hosts — skip silently on all others

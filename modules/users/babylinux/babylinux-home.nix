@@ -9,13 +9,15 @@
 #   Ryzen5800x → "4k"
 #   Asus-A15   → "4k"
 #
-# Notable:
-#   - Hytale installed from bundled flatpak from the Assets input
-#   - Prism Launcher for Minecraft (Java Edition)
-#   - Shares terminal dotfiles with linuxury (kitty)
+# Contents: Hytale (bundled flatpak from the Assets input), XDG dirs, default
+# browser, wallpapers/avatar/fastfetch image from the Assets input, shared
+# kitty/fastfetch/starship/nano/zsh setup, git identity, BreezeX cursor, KDE
+# seed config, SDDM wallpaper sync, VSCodium. Applied through the Home Manager
+# user list in flake.nix.
 # ===========================================================================
 
-# Single function — wallpaperDir comes from extraSpecialArgs in flake.nix
+# Function arguments: config/pkgs/lib are the module set; inputs are the flake
+# inputs (assets, dotfiles, zsh); wallpaperDir comes from extraSpecialArgs in flake.nix.
 { config, pkgs, lib, inputs, wallpaperDir, ... }:
 
 {
@@ -24,19 +26,24 @@
     ../wallpapers.nix
   ];
 
+  # Hytale — auto-install + overrides (see modules/system/graphical/hytale.nix)
   programs.hytale.enable = true;
 
   # =========================================================================
   # Home Manager basics
   # =========================================================================
+  # Account name, home path and the Home Manager release the state format
+  # follows (stateVersion: keep at the install-time release; do not bump for upgrades).
   home.username      = "babylinux";
   home.homeDirectory = "/home/babylinux";
   home.stateVersion  = "24.11";
 
-  programs.home-manager.enable = true;
+  programs.home-manager.enable = true; # install the home-manager CLI for this user
 
   # =========================================================================
   # Browser — per-user choice (shared app defaults live in graphical/graphical.nix)
+  # xdg.mimeApps.defaultApplications maps a MIME type or URL scheme to one or
+  # more .desktop files, in priority order: Firefox first, Helium as fallback.
   # =========================================================================
   xdg.mimeApps.defaultApplications = {
     "x-scheme-handler/http"  = [ "firefox.desktop" "helium.desktop" ];
@@ -47,11 +54,18 @@
 
   # =========================================================================
   # XDG User Directories
+  #   enable               write ~/.config/user-dirs.dirs
+  #   createDirectories    create the folders below at activation
+  #   setSessionVariables  export XDG_*_DIR variables in the session
+  #   desktop/documents/download/music/pictures/projects/videos/templates/
+  #   publicShare          paths of the standard folders (null disables one)
+  #   extraConfig          extra XDG_<NAME>_DIR entries
+  #   package              xdg-user-dirs package (null to skip it)
   # =========================================================================
   xdg.userDirs = {
     enable            = true;
     createDirectories = true;
-    setSessionVariables = true; # Silence HM 26.05 default change warning
+    setSessionVariables = true; # export XDG_*_DIR variables (explicit, so no default-change warning)
 
     desktop    = "${config.home.homeDirectory}/Desktop";
     documents  = "${config.home.homeDirectory}/Documents";
@@ -65,17 +79,21 @@
 
   # =========================================================================
   # Extra directories
+  # systemd user tmpfiles rules, "type path mode user group age": d = create the
+  # directory if missing (age "-" = never cleaned).
   # =========================================================================
   systemd.user.tmpfiles.rules = [
-    # SSH directory with correct permissions
+    # SSH directory with correct permissions (sshd refuses looser modes)
     "d ${config.home.homeDirectory}/.ssh  0700 babylinux users -"
   ];
 
   # =========================================================================
-  # Dotfiles — shared terminal setup with linuxury
+  # Pre-link cleanup — activation steps that run before Home Manager checks
+  # link targets (entryBefore checkLinkTargets), removing files that would block
+  # a link or conflict with a seeded file.
   # =========================================================================
-  # Migration — remove old plain dirs before HM creates symlinks in their place
-  # =========================================================================
+  # Clears the BreezeX-Light cursor dir (HM links it) and any symlinked
+  # kdeglobals/kcminputrc, so initKdeConfig below can write regular files.
   home.activation.migrateKdeGtkFiles = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
     # BreezeX cursor dir written by a previous session — HM will symlink it
     rm -rf "$HOME/.icons/BreezeX-Light"
@@ -85,6 +103,8 @@
     [ -L "$HOME/.config/kcminputrc" ]  && rm -f "$HOME/.config/kcminputrc"
   '';
 
+  # Removes empty plain directories at the Assets link targets
+  # (Pictures/Avatar, Documents/assets[/flatpaks]) and a non-symlink fontconfig file.
   home.activation.migrateAssetDirs = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
     # Old ~/Pictures/Avatar plain dir → now symlinked at ~/Pictures/Avatar
     if [ -d "$HOME/Pictures/Avatar" ] && [ ! -L "$HOME/Pictures/Avatar" ]; then
@@ -105,6 +125,9 @@
   '';
 
   # =========================================================================
+  # Dotfiles — shared terminal setup with linuxury
+  # home.file.<path>.source links a store path into $HOME; .text writes content.
+  # =========================================================================
   home.file = {
     # Starship prompt — shared config
     ".config/starship.toml".source = "${inputs.zsh}/starship/starship.toml";
@@ -120,7 +143,7 @@
     ".nanorc".source = "${inputs.dotfiles}/nano/.nanorc";
 
     # ~/Pictures/Wallpapers is a writable folder, filled from the Assets input
-    # by modules/users/wallpapers. Both her machines use "4k" — set in flake.nix
+    # by modules/users/wallpapers. Both machines use "4k" — set in flake.nix
 
     # ~/Pictures/Avatar → <assets>/Avatar (family profile photos)
     "Pictures/Avatar".source =
@@ -134,7 +157,10 @@
     "Pictures/Fastfetch".source =
       "${inputs.assets}/Fastfetch/babylinux";
 
-    # SSH config
+    # SSH client config: AddKeysToAgent loads keys on first use, IdentitiesOnly
+    # sends only the listed identity, ServerAlive* drop dead connections after
+    # ~3 min, SetEnv sets TERM for hosts without kitty terminfo; Host media-server
+    # is a shortcut for the Media-Server machine.
     ".ssh/config".text = ''
       # ===========================================================
       # SSH Config — babylinux
@@ -158,6 +184,13 @@
 
   # =========================================================================
   # Zsh shell
+  #   autosuggestion.enable  grey inline history suggestions
+  #   enableCompletion       tab completion
+  #   plugins                fast-syntax-highlighting (command colouring)
+  #   zsh-abbr               fish-style abbreviations; age-edit / age-rekey run
+  #                          agenix from secrets/ without changing the shell's cwd
+  #   shellAliases.ll        long eza listing with icons and git status
+  #   initContent            shared init from the ZSH repo (init.nix)
   # =========================================================================
   programs.zsh = {
     enable            = true;
@@ -189,14 +222,15 @@
   };
 
   # =========================================================================
-  # Starship prompt
+  # Starship prompt — enable installs it and hooks zsh; config is the linked
+  # starship.toml from the ZSH repo (home.file above).
   # =========================================================================
   programs.starship = {
     enable = true;
   };
 
   # =========================================================================
-  # Zoxide — smarter cd
+  # Zoxide — smarter cd (z <dir>); enableZshIntegration adds the zsh hook
   # =========================================================================
   programs.zoxide = {
     enable               = true;
@@ -204,7 +238,7 @@
   };
 
   # =========================================================================
-  # FZF — fuzzy finder
+  # FZF — fuzzy finder; enableZshIntegration adds Ctrl-R/Ctrl-T/Alt-C bindings
   # =========================================================================
   programs.fzf = {
     enable               = true;
@@ -213,6 +247,8 @@
 
   # =========================================================================
   # Direnv — auto-loads .envrc on cd (nix develop shells, project env vars)
+  #   enableZshIntegration  zsh hook
+  #   nix-direnv.enable     fast cached `use flake` / `use nix`
   # =========================================================================
   programs.direnv = {
     enable               = true;
@@ -222,10 +258,13 @@
 
   # =========================================================================
   # Git
+  #   signing.format  null = no commit signing configured
+  #   includes        extra config files; the email lives in an agenix secret
+  #   settings        user.name, init.defaultBranch, pull.rebase (false = merge)
   # =========================================================================
   programs.git = {
     enable    = true;
-    signing.format = null; # Silence HM 25.05 default change warning
+    signing.format = null; # no signing format set (explicit, so no default-change warning)
     # Email comes from an agenix secret ([user] email), so it stays out of the repo.
     includes = [ { path = "/run/agenix/git-email-babylinux"; } ];
     settings = {
@@ -236,10 +275,6 @@
   };
 
   # =========================================================================
-  # Hytale — auto-install + overrides (see modules/system/graphical/hytale.nix)
-  # =========================================================================
-
-  # =========================================================================
   # Cursor — BreezeX-Light
   #
   # home.pointerCursor sets three things at once:
@@ -247,6 +282,8 @@
   #      so kwin_wayland picks it up on session start
   #   2. ~/.icons/default/index.theme for X11 fallback
   #   3. GTK cursor config (via gtk.enable below)
+  # Options: enable, name, package, size (px); per-target gtk / x11 / hyprcursor /
+  # sway (.enable, .size), x11.defaultCursor, dotIcons.enable (~/.icons/default).
   # =========================================================================
   home.pointerCursor = {
     enable     = true;
@@ -312,7 +349,8 @@ PYEOF
   '';
 
   # =========================================================================
-  # SSH agent
+  # SSH agent — keeps loaded keys for the session (pairs with AddKeysToAgent in
+  # the SSH config above)
   # =========================================================================
   services.ssh-agent.enable = true;
 
@@ -355,5 +393,5 @@ PYEOF
     Install.WantedBy = [ "graphical-session.target" ];
   };
 
-  # Personal packages live in modules/users/babylinux-packages.nix
+  # Per-user packages: only vscodium above; shared packages come from the host modules.
 }

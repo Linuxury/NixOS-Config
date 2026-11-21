@@ -8,6 +8,9 @@
 #
 # For the cursor, icon theme, GTK dark mode, and dconf base, see:
 #   modules/themes/gtk.nix
+#
+# Home Manager module: hyprland.nix adds it to home-manager.sharedModules.
+# Remove it from that list to turn it off.
 # ===========================================================================
 
 { ... }:

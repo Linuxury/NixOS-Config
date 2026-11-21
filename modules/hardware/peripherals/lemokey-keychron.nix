@@ -1,10 +1,11 @@
 # ===========================================================================
 # modules/hardware/peripherals/lemokey-keychron.nix — WebHID access
 #
-# Option-gated module — imported for ALL hosts in flake.nix (mkHost).
-# Dormant until a host enables it:
+# Lets the logged-in user reach Lemokey and Keychron devices over WebHID.
+# flake.nix (mkHost) imports it for every host; it does nothing until a host
+# turns it on:
 #
-#   hardware.lemokey-keychron.enable = true;
+#   hardware.lemokey-keychron.enable = true;    # default false
 #
 # The Lemokey and Keychron web launchers use the WebHID API to configure
 # keyboards and mice directly from the browser. By default /dev/hidraw*
@@ -12,9 +13,10 @@
 # active logged-in user a session-scoped ACL — no MODE=0666 or static
 # group needed.
 #
-# Shipped as 70-*.rules via udev.packages, NOT services.udev.extraRules:
-# extraRules lands in 99-local.rules, which runs after 73-seat-late.rules
-# (where uaccess tags become ACLs), so the tag was set but never applied.
+# The rules ship as 70-*.rules through services.udev.packages, not
+# services.udev.extraRules: extraRules goes into 99-local.rules, which runs
+# after 73-seat-late.rules (where uaccess tags become ACLs), so a tag set
+# there would never be applied.
 #
 # VID 362d = Lemokey  (Hall Effect keyboards — P1 HE, etc.)
 # VID 3434 = Keychron (QMK keyboards + M-series mice)

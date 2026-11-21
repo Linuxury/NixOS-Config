@@ -1,21 +1,27 @@
 # ===========================================================================
 # modules/system/graphical/thunar.nix — Thunar as default file manager
 #
-# Linuxury-specific: overrides the shared inode/directory default (Nautilus,
-# set in modules/system/graphical/graphical.nix's home-manager.sharedModules)
-# for this user only. Import only from modules/users/linuxury/linuxury-home.nix, not from
-# home-manager.sharedModules — other hosts don't have Thunar installed.
+# Home Manager module that makes Thunar the default file manager for
+# linuxury. Turn it on by importing it from
+# modules/users/linuxury/linuxury-home.nix; remove the import to go back to
+# the shared default (Nautilus, set in graphical.nix). Do not add it to
+# home-manager.sharedModules: other hosts do not install Thunar.
 #
-# Bookmarks aren't duplicated here — Thunar reads the same
-# ~/.config/gtk-3.0/bookmarks file Nautilus's module already writes.
+#   xdg.mimeApps.defaultApplications."inode/directory"
+#                    thunar.desktop, with mkForce to win over the shared
+#                    Nautilus default
+#   home.file.".config/Thunar/uca.xml"
+#                    right-click Custom Actions: Open Terminal Here (kitty)
+#                    plus the three Nautilus scripts from nautilus.nix
+#                    (Copy Name, Copy Path, Open as Root)
 #
-# Custom Actions (right-click menu) ports the three Nautilus scripts from
-# modules/system/graphical/nautilus.nix, plus an Open Terminal Here
-# using kitty. %f is passed as a positional arg ("$1", not inlined) so paths
-# with spaces (e.g. "Faugus Backup") survive intact. Nix-managed like
-# Nautilus's bookmarks file — if you add more actions via Thunar's own
-# "Configure custom actions" dialog later, they won't persist past the next
-# rebuild; add them here instead.
+# Bookmarks come from ~/.config/gtk-3.0/bookmarks, which nautilus.nix writes;
+# Thunar reads the same file.
+#
+# Each action passes %f as a positional argument ("$1") so paths with spaces
+# stay intact. uca.xml is managed by Nix: actions added in Thunar's
+# "Configure custom actions" dialog are lost on the next rebuild, so add them
+# here instead.
 # ===========================================================================
 
 { lib, ... }:
@@ -24,7 +30,7 @@
   xdg.mimeApps.defaultApplications."inode/directory" = lib.mkForce "thunar.desktop";
 
   home.file.".config/Thunar/uca.xml" = {
-    force = true; # Thunar creates a default uca.xml on first launch; override it
+    force = true; # replace the default uca.xml Thunar writes on first launch
     text = ''
     <?xml version="1.0" encoding="UTF-8"?>
     <actions>

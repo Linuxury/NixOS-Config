@@ -21,17 +21,27 @@
 #    If a user that needs moving is logged in (e.g. started by a switch, not
 #    a boot), it postpones to the next boot.
 #
+# Options:
+#   users.users.<name>.uid        set automatically for names listed in ../uids.nix
+#                                 (mkIf, so an explicit uid elsewhere conflicts)
+#   users.uidMigrate.ownedBy      { "<path>" = "<user>"; } paths chowned to <user>
+#                                 after a migration (default { }); use for data
+#                                 written by containers running with a raw UID
+#
+# Always on: no enable option. To disable, remove the import in flake.nix mkHost.
 # Log: journalctl -u uid-migrate · /var/log/uid-migrate.log
 # ===========================================================================
 { config, lib, pkgs, ... }:
 
 let
   uids = import ../uids.nix;
+  # Family users this host declares as normal users, as bash "[name]=uid" pairs.
   managed = lib.filterAttrs (n: u: uids ? ${n} && u.isNormalUser) config.users.users;
   wantDecl = lib.concatStringsSep " " (lib.mapAttrsToList (n: _: "[${n}]=${toString uids.${n}}") managed);
   ownedDecl = lib.concatStringsSep " " (lib.mapAttrsToList (p: u: "[${lib.escapeShellArg p}]=${u}") config.users.uidMigrate.ownedBy);
 in
 {
+  # Extends the users.users submodule so a declared user picks up its pinned uid.
   options.users.users = lib.mkOption {
     type = lib.types.attrsOf (lib.types.submodule ({ name, ... }: {
       config.uid = lib.mkIf (uids ? ${name}) uids.${name};
@@ -49,6 +59,11 @@ in
     '';
   };
 
+  # Boot-time migration unit. Ordered in sysinit.target before logind and user
+  # sessions; DefaultDependencies = false avoids a cycle with sysinit.target;
+  # restartIfChanged = false keeps a switch from re-running it mid-session;
+  # Type oneshot + RemainAfterExit = true, TimeoutStartSec infinity because
+  # chowning large disks can take long. path = tools the script calls.
   config.systemd.services.uid-migrate = {
     description = "Move family users to their fixed UIDs (one-time)";
     wantedBy = [ "sysinit.target" ];

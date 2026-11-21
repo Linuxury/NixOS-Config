@@ -12,7 +12,7 @@
 # What this module owns:
 #   - SDDM enable + Wayland mode (weston compositor by default)
 #   - hypr-sddm theme (minimal blur, hyprlock-inspired aesthetic)
-#   - Wallpaper sync dir (/var/lib/sddm/wallpaper/) for live wallpaper updates
+#   - Wallpaper sync dir (/var/lib/sddm-wallpaper/) for live wallpaper updates
 #   - GNOME Keyring unlock via SDDM PAM service
 #   - sddm user video/input groups (needed for greeter GPU access)
 #   - /run/user/175 tmpfiles entry (SDDM runtime dir for the greeter session)
@@ -20,21 +20,24 @@
 # What each DE module still owns:
 #   - Registering its own session package (services.displayManager.sessionPackages)
 #   - Any compositor-specific SDDM overrides (KDE: CompositorCommand, GreeterEnvironment)
-#   - Copying the current wallpaper to /var/lib/sddm/wallpaper/background.jpg
+#   - Copying the current wallpaper to /var/lib/sddm-wallpaper/background.jpg
 #     (handled by modules/compositors/hyprland/hyprland-matugen.nix)
 #   - services.gnome.gnome-keyring.enable (session-level concern, not greeter)
+#
+# To turn SDDM off, drop the import from the DE module and enable another
+# greeter (e.g. greeter-noctalia.nix).
 # ===========================================================================
 
 { config, pkgs, lib, ... }:
 
 let
   # KDE hosts have no matugen wallpaper pipeline, so the theme's runtime colour
-  # extractor is unreliable there (pink card on a teal wallpaper). Pin a teal
-  # accent instead; empty string = keep dynamic extraction (Hyprland hosts).
+  # extractor can pick a colour that clashes with the wallpaper there. Pin a
+  # teal accent instead; empty string = keep dynamic extraction (Hyprland hosts).
   accent = lib.optionalString config.services.desktopManager.plasma6.enable "#7CC8D6";
 
   # ---------------------------------------------------------------------------
-  # Patch script for Main.qml — two patches applied in one pass.
+  # Patch script for Main.qml — all patches applied in one pass.
   #
   # Extracted to writeText so it lives in its own Nix string (2-space minimum
   # indent → correctly stripped by Nix) rather than inline in installPhase
@@ -44,6 +47,7 @@ let
   # Patch 1: visible:false → opacity:0  (Qt 6 scene-graph texture fix)
   # Patch 2: extends avatar regex to also accept .icon extension
   # Patch 3: Qt.UserRole + 3 → Qt.UserRole + 4  (SDDM 0.21 UserRoles enum fix)
+  # Patch 4: fixed accent, colour extractor disabled (only when accent != "")
   # ---------------------------------------------------------------------------
   mainQmlPatch = pkgs.writeText "hypr-sddm-avatar-patch.py" ''
     import sys
@@ -170,6 +174,16 @@ let
 in
 
 {
+  # SDDM options (services.displayManager.sddm.*):
+  #   enable          run SDDM as the display manager
+  #   wayland.enable  run the greeter on a Wayland compositor (weston default)
+  #   wayland.compositor / compositorCommand  pick or override that compositor
+  #   theme           theme name or full path to a theme dir
+  #   extraPackages   Qt packages added to the greeter's environment
+  #   settings        free-form sddm.conf sections ([General], [Theme], ...)
+  #   Not set here: package, enableHidpi, autoNumlock (this file uses
+  #   settings.General.Numlock instead), setupScript, stopScript, relogin,
+  #   minimumUid.
   services.displayManager.sddm = {
     enable = true;
     # Wayland mode — uses weston by default (safe on any GPU, no kwin needed).
@@ -191,7 +205,7 @@ in
   services.displayManager.sddm.settings.Theme.FacesDir = "/var/lib/sddm-faces";
 
   # NixOS only sets [Theme] CursorTheme when cfg.theme == "" (default SDDM theme).
-  # With a custom theme (catppuccin-sddm), it's omitted — and SDDM shows no cursor.
+  # With a custom theme (hypr-sddm), it's omitted — and SDDM shows no cursor.
   # Set it explicitly here so the greeter always has a cursor regardless of theme.
   # Compositor modules override these to their preferred theme (e.g. BreezeX-Light).
   services.displayManager.sddm.settings.Theme = {
@@ -244,7 +258,7 @@ in
 
   # Prevent SDDM from being restarted mid-session during nixos-rebuild switch.
   # nixpkgs is rolling — Qt6/KWin change often, which would otherwise kick the
-  # active Hyprland session to the login screen on every rebuild.
+  # active desktop session to the login screen on every rebuild.
   # SDDM changes take effect on the next reboot or manual service restart.
   systemd.services.display-manager.restartIfChanged = false;
 

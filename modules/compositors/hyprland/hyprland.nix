@@ -8,7 +8,8 @@
 #   modules/shells/wayle.nix     # Wayle (needs greeters/sddm)
 #   modules/shells/noctalia/shell-noctalia.nix  # Noctalia (needs greeters/sddm)
 #
-# To enable on a host, import this module in that host's config.
+# To enable on a host, import this module in that host's config; remove the
+# import to turn it off.
 # ===========================================================================
 
 { pkgs, lib, inputs, ... }:
@@ -110,6 +111,12 @@ in
   #
   # withUWSM wraps Hyprland in the Universal Wayland Session Manager,
   # which handles systemd session integration properly.
+  #
+  #   enable           install Hyprland and register its session
+  #   withUWSM         launch through UWSM (systemd session targets)
+  #   xwayland.enable  run XWayland for X11 apps
+  #   Not set here: package, portalPackage (both default to nixpkgs'
+  #   hyprland / xdg-desktop-portal-hyprland), systemd.setPath.enable.
   # =========================================================================
   programs.hyprland = {
     enable      = true;
@@ -119,6 +126,12 @@ in
 
   # =========================================================================
   # XDG Portal for Hyprland
+  #
+  #   enable                 run xdg-desktop-portal
+  #   extraPortals           backends: hyprland (screencast, screenshots),
+  #                          gtk (file chooser, settings)
+  #   config.common.default  backend order for every interface
+  #   Not set here: xdgOpenUsePortal, configPackages.
   # =========================================================================
   xdg.portal = {
     enable = true;
@@ -167,8 +180,8 @@ in
     satty           # Screenshot annotation tool
 
     # Screen recording
-    # wf-recorder 0.6.0 fails to build against current nixpkgs ffmpeg — sample_fmts
-    # was removed from AVCodec upstream (2026-08-13). Re-enable once nixpkgs fixes/bumps it.
+    # wf-recorder 0.6.0 does not build against the pinned ffmpeg (AVCodec has no
+    # sample_fmts field). Re-enable when the nixpkgs build succeeds.
     # wf-recorder     # Wayland screen recorder (lightweight, keybind toggle)
     wl-screenrec    # GPU-accelerated screen recorder (AMD/NVIDIA)
 
@@ -179,7 +192,7 @@ in
     wl-clipboard    # Wayland clipboard (wl-copy / wl-paste commands)
     cliphist        # Clipboard history manager
 
-    # Idle management — locking now goes through `noctalia msg session lock`
+    # Idle management — locking goes through `noctalia msg session lock`
     hypridle        # Idle management (dim, lock, suspend)
 
     # Audio

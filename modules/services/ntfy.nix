@@ -5,7 +5,8 @@
 # All 9 hosts send update events here via curl; you subscribe on your
 # phone and desktop to receive them in real time.
 #
-# Imported by: hosts/Media-Server/Media-Server.nix
+# Imported by: hosts/Media-Server/Media-Server.nix (remove the import to
+# turn it off).
 #
 # Phone setup:
 #   1. Install the ntfy app (Android / iOS — free)
@@ -17,6 +18,13 @@
 #
 # Access from outside the LAN: use Tailscale (already on all hosts).
 # Media-Server's Tailscale IP is stable — use it in the ntfy app.
+#
+# Options (services.ntfy-sh.*):
+#   enable           run the ntfy server
+#   settings         server.yml keys (base-url, listen-http, cache-*, auth-*,
+#                    attachment-*, upstream-base-url, ...)
+#   Not set here: package, environmentFile (secrets as env vars),
+#   nginx.enable / nginx.port / nginx.virtualHost (reverse proxy in front).
 # ===========================================================================
 
 { ... }:
