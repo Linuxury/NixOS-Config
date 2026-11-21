@@ -9,9 +9,9 @@
 # Port:  7879 (host) → 7878 (container) — 7878 is taken by Radarr
 #
 # Web UI / desktop: http://Media-Server:7879
-#                   http://media-server.tail1023a0.ts.net:7879
+#                   http://media-server.<tailnet>.ts.net:7879
 #
-# Auth token: secrets/zennotes-auth-token.age
+# Auth token: secrets/services/zennotes-auth-token.age
 #   File format: ZENNOTES_AUTH_TOKEN=<token>
 #
 # First boot:
@@ -37,7 +37,7 @@ in
   # Agenix secret — auth token (env-file format: ZENNOTES_AUTH_TOKEN=<token>)
   # ===========================================================================
   age.secrets.zennotes-auth-token = {
-    file = ../../../secrets/zennotes-auth-token.age;
+    file = ../../../secrets/services/zennotes-auth-token.age;
     mode = "0400";
   };
 

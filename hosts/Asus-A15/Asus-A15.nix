@@ -285,7 +285,7 @@
   # Agenix secrets
   # ==============================================================
   age.secrets.smb-credentials = {
-    file  = ../../secrets/smb-credentials.age;
+    file  = ../../secrets/network/smb-credentials.age;
     mode  = "0400";
     owner = "root";
   };

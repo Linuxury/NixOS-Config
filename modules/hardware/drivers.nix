@@ -8,7 +8,7 @@
 #
 #   hardware.gpu = "amd";          # AMD CPU + AMD GPU (most of your machines)
 #   hardware.gpu = "intel";        # Intel CPU + Intel integrated graphics
-#   hardware.gpu = "nvidia-hybrid"; # AMD CPU + Nvidia GPU (wife's Asus A15)
+#   hardware.gpu = "nvidia-hybrid"; # AMD CPU + Nvidia GPU (e.g. Asus-A15)
 #
 # That's it. The rest is handled here automatically.
 # ===========================================================================
@@ -31,7 +31,7 @@
   config = lib.mkMerge [
 
     # =========================================================================
-    # AMD — Used by your desktops/laptops, wife's desktop, kid's machines
+    # AMD — used by most desktops and laptops
     #
     # amdgpu is the open source AMD driver. It's built into the Linux kernel
     # and supports Vulkan, OpenGL, and hardware video decoding out of the box.
@@ -104,7 +104,7 @@
     })
 
     # =========================================================================
-    # NVIDIA HYBRID — Used by wife's Asus A15
+    # NVIDIA HYBRID — used by Asus-A15
     #
     # Hybrid graphics means there are TWO GPUs:
     #   - The AMD integrated GPU (always on, handles the display output)

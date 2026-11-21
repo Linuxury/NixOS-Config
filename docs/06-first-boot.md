@@ -75,7 +75,7 @@ tailscale status   # should show this machine and any others already on the tail
 On linuxury's machines (ThinkPad, Ryzen5900x), generate a key pair. Accept the default path (`~/.ssh/id_ed25519`) and set a passphrase when prompted:
 
 ```bash
-ssh-keygen -t ed25519 -C "linuxurypr@gmail.com"
+ssh-keygen -t ed25519 -C "you@example.com"
 ```
 
 Print the public key, then add it to GitHub at **Settings → SSH and GPG keys → New SSH key**:
@@ -116,7 +116,7 @@ let
   new-machine-host = "ssh-ed25519 AAAA...";   # paste the key here
 in
 {
-  "smb-credentials.age".publicKeys = [
+  "network/smb-credentials.age".publicKeys = [
     # ... existing keys ...
     new-machine-host   # add to every secret this machine needs
   ];

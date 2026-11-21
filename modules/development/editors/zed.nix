@@ -32,7 +32,7 @@
   # IteraCompute key — readable by every normal user (group users). Also
   # declared identically in ai-tools/ai-tools.nix; identical definitions merge.
   age.secrets.iteracompute-api-key = {
-    file  = ../../../secrets/iteracompute-api-key.age;
+    file  = ../../../secrets/api-keys/iteracompute.age;
     mode  = "0440";
     owner = "root";
     group = "users";

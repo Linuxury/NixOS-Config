@@ -261,7 +261,7 @@
   # Samba credentials for mounting Radxa-X4's Torrents share
   # ==============================================================
   age.secrets.smb-credentials = {
-    file = ../../secrets/smb-credentials.age;
+    file = ../../secrets/network/smb-credentials.age;
     mode = "0400";
   };
 

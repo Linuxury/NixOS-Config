@@ -8,14 +8,21 @@
 # updated) so the GECOS field is never blank after a switch.
 #
 # Imported by: ThinkPad, Ryzen5900x
-# Secret: secrets/description-linuxury.age
+# Secret: secrets/users/linuxury/description.age
 # ===========================================================================
 
 { config, pkgs, ... }:
 
 {
   age.secrets.description-linuxury = {
-    file = ../../../secrets/description-linuxury.age;
+    file = ../../../secrets/users/linuxury/description.age;
+  };
+
+  # Git identity ([user] email), read by git via programs.git.includes in linuxury-home.nix.
+  age.secrets.git-email-linuxury = {
+    file  = ../../../secrets/users/linuxury/git-email.age;
+    owner = "linuxury";
+    mode  = "0400";
   };
 
   system.activationScripts.linuxury-description = {

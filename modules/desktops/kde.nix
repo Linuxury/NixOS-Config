@@ -2,8 +2,8 @@
 # modules/desktops/kde.nix — KDE Plasma Desktop Environment
 #
 # KDE Plasma is a full-featured, highly customizable desktop environment.
-# Your wife is already comfortable with it, so it's available as a fallback
-# option on her machines if she ever wants to switch from COSMIC.
+# Available as a fallback desktop on the babylinux machines, alongside
+# COSMIC.
 #
 # To enable it on a host, simply import this module alongside cosmic/cosmic.nix.
 # Both can coexist — the user picks which one to log into at the login screen.

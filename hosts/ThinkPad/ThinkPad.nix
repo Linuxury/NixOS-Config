@@ -320,20 +320,20 @@
   # Agenix secrets
   # ==============================================================
   age.secrets.smb-credentials = {
-    file = ../../secrets/smb-credentials.age;
+    file = ../../secrets/network/smb-credentials.age;
     mode = "0400";
     owner = "root";
   };
 
   age.secrets.openrouter-api-key = {
-    file = ../../secrets/openrouter-api-key.age;
+    file = ../../secrets/api-keys/openrouter.age;
     mode = "0440";
     owner = "root";
     group = "users";
   };
 
   age.secrets.flow-icons-license = {
-    file = ../../secrets/flow-icons-license.age;
+    file = ../../secrets/licenses/flow-icons.age;
     mode = "0440";
     owner = "root";
     group = "users";

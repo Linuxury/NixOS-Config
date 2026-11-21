@@ -32,10 +32,10 @@ The core idea:
 ```
 secrets/
 ├── secrets.nix                     ← Defines who can read what
-├── smb-credentials.age             ← Encrypted Samba mount credentials
-├── wireguard-vpnunlimited.age      ← Mullvad WireGuard config (Radxa-X4 only)
-├── freshrss-admin-password.age     ← FreshRSS admin password
-├── linuxury-authorized-key.age     ← linuxury's SSH public key (for authorized_keys)
+├── network/smb-credentials.age             ← Encrypted Samba mount credentials
+├── network/mullvad-wireguard.age      ← Mullvad WireGuard config (Radxa-X4 only)
+├── services/freshrss-admin-password.age     ← FreshRSS admin password
+├── users/linuxury/authorized-key.age     ← linuxury's SSH public key (for authorized_keys)
 └── description-*.age               ← User GECOS display names
 ```
 
@@ -60,10 +60,10 @@ let
 in
 {
   # This secret is readable by all desktop hosts and by linuxury (for re-keying)
-  "smb-credentials.age".publicKeys = all-desktop-hosts ++ linuxury-admins;
+  "network/smb-credentials.age".publicKeys = all-desktop-hosts ++ linuxury-admins;
 
   # This secret is readable only by Radxa-X4 and by linuxury
-  "wireguard-vpnunlimited.age".publicKeys = [ radxa-host ] ++ linuxury-admins;
+  "network/mullvad-wireguard.age".publicKeys = [ radxa-host ] ++ linuxury-admins;
 }
 ```
 
@@ -115,15 +115,15 @@ The `age-rekey` abbreviation does the same thing. Re-keying requires your person
 
 | File | What it contains | Who can decrypt it |
 |------|-----------------|-------------------|
-| `smb-credentials.age` | Samba username and password for CIFS mounts | All graphical hosts + admins |
-| `wireguard-vpnunlimited.age` | Mullvad WireGuard config for qBittorrent VPN | Radxa-X4 + admins |
-| `freshrss-admin-password.age` | FreshRSS admin account password | Media-Server + admins |
-| `linuxury-authorized-key.age` | linuxury's SSH public key (deployed to `authorized_keys`) | All hosts + admins |
-| `description-linuxury.age` | GECOS display name "Erick Rodriguez" | ThinkPad, Ryzen5900x + admins |
-| `description-babylinux.age` | GECOS display name "Milagros Monserrate" | Ryzen5800x, Asus-A15 + admins |
-| `description-alex.age` | GECOS display name "Alexander Rodriguez" | Alex-Desktop, Alex-Laptop + admins |
+| `network/smb-credentials.age` | Samba username and password for CIFS mounts | All graphical hosts + admins |
+| `network/mullvad-wireguard.age` | Mullvad WireGuard config for qBittorrent VPN | Radxa-X4 + admins |
+| `services/freshrss-admin-password.age` | FreshRSS admin account password | Media-Server + admins |
+| `users/linuxury/authorized-key.age` | linuxury's SSH public key (deployed to `authorized_keys`) | All hosts + admins |
+| `users/linuxury/description.age` | GECOS display name (full name) for linuxury | ThinkPad, Ryzen5900x + admins |
+| `users/babylinux/description.age` | GECOS display name (full name) for babylinux | Ryzen5800x, Asus-A15 + admins |
+| `users/alex/description.age` | GECOS display name (full name) for alex | Alex-Desktop, Alex-Laptop + admins |
 
-> `wireguard-vpnunlimited.age` is still named "vpnunlimited" for historical reasons — the VPN provider was changed from VPN Unlimited to Mullvad. The filename was not changed to avoid unnecessary re-keying and reference updates.
+> `network/mullvad-wireguard.age` is still named "vpnunlimited" for historical reasons — the VPN provider was changed from VPN Unlimited to Mullvad. The filename was not changed to avoid unnecessary re-keying and reference updates.
 
 ---
 
@@ -142,7 +142,7 @@ When you install NixOS on a new machine and want it to access secrets:
      new-machine-host = "ssh-ed25519 AAAA...";   # paste the key here
    in
    {
-     "smb-credentials.age".publicKeys = [
+     "network/smb-credentials.age".publicKeys = [
        # ... existing keys ...
        new-machine-host   # add to every secret this machine needs to read
      ];
@@ -206,8 +206,8 @@ To change a secret's value (for example, rotating the VPN config after switching
 
 ```bash
 cd ~/nixos-config/secrets
-nix run nixpkgs#ragenix -- -e wireguard-vpnunlimited.age   # edit in $EDITOR, save, close
-git add wireguard-vpnunlimited.age
+nix run nixpkgs#ragenix -- -e network/mullvad-wireguard.age   # edit in $EDITOR, save, close
+git add network/mullvad-wireguard.age
 git commit -m "rotate VPN config to us-mia-wg-002"
 git push
 nru Radxa-X4   # rebuild Radxa-X4 to pick up the new VPN config
@@ -216,7 +216,7 @@ nru Radxa-X4   # rebuild Radxa-X4 to pick up the new VPN config
 For a non-interactive update (replacing a secret with a file directly):
 
 ```bash
-EDITOR="cp /tmp/new-config.conf" nix run nixpkgs#ragenix -- -e wireguard-vpnunlimited.age
+EDITOR="cp /tmp/new-config.conf" nix run nixpkgs#ragenix -- -e network/mullvad-wireguard.age
 ```
 
 ---
@@ -227,7 +227,7 @@ Agenix decrypts secrets during system activation and places them under `/run/age
 
 ```nix
 age.secrets.smb-credentials = {
-  file  = ../../secrets/smb-credentials.age;
+  file  = ../../secrets/network/smb-credentials.age;
   owner = "root";
   mode  = "0400";
 };

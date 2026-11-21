@@ -140,10 +140,14 @@ case "$OUTCOME" in
       grep -iE 'renamed|deprecated|removed|does not exist|unknown option|no longer supported|has been|will be removed|type error' | \
       sort -u || true)
 
+    # Address comes from the notify-email agenix secret; no secret, no email.
+    MAIL_ADDR=$(cat /run/agenix/notify-email 2>/dev/null || true)
+    [ -n "$MAIL_ADDR" ] || { echo "[notify-update-result] no notify-email secret; email skipped"; exit 0; }
+
     {
       echo "Subject: [NixOS] Update FAILED — ${HOSTNAME} — ${DATE}"
-      echo "From: linuxurypr@gmail.com"
-      echo "To: linuxurypr@gmail.com"
+      echo "From: ${MAIL_ADDR}"
+      echo "To: ${MAIL_ADDR}"
       echo "Content-Type: text/plain; charset=utf-8"
       echo ""
       echo "NixOS Auto-Update Failed"
@@ -179,7 +183,7 @@ case "$OUTCOME" in
       echo ""
       echo "─── Log (last 50 lines) ─────────────────────────────"
       tail -50 "$LOG_FILE" 2>/dev/null || echo "Log not available"
-    } | msmtp linuxurypr@gmail.com 2>/dev/null || true
+    } | msmtp --user="$MAIL_ADDR" --from="$MAIL_ADDR" "$MAIL_ADDR" 2>/dev/null || true
     ;;
 esac
 

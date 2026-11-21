@@ -148,8 +148,8 @@ echo "Disk: $DISK  |  Partitions: ${DISK}${P}1 / ${DISK}${P}2  |  Host: $HOST  |
 |--------|-----------|---------|-------|
 | `ThinkPad` | `linuxury` | linuxury's laptop | [03-install-luks.md](03-install-luks.md) |
 | `Ryzen5900x` | `linuxury` | linuxury's desktop | this guide |
-| `Ryzen5800x` | `babylinux` | Milagros' desktop | this guide |
-| `Asus-A15` | `babylinux` | Milagros' laptop | [03-install-luks.md](03-install-luks.md) |
+| `Ryzen5800x` | `babylinux` | babylinux's desktop | this guide |
+| `Asus-A15` | `babylinux` | babylinux's laptop | [03-install-luks.md](03-install-luks.md) |
 | `Alex-Desktop` | `alex` | Alex's desktop | [04-install-legacy-bios.md](04-install-legacy-bios.md) |
 | `Alex-Laptop` | `alex` | Alex's laptop | this guide |
 | `Media-Server` | `linuxury` | Media server | this guide |

@@ -226,9 +226,10 @@
   programs.git = {
     enable    = true;
     signing.format = null; # Silence HM 25.05 default change warning
+    # Email comes from an agenix secret ([user] email), so it stays out of the repo.
+    includes = [ { path = "/run/agenix/git-email-babylinux"; } ];
     settings = {
       user.name  = "babylinux";
-      user.email = "babylinux69@gmail.com";
       init.defaultBranch = "main";
       pull.rebase        = false;
     };

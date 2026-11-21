@@ -257,7 +257,7 @@
   # Auth key stored in agenix — no manual "tailscale up" or URL needed.
   # ==============================================================
   age.secrets.tailscale-auth-radxa = {
-    file = ../../secrets/tailscale-auth-radxa.age;
+    file = ../../secrets/network/tailscale-auth-radxa.age;
     mode = "0400";
   };
 
@@ -394,13 +394,13 @@
   #   4. Configure qBittorrent in Sonarr/Radarr as remote download client
   # ==============================================================
   age.secrets.wireguard-vpnunlimited = {
-    file = ../../secrets/wireguard-vpnunlimited.age;
+    file = ../../secrets/network/mullvad-wireguard.age;
     path = "/etc/wireguard/vpnunlimited.conf";
     mode = "0600";
   };
 
   age.secrets.smb-credentials = {
-    file = ../../secrets/smb-credentials.age;
+    file = ../../secrets/network/smb-credentials.age;
     mode = "0400";
     owner = "root";
   };

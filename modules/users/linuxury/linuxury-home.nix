@@ -275,7 +275,7 @@
         IdentityFile ~/.ssh/id_ed25519
 
       # babylinux's machines: log in as her (nru, her repo, her shell); my key
-      # is in babylinux-authorized-key.age. `ssh linuxury@<host>` for my sudo.
+      # is in users/babylinux/authorized-key.age. `ssh linuxury@<host>` for my sudo.
       Host ryzen5800x
         HostName     Ryzen5800x
         User         babylinux
@@ -430,9 +430,10 @@
   programs.git = {
     enable = true;
     signing.format = null; # Silence HM 25.05 default change warning (no signing configured)
+    # Email comes from an agenix secret ([user] email), so it stays out of the repo.
+    includes = [ { path = "/run/agenix/git-email-linuxury"; } ];
     settings = {
       user.name = "Linuxury";
-      user.email = "linuxurypr@gmail.com";
       init.defaultBranch = "main";
       pull.rebase = false;
       core.editor = "nvim";

@@ -35,7 +35,7 @@
   # Also declared identically in editors/zed; identical definitions merge.
   # =========================================================================
   age.secrets.iteracompute-api-key = {
-    file  = ../../../secrets/iteracompute-api-key.age;
+    file  = ../../../secrets/api-keys/iteracompute.age;
     mode  = "0440";
     owner = "root";
     group = "users";

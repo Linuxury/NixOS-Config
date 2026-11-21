@@ -6,15 +6,15 @@
 #
 # Imported by: Alex-Desktop, Alex-Laptop
 # NOTE: Only import after real SSH host keys are collected for these machines
-#       and secrets/description-alex.age has been re-keyed to include them.
-# Secret: secrets/description-alex.age
+#       and secrets/users/alex/description.age has been re-keyed to include them.
+# Secret: secrets/users/alex/description.age
 # ===========================================================================
 
 { config, pkgs, ... }:
 
 {
   age.secrets.description-alex = {
-    file = ../../../secrets/description-alex.age;
+    file = ../../../secrets/users/alex/description.age;
   };
 
   system.activationScripts.alex-description = {

@@ -2,8 +2,8 @@
 # modules/users/alex/alex-home.nix — Home Manager config for alex
 #
 # Machines: Alex-Desktop, Alex-Laptop
-# Age: 6 years old
-# Role: Kids machine — educational, creative, gaming
+# Account: child account (restricted)
+# Role: child machine — educational, creative, gaming
 #
 # This file is a function that accepts wallpaperDir from the flake.
 # wallpaperDir is passed per-host in flake.nix:

@@ -134,16 +134,23 @@ in
     accounts.default = {
       host = "smtp.gmail.com";
       auth = true;
-      user = "linuxurypr@gmail.com";
+      # user/from are passed by notify-update-result.sh (--user/--from),
+      # read at runtime from the notify-email agenix secret.
       passwordeval = "cat /run/agenix/smtp-app-password";
-      from = "linuxurypr@gmail.com";
     };
   };
 
   # SMTP password via agenix — owned by the primary user so the
   # notify-vault@ service (which runs as primaryUser) can read it.
   age.secrets.smtp-app-password = {
-    file  = ../../../secrets/smtp-app-password.age;
+    file  = ../../../secrets/notifications/smtp-app-password.age;
+    mode  = "0400";
+    owner = cfg.primaryUser;
+  };
+
+  # Notification address (sender and recipient), read by notify-update-result.sh.
+  age.secrets.notify-email = {
+    file  = ../../../secrets/notifications/notify-email.age;
     mode  = "0400";
     owner = cfg.primaryUser;
   };

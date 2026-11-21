@@ -101,7 +101,7 @@ sudo nixos-rebuild switch --flake ~/nixos-config#Media-Server
 FreshRSS is a self-hosted RSS aggregator. Admin credentials:
 
 - Admin user: `linuxury`
-- Password: managed by agenix (`secrets/freshrss-admin-password.age`) — set via `age-edit` on your admin machine
+- Password: managed by agenix (`secrets/services/freshrss-admin-password.age`) — set via `age-edit` on your admin machine
 
 **Mobile RSS app setup** (Fluent Reader, FeedMe, etc.):
 
@@ -114,7 +114,7 @@ Desktop machines auto-mount `\\Media-Server\Media-Server` at `/mnt/Media-Server`
 
 | Option | Effect |
 |--------|--------|
-| Credentials from `smb-credentials.age` | Decrypted by agenix at boot |
+| Credentials from `network/smb-credentials.age` | Decrypted by agenix at boot |
 | `x-systemd.automount` | Mounts on first access, not at boot |
 | `idle-timeout=60` | Unmounts after 60 seconds idle |
 | `nofail _netdev noauto` | Does not block boot if the server is off |
@@ -225,14 +225,14 @@ To switch Mullvad servers or rotate credentials, download the new WireGuard conf
 ```bash
 # Place the new config at /tmp/new-config.conf, then:
 cd ~/nixos-config/secrets
-EDITOR="cp /tmp/new-config.conf" nix run nixpkgs#ragenix -- -e wireguard-vpnunlimited.age
-git add wireguard-vpnunlimited.age
+EDITOR="cp /tmp/new-config.conf" nix run nixpkgs#ragenix -- -e network/mullvad-wireguard.age
+git add network/mullvad-wireguard.age
 git commit -m "update VPN config to <server-name>"
 git push
 nru Radxa-X4   # rebuild Radxa-X4 to apply the new config
 ```
 
-> The secret is named `wireguard-vpnunlimited.age` for historical reasons — it was originally VPN Unlimited before the provider was changed to Mullvad. The filename was not changed to avoid unnecessary churn.
+> The secret is named `network/mullvad-wireguard.age` for historical reasons — it was originally VPN Unlimited before the provider was changed to Mullvad. The filename was not changed to avoid unnecessary churn.
 
 ---
 

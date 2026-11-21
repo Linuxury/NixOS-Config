@@ -154,8 +154,8 @@ echo "Disk: $DISK  |  Partitions: ${DISK}${P}1 / ${DISK}${P}2  |  Host: $HOST  |
 |--------|-----------|---------|-------|
 | `ThinkPad` | `linuxury` | linuxury's laptop | this guide |
 | `Ryzen5900x` | `linuxury` | linuxury's desktop | [02-install-uefi.md](02-install-uefi.md) |
-| `Ryzen5800x` | `babylinux` | Milagros' desktop | [02-install-uefi.md](02-install-uefi.md) |
-| `Asus-A15` | `babylinux` | Milagros' laptop | this guide |
+| `Ryzen5800x` | `babylinux` | babylinux's desktop | [02-install-uefi.md](02-install-uefi.md) |
+| `Asus-A15` | `babylinux` | babylinux's laptop | this guide |
 | `Alex-Desktop` | `alex` | Alex's desktop | [04-install-legacy-bios.md](04-install-legacy-bios.md) |
 | `Alex-Laptop` | `alex` | Alex's laptop | [02-install-uefi.md](02-install-uefi.md) |
 | `Media-Server` | `linuxury` | Media server | [02-install-uefi.md](02-install-uefi.md) |

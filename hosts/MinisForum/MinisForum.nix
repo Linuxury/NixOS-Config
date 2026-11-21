@@ -202,7 +202,7 @@
   # Agenix secrets
   # ==============================================================
   age.secrets.smb-credentials = {
-    file = ../../secrets/smb-credentials.age;
+    file = ../../secrets/network/smb-credentials.age;
     mode = "0400";
     owner = "root";
   };
@@ -353,7 +353,7 @@
 
     babylinux = {
       isNormalUser  = true;
-      # No wheel — wife doesn't need server admin access
+      # No wheel — no server admin rights for this account
       extraGroups   = [ "networkmanager" "docker" ];
       shell         = pkgs.zsh;
     };
@@ -373,7 +373,7 @@
     # THIS user, not root — core.nix sets PermitRootLogin = "no"
     # fleet-wide, and Nix does not need root on a builder anyway.
     #
-    # The private half lives in secrets/nix-builder-key.age and is
+    # The private half lives in secrets/services/nix-builder-key.age and is
     # deployed only to the three clients. Public keys are safe in git.
     #
     # ⚠ This account is a trusted-user below, which means it can insert

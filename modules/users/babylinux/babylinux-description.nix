@@ -6,15 +6,22 @@
 #
 # Imported by: Ryzen5800x, Asus-A15
 # NOTE: Only import after real SSH host keys are collected for these machines
-#       and secrets/description-babylinux.age has been re-keyed to include them.
-# Secret: secrets/description-babylinux.age
+#       and secrets/users/babylinux/description.age has been re-keyed to include them.
+# Secret: secrets/users/babylinux/description.age
 # ===========================================================================
 
 { config, pkgs, ... }:
 
 {
   age.secrets.description-babylinux = {
-    file = ../../../secrets/description-babylinux.age;
+    file = ../../../secrets/users/babylinux/description.age;
+  };
+
+  # Git identity ([user] email), read by git via programs.git.includes in babylinux-home.nix.
+  age.secrets.git-email-babylinux = {
+    file  = ../../../secrets/users/babylinux/git-email.age;
+    owner = "babylinux";
+    mode  = "0400";
   };
 
   system.activationScripts.babylinux-description = {

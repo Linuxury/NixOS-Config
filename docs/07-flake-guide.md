@@ -151,7 +151,7 @@ Every host has a `hosts/<HostName>/<HostName>.nix` file with system-level config
   };
 
   # Secrets — decrypted by agenix at activation and placed in /run/agenix/
-  age.secrets.smb-credentials.file = ../../secrets/smb-credentials.age;
+  age.secrets.smb-credentials.file = ../../secrets/network/smb-credentials.age;
 
   # Filesystem mounts
   fileSystems."/mnt/Media-Server" = { ... };

@@ -42,7 +42,7 @@ let
   # Add a new entry when setting up a new machine:
   #   cat ~/.ssh/id_ed25519.pub
   # --------------------------------------------------------------------------
-  linuxury-personal   = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH0ZEivzBqlE7mH2ZepwWmTnQM2Oha6q0Mblx20CyvcP linuxurypr@gmail.com";
+  linuxury-personal   = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH0ZEivzBqlE7mH2ZepwWmTnQM2Oha6q0Mblx20CyvcP";
   thinkpad-personal   = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx6aZyKXvPNCP9q+Mv+5FLJ/G3O7IA8duJuTkxeB6Uz linuxury-thinkpad";
   ryzen5900x-personal = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ7VayUjJnywEEhyLOnc5E4Pqb5DxoNDmVVNLRpiV7dQ ryzen5900x-linuxury";
   # babylinux's personal SSH key — generated on Ryzen5800x
@@ -66,7 +66,7 @@ let
   ThinkPad = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIT5rYiAs2ukQJtUmGWTD5nbxX74fh3vG3OyNxE1XfdJ root@ThinkPad";
   Ryzen5900x = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHyps7MacHDkQcGP1kr6ZOc6fR/JTMrj4my3Bg5ybyJo root@Ryzen5900x";
   Ryzen5800x = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINl+VNvT/47nZ0x3W+1bZudGCNcMw8k8dXeQE2pkLeWU root@Ryzen5800x";
-  Asus-A15 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH0ZEivzBqlE7mH2ZepwWmTnQM2Oha6q0Mblx20CyvcP linuxurypr@gmail.com";
+  Asus-A15 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH0ZEivzBqlE7mH2ZepwWmTnQM2Oha6q0Mblx20CyvcP";
   Alex-Desktop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIMQG145RHl2xXl6wmRfpz+q7fUMVGqPp37KMD+RTSI root@Alex-Desktop";
   Alex-Laptop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILyHn+dSmJU01t4p81PfmhHb8yaRjUhoarvQwTDJQ69T root@Alex-Laptop";
   MinisForum = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM/HPvxQY35jS4VDZRy4viIfHIGjUqkCgFhRVNcIsZRG root@MinisForum";
@@ -104,7 +104,7 @@ in
   # agenix decrypts it onto each host so linuxury can SSH in after install.
   # Deployed to: all hosts (emergency/admin access on family machines).
   # --------------------------------------------------------------------------
-  "linuxury-authorized-key.age".publicKeys = uniq (
+  "users/linuxury/authorized-key.age".publicKeys = uniq (
     linuxury-admins ++ linuxury-machines ++ babylinux-machines ++ alex-machines
   );
 
@@ -114,7 +114,7 @@ in
   # Primary SSH key for babylinux — deployed to her machines so she can
   # manage them directly. linuxury-admins included so secrets can be re-keyed.
   # --------------------------------------------------------------------------
-  "babylinux-authorized-key.age".publicKeys = uniq (
+  "users/babylinux/authorized-key.age".publicKeys = uniq (
     linuxury-admins ++ [ ryzen5800x-personal ] ++ babylinux-machines
   );
 
@@ -126,7 +126,7 @@ in
   # Moved from babylinux machines to Radxa-X4 (dedicated torrent host).
   # After updating: nix run nixpkgs#agenix -- -r
   # --------------------------------------------------------------------------
-  "wireguard-vpnunlimited.age".publicKeys = uniq (linuxury-admins ++ [ Radxa-X4 ]);
+  "network/mullvad-wireguard.age".publicKeys = uniq (linuxury-admins ++ [ Radxa-X4 ]);
 
   # --------------------------------------------------------------------------
   # Tailscale auth key for Radxa-X4
@@ -134,7 +134,7 @@ in
   # Generate a new key at: https://login.tailscale.com/admin/settings/keys
   # After updating: nix run nixpkgs#agenix -- -r
   # --------------------------------------------------------------------------
-  "tailscale-auth-radxa.age".publicKeys = uniq (linuxury-admins ++ [ Radxa-X4 ]);
+  "network/tailscale-auth-radxa.age".publicKeys = uniq (linuxury-admins ++ [ Radxa-X4 ]);
 
   # --------------------------------------------------------------------------
   # User display names (GECOS / full names)
@@ -145,7 +145,7 @@ in
   # Machines with placeholder host keys (babylinux/alex) should only import
   # the corresponding module after real host keys are collected and re-keyed.
   # --------------------------------------------------------------------------
-  "description-linuxury.age".publicKeys = uniq (
+  "users/linuxury/description.age".publicKeys = uniq (
     linuxury-admins
     ++ [
       ThinkPad
@@ -153,9 +153,14 @@ in
     ]
   );
 
-  "description-babylinux.age".publicKeys = uniq (linuxury-admins ++ babylinux-machines);
+  "users/babylinux/description.age".publicKeys = uniq (linuxury-admins ++ babylinux-machines);
 
-  "description-alex.age".publicKeys = uniq (linuxury-admins ++ alex-machines);
+  # Git identity, loaded by git through include.path at runtime.
+  # Contents: "[user]\n\temail = <address>"
+  "users/linuxury/git-email.age".publicKeys = uniq (linuxury-admins ++ [ ThinkPad Ryzen5900x ]);
+  "users/babylinux/git-email.age".publicKeys = uniq (linuxury-admins ++ babylinux-machines);
+
+  "users/alex/description.age".publicKeys = uniq (linuxury-admins ++ alex-machines);
 
   # --------------------------------------------------------------------------
   # Samba credentials for mounting Media-Server share
@@ -165,7 +170,7 @@ in
   # After updating this list, re-encrypt with:
   #   nix run nixpkgs#agenix -- -r
   # --------------------------------------------------------------------------
-  "smb-credentials.age".publicKeys = uniq (
+  "network/smb-credentials.age".publicKeys = uniq (
     linuxury-admins
     ++ [
       ThinkPad
@@ -185,7 +190,7 @@ in
   # Migrated from Radxa-X4 to Media-Server.
   # After updating: nix run nixpkgs#agenix -- -r
   # --------------------------------------------------------------------------
-  "freshrss-admin-password.age".publicKeys = uniq (linuxury-admins ++ [ Media-Server ]);
+  "services/freshrss-admin-password.age".publicKeys = uniq (linuxury-admins ++ [ Media-Server ]);
 
   # --------------------------------------------------------------------------
   # OpenRouter API key for opencode
@@ -193,7 +198,7 @@ in
   # Used by the opencode() shell function to authenticate with OpenRouter.
   # After updating: nix run nixpkgs#agenix -- -r
   # --------------------------------------------------------------------------
-  "openrouter-api-key.age".publicKeys = uniq (
+  "api-keys/openrouter.age".publicKeys = uniq (
     linuxury-admins
     ++ [
       ThinkPad
@@ -204,7 +209,7 @@ in
   # IteraCompute API key (free Qwen tier). Encrypted to every host so any host
   # that imports the Zed or ai-tools module gets it without a re-key.
   # Zed: injected into settings.json. Shells: exported as ITERACOMPUTE_API_KEY.
-  "iteracompute-api-key.age".publicKeys = uniq (
+  "api-keys/iteracompute.age".publicKeys = uniq (
     linuxury-admins ++ linuxury-machines ++ babylinux-machines ++ alex-machines
   );
 
@@ -216,22 +221,19 @@ in
   # Generate at: https://myaccount.google.com/apppasswords
   # After updating: nix run nixpkgs#agenix -- -r
   # --------------------------------------------------------------------------
-  "smtp-app-password.age".publicKeys = uniq (
+  "notifications/smtp-app-password.age".publicKeys = uniq (
     linuxury-admins
     ++ linuxury-machines
     ++ babylinux-machines
     ++ alex-machines
   );
 
-  # --------------------------------------------------------------------------
-  # PostgreSQL password for AI Memory database
-  #
-  # Stored as env-file format: POSTGRES_PASSWORD=<secret>
-  # Deployed only to Media-Server.
-  # After updating: nix run nixpkgs#agenix -- -r
-  # --------------------------------------------------------------------------
-  "postgres-ai-memory.age".publicKeys = uniq (
-    linuxury-admins ++ [ Media-Server ]
+  # Address the update notifications are sent from and to (plain address).
+  "notifications/notify-email.age".publicKeys = uniq (
+    linuxury-admins
+    ++ linuxury-machines
+    ++ babylinux-machines
+    ++ alex-machines
   );
 
   # --------------------------------------------------------------------------
@@ -242,7 +244,7 @@ in
   # Generate: openssl rand -base64 32
   # After updating: nix run nixpkgs#agenix -- -r
   # --------------------------------------------------------------------------
-  "zennotes-auth-token.age".publicKeys = uniq (linuxury-admins ++ [ Media-Server ]);
+  "services/zennotes-auth-token.age".publicKeys = uniq (linuxury-admins ++ [ Media-Server ]);
 
   # --------------------------------------------------------------------------
   # flow-icons license key
@@ -251,7 +253,7 @@ in
   # Injected into settings.json at HM activation — never stored in plaintext.
   # After updating: nix run nixpkgs#ragenix -- -r
   # --------------------------------------------------------------------------
-  "flow-icons-license.age".publicKeys = uniq (
+  "licenses/flow-icons.age".publicKeys = uniq (
     linuxury-admins
     ++ [
       ThinkPad
@@ -273,7 +275,7 @@ in
   # Asus-A15 (not migrated to this config).
   # After updating: nix run nixpkgs#agenix -- -r
   # --------------------------------------------------------------------------
-  "nix-builder-key.age".publicKeys = uniq (
+  "services/nix-builder-key.age".publicKeys = uniq (
     linuxury-admins
     ++ [
       Radxa-X4

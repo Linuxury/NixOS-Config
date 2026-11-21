@@ -8,7 +8,7 @@
 #
 # After install, connect to the self-hosted server:
 #   Settings → Connect to Remote Vault → http://Media-Server:7879
-#   Enter the auth token from secrets/zennotes-auth-token.age
+#   Enter the auth token from secrets/services/zennotes-auth-token.age
 #
 # Server module: modules/services/zennotes/service-zennotes.nix (Media-Server)
 # ===========================================================================

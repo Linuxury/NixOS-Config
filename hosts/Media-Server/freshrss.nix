@@ -4,7 +4,7 @@
 # Migrated from Radxa-X4.
 #
 # Web UI: http://Media-Server:8080  (LAN)
-#         http://media-server.tail1023a0.ts.net:8080  (Tailscale)
+#         http://media-server.<tailnet>.ts.net:8080  (Tailscale)
 #
 # Data migration from Radxa — run once after first deploy:
 #   On Radxa-X4:
@@ -61,7 +61,7 @@ in
 {
   # Agenix secret — same file, now decrypted for Media-Server's host key
   age.secrets.freshrss-admin-password = {
-    file  = ../../secrets/freshrss-admin-password.age;
+    file  = ../../secrets/services/freshrss-admin-password.age;
     owner = "freshrss";
     mode  = "0400";
   };

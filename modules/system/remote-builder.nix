@@ -28,7 +28,7 @@
   # root must own it; agenix defaults to root but it is spelled out here to
   # match the pattern in hosts/Radxa-X4/Radxa-X4.nix.
   age.secrets.nix-builder-key = {
-    file  = ../../secrets/nix-builder-key.age;
+    file  = ../../secrets/services/nix-builder-key.age;
     mode  = "0400";
     owner = "root";
   };
