@@ -28,7 +28,7 @@ fi
 
 # ── Vault logging + PENDING.md ────────────────────────────────────────────
 # nixos-log-rebuild handles:
-#   - Writing/prepending to 09 🔄 Updates/<hostname>.md
+#   - Writing/prepending to Hosts/<hostname>.md in the vault
 #   - Inserting failure/warning rows into PENDING.md (deduplicated)
 #   - Pruning log entries older than 30 days
 nixos-log-rebuild \

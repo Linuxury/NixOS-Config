@@ -44,7 +44,7 @@
     # Graphical Apps — all optional, comment out to remove
     #   zen-browser  — primary browser (privacy-focused Firefox fork)
     #   thunderbird  — email client
-    #   fluxer       — Discord client
+    #   fluxer       — Fluxer chat client (canary, nixpkgs)
     #   kdeconnect   — phone integration
     #   zennotes     — keyboard-first Markdown notes (connects to Media-Server:7879)
     # ==============================================================
@@ -421,10 +421,6 @@
   boot.initrd.kernelModules = [ "amdgpu" ];
 
   boot.kernelParams = [
-    # amdgpu power-management feature mask: 0xffffffff enables all features. Needed for the
-    # full fan curve and overclock control in CoreCtrl. See hardware.amdgpu.overdrive below.
-    "amdgpu.ppfeaturemask=0xffffffff"
-
     # Console logging: hide most kernel, udev and systemd messages on the TTY.
     "quiet"                              # reduce kernel messages on the console
     "loglevel=3"                         # kernel: print errors and worse only
@@ -438,10 +434,11 @@
   #   programs.corectrl.enable              install CoreCtrl, its D-Bus service and the corectrl group (set here)
   #   programs.corectrl.package             the CoreCtrl package (default pkgs.corectrl)
   #   hardware.amdgpu.overdrive.enable      turn on amdgpu overdrive for overclocking (set here)
-  #   hardware.amdgpu.overdrive.ppfeaturemask  kernel value for amdgpu.ppfeaturemask (default 0xfffd7fff)
+  #   hardware.amdgpu.overdrive.ppfeaturemask  kernel value for amdgpu.ppfeaturemask (default 0xfffd7fff:
+  #                                            overdrive on, GFXOFF off; 0xffffffff turns everything on)
   #
   # The CoreCtrl polkit rule lets members of the corectrl group run it without a password
-  # prompt. This host does not add linuxury to that group (see users.users.linuxury below).
+  # prompt; linuxury is in that group (users.users.linuxury below).
   # ==============================================================
   programs.corectrl.enable = true;
   # Affinity design suite, off (design apps come from craft-apps).
@@ -497,6 +494,7 @@
   #                   video, audio   GPU and sound device access
   #                   input          input device access
   #                   gamemode       group created by the GameMode module (programs.gamemode)
+  #                   corectrl       run CoreCtrl without a password (programs.corectrl)
   #                   seat           seatd: DRM and input handoff for Wayland compositors
   #   shell         login shell (zsh)
   # ==============================================================
@@ -509,6 +507,7 @@
       "audio"
       "input"
       "gamemode"
+      "corectrl"
       "seat"
     ];
     shell = pkgs.zsh;

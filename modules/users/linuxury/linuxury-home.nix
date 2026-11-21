@@ -298,8 +298,8 @@
         User         linuxury
         IdentityFile ~/.ssh/id_ed25519
 
-      # babylinux's machines: log in as her (nru, her repo, her shell); my key
-      # is in users/babylinux/authorized-key.age. `ssh linuxury@<host>` for my sudo.
+      # babylinux's machines: log in as babylinux (nru, that user's repo and shell); this key
+      # is in users/babylinux/authorized-key.age. `ssh linuxury@<host>` for sudo.
       Host ryzen5800x
         HostName     Ryzen5800x
         User         babylinux
@@ -521,13 +521,9 @@
 
   # =========================================================================
   # Hytale — auto-install + overrides (see modules/system/graphical/hytale.nix)
-  #   enable       install Hytale from the local bundle in the Assets input
-  #   cdnFallback  download from the CDN when the local bundle is not found
+  #   enable  download and install the launcher at first login
   # =========================================================================
-  programs.hytale = {
-    enable      = true;
-    cdnFallback = true;  # download from the CDN if the local bundle is missing
-  };
+  programs.hytale.enable = true;
 
   # VSCodium Claude wrapper: see modules/development/editors/vscodium/vscodium-hm.nix
 
@@ -552,9 +548,9 @@
     _cfg="$HOME/.config/kitty/kitty.conf"
     _template="$HOME/dotfiles/kitty/kitty.conf"
     mkdir -p "$HOME/.config/kitty"
-    # First run after switching away from the old HM-managed symlink: remove
-    # the stale symlink so the [ ! -f ] check below actually re-seeds a real
-    # file instead of seeing the (still-resolving) old symlink and skipping.
+    # A symlink here (from Home Manager managing the file) blocks seeding: remove
+    # it so the [ ! -f ] check below seeds a real, writable
+    # file instead of seeing the still-resolving symlink and skipping.
     [ -L "$_cfg" ] && rm -f "$_cfg"
     if [ ! -f "$_cfg" ] && [ -f "$_template" ]; then
       cp "$_template" "$_cfg"

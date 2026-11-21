@@ -141,10 +141,6 @@
     "net.ipv4.tcp_rmem"          = "4096 87380 134217728";
     "net.ipv4.tcp_wmem"          = "4096 65536 134217728";
     "net.core.netdev_max_backlog" = 5000;       # Handle bursts of traffic
-
-    # File system
-    "fs.inotify.max_user_watches" = 524288;    # Needed by some services
-                                               # that watch many files
   };
 
   # ==============================================================

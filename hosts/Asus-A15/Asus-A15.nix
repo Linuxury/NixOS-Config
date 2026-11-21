@@ -41,7 +41,7 @@
     # Graphical Apps — all optional, comment out to remove
     #   firefox     — primary browser
     #   helium      — secondary browser (Firefox-based)
-    #   fluxer      — Discord client
+    #   fluxer      — Fluxer chat client (canary, nixpkgs)
     #   kdeconnect  — phone integration
     #   zen-browser — privacy-focused Firefox fork
     # ==============================================================

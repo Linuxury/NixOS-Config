@@ -258,7 +258,6 @@
   #   net.core.rmem_max / wmem_max        max socket buffer size (128 MiB)
   #   net.ipv4.tcp_rmem / tcp_wmem        TCP buffer min / default / max
   #   net.core.netdev_max_backlog         packets queued when the NIC is faster than the CPU
-  #   fs.inotify.max_user_watches         file watches per user (large torrent trees)
   # ==============================================================
   boot.kernel.sysctl = {
     "net.core.rmem_max"           = 134217728;
@@ -266,7 +265,6 @@
     "net.ipv4.tcp_rmem"           = "4096 87380 134217728";
     "net.ipv4.tcp_wmem"           = "4096 65536 134217728";
     "net.core.netdev_max_backlog" = 5000;
-    "fs.inotify.max_user_watches" = 524288;
   };
 
   # ==============================================================

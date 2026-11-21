@@ -37,19 +37,19 @@
           [ -d "$(dirname "$_target")" ] || mkdir -p "$(dirname "$_target")"
           printf '%s\n' \
             'local mod = "SUPER"' \
-            '' \
+            ''' \
             '-- ── Launcher ────────────────────────────────────────────────────────────' \
             'hl.bind(mod .. " + Space", hl.dsp.exec_cmd("wofi --show drun --normal-window"))' \
             'hl.bind(mod .. " + R",     hl.dsp.exec_cmd("wofi --show run --normal-window"))' \
-            '' \
+            ''' \
             '-- ── Clipboard history (cliphist + wofi) ────────────────────────────────' \
             'hl.bind(mod .. " + V", hl.dsp.exec_cmd(' \
             '    "cliphist list | wofi --dmenu --normal-window --style ~/.config/wofi/style.css | cliphist decode | wl-copy"' \
             '))' \
-            '' \
+            ''' \
             '-- ── Window switcher (rofi) ──────────────────────────────────────────────' \
             'hl.bind(mod .. " + Tab", hl.dsp.exec_cmd("rofi -show window -theme ~/.config/rofi/window.rasi"))' \
-            '' \
+            ''' \
             '-- ── Wofi window rules ───────────────────────────────────────────────────' \
             'hl.window_rule({ match = { class = "wofi" }, float    = true  })' \
             'hl.window_rule({ match = { class = "wofi" }, center   = true  })' \

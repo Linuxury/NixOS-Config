@@ -2,10 +2,10 @@
 # modules/system/graphical/hytale.nix — Hytale launcher: auto-install + flatpak overrides
 #
 # Home Manager module that installs the Hytale launcher Flatpak and sets its
-# sandbox overrides. Hytale is not on Flathub, so it installs from a bundled
-# .flatpak file.
-#   - Installs from the bundled flatpak on first login (Assets input)
-#   - Optional CDN fallback (downloads if the local bundle is missing)
+# sandbox overrides. Hytale is not on Flathub; the launcher is downloaded
+# from Hytale's own release URL and keeps itself up to date after install.
+#   - Install on first login: download, `flatpak install --user`, delete
+#     the download (Flathub is added as a user remote for the runtime)
 #   - Flatpak overrides applied on every rebuild:
 #       ELECTRON_OZONE_PLATFORM_HINT=x11  (prevents a blank window on COSMIC)
 #       --device=input                    (controller support)
@@ -18,127 +18,68 @@
 # Turn it on in a user's home.nix:
 #   imports = [ ../../modules/system/graphical/hytale.nix ];
 #   programs.hytale.enable = true;          # default false
-# Options:
-#   programs.hytale.cdnFallback = true;     # default false; download from the
-#                                           # Hytale CDN if the bundle is
-#                                           # missing (linuxury uses this)
 # ===========================================================================
 
-{ config, pkgs, lib, inputs, ... }:
+{ config, pkgs, lib, ... }:
 
 let
   cfg = config.programs.hytale;
+  url = "https://launcher.hytale.com/builds/release/linux/amd64/hytale-launcher-latest.flatpak";
 in
-
 {
-  options.programs.hytale = {
-    enable = lib.mkEnableOption "Hytale launcher auto-install and flatpak overrides";
-
-    cdnFallback = lib.mkOption {
-      type        = lib.types.bool;
-      default     = false;
-      description = ''
-        Download the Hytale flatpak from the official CDN if the local bundle
-        is not found. Requires network access at login. Intended for linuxury
-        only — babylinux and alex always use the bundled file from the assets repo.
-      '';
-    };
-  };
+  options.programs.hytale.enable =
+    lib.mkEnableOption "Hytale launcher auto-install and flatpak overrides";
 
   config = lib.mkIf cfg.enable {
     # =========================================================================
-    # Bundle path — ~/Documents/assets/flatpaks/hytale-launcher-latest.flatpak
-    #
-    # cdnFallback = false (babylinux, alex): symlink to the Assets input, a
-    #   read-only store path.
-    # cdnFallback = true (linuxury): a plain directory created by the
-    #   activation below, so the downloaded file can be written there.
-    # =========================================================================
-    home.file = lib.mkIf (!cfg.cdnFallback) {
-      "Documents/assets/flatpaks".source =
-        "${inputs.assets}/flatpaks";
-    };
-
-    home.activation.hytale-flatpak-dir = lib.mkIf cfg.cdnFallback
-      (lib.hm.dag.entryBefore [ "writeBoundary" ] ''
-        mkdir -p "$HOME/Documents/assets/flatpaks"
-      '');
-
-    # =========================================================================
     # Install service — oneshot user unit started with the graphical session.
     #
-    # ConditionPathExists skips it once Hytale is installed. With cdnFallback
-    # it also waits for network-online.target.
+    # ConditionPathExists skips it once Hytale is installed. User units can't
+    # order on network-online.target (system manager only), so curl retries
+    # for about a minute while the network comes up after login.
     # =========================================================================
     systemd.user.services.hytale-flatpak-install = {
       Unit = {
-        Description         = "Install Hytale launcher from bundled flatpak";
-        After               = [ "graphical-session.target" ]
-          ++ lib.optionals cfg.cdnFallback [ "network-online.target" ];
-        Wants               = [ "graphical-session.target" ]
-          ++ lib.optionals cfg.cdnFallback [ "network-online.target" ];
+        Description         = "Install the Hytale launcher from hytale.com";
+        After               = [ "graphical-session.target" ];
+        Wants               = [ "graphical-session.target" ];
         ConditionPathExists = "!%h/.local/share/flatpak/app/com.hypixel.HytaleLauncher";
       };
 
       Service = {
         Type    = "oneshot";
         Restart = "no";
-        ExecStart = "${pkgs.writeShellScript "install-hytale" (
-          ''
-            FLATPAK="${pkgs.flatpak}/bin/flatpak"
-            FLATPAK_FILE="$HOME/Documents/assets/flatpaks/hytale-launcher-latest.flatpak"
-          ''
-          + lib.optionalString cfg.cdnFallback ''
-            CURL="${pkgs.curl}/bin/curl"
-            HYTALE_URL="https://launcher.hytale.com/builds/release/linux/amd64/hytale-launcher-latest.flatpak"
-          ''
-          + ''
+        ExecStart = "${pkgs.writeShellScript "install-hytale" ''
+          FLATPAK="${pkgs.flatpak}/bin/flatpak"
+          if $FLATPAK info --user com.hypixel.HytaleLauncher &>/dev/null; then
+            echo "Hytale already installed, skipping."
+            exit 0
+          fi
+          # Runtime dependencies come from Flathub
+          $FLATPAK remote-add --user --if-not-exists flathub \
+            https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
 
-            if $FLATPAK info --user com.hypixel.HytaleLauncher &>/dev/null; then
-              echo "Hytale already installed, skipping."
-              exit 0
-            fi
+          file=$(mktemp --suffix=.flatpak)
+          trap 'rm -f "$file"' EXIT
+          echo "Downloading ${url}"
+          if ! ${pkgs.curl}/bin/curl -L --fail --retry 10 --retry-delay 6 --retry-all-errors \
+               -o "$file" "${url}"; then
+            echo "ERROR: could not download Hytale. Check the network, then: systemctl --user start hytale-flatpak-install"
+            exit 1
+          fi
 
-            # Ensure Flathub is available for runtime dependencies
-            $FLATPAK remote-add --user --if-not-exists flathub \
-              https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
-
-          ''
-          + lib.optionalString cfg.cdnFallback ''
-            if [ ! -f "$FLATPAK_FILE" ]; then
-              echo "Local bundle not found — downloading from $HYTALE_URL"
-              mkdir -p "$(dirname "$FLATPAK_FILE")"
-              if ! $CURL -L --fail -o "$FLATPAK_FILE" "$HYTALE_URL"; then
-                echo "ERROR: Could not download Hytale. Check internet or clone the assets repo."
-                exit 1
-              fi
-            fi
-
-          ''
-          + lib.optionalString (!cfg.cdnFallback) ''
-            if [ ! -f "$FLATPAK_FILE" ]; then
-              echo "ERROR: Hytale flatpak not found at $FLATPAK_FILE"
-              echo "  Place hytale-launcher-latest.flatpak in the Assets repo (flatpaks/), then run nru."
-              exit 1
-            fi
-
-          ''
-          + ''
-            echo "Installing Hytale launcher..."
-            $FLATPAK install --user --noninteractive "$FLATPAK_FILE" || true
-
-            # Remove the sideload origin remote — it has no appstream data and
-            # causes COSMIC Store's flatpak-user backend to fail on load.
-            $FLATPAK remote-delete --user --force hytalelauncher-origin 2>/dev/null || true
-
-            if $FLATPAK info --user com.hypixel.HytaleLauncher &>/dev/null; then
-              echo "Hytale installed successfully."
-            else
-              echo "ERROR: Hytale install failed. Check journalctl --user -u hytale-flatpak-install"
-              exit 1
-            fi
-          ''
-        )}";
+          echo "Installing Hytale launcher..."
+          $FLATPAK install --user --noninteractive "$file" || true
+          # Remove the sideload origin remote — it has no appstream data and
+          # causes COSMIC Store's flatpak-user backend to fail on load.
+          $FLATPAK remote-delete --user --force hytalelauncher-origin 2>/dev/null || true
+          if $FLATPAK info --user com.hypixel.HytaleLauncher &>/dev/null; then
+            echo "Hytale installed successfully."
+          else
+            echo "ERROR: Hytale install failed. Check journalctl --user -u hytale-flatpak-install"
+            exit 1
+          fi
+        ''}";
       };
 
       Install.WantedBy = [ "graphical-session.target" ];

@@ -34,17 +34,14 @@
   # =========================================================================
   # Display Manager — GDM
   #
-  # GDM is GNOME's native display manager. Wayland session is the default.
+  # GDM is GNOME's native display manager; it always runs on Wayland.
   #
   #   enable   run GDM
-  #   wayland  removed in the pinned nixpkgs ("no longer supported with
-  #            GNOME 50") — evaluation fails while it is set
   #   Not set here: debug, autoLogin.delay, autoSuspend, banner, settings
   #   (custom.conf), extraPackages.
   # =========================================================================
   services.displayManager.gdm = {
     enable   = true;
-    wayland  = true;
   };
 
   # =========================================================================

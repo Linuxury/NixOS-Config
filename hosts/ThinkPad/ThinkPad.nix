@@ -50,7 +50,7 @@
     # Graphical Apps — all optional, comment out to remove
     #   zen-browser  — primary browser (privacy-focused Firefox fork)
     #   thunderbird  — email client
-    #   fluxer       — Discord client
+    #   fluxer       — Fluxer chat client (canary, nixpkgs)
     #   kdeconnect   — phone integration
     #   zennotes     — keyboard-first Markdown notes (connects to Media-Server:7879)
     # ==============================================================

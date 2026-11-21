@@ -43,7 +43,7 @@
     #   helium      — secondary browser (Firefox-based)
     #   app-zennotes — ZenNotes notes app
     #   craft-apps  — creative apps
-    #   fluxer      — Discord client
+    #   fluxer      — Fluxer chat client (canary, nixpkgs)
     #   kdeconnect  — phone integration
     #   zen-browser — privacy-focused Firefox fork
     # ==============================================================

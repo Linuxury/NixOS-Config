@@ -463,7 +463,6 @@
   #   net.core.rmem_max / wmem_max       largest socket receive and send buffers (128 MiB)
   #   net.ipv4.tcp_rmem / tcp_wmem       TCP buffer sizes: min, default, max
   #   net.core.netdev_max_backlog        packets queued per CPU before the kernel drops them
-  #   fs.inotify.max_user_watches        number of files services can watch
   #   net.ipv4.tcp_congestion_control    "bbr": congestion control algorithm
   #   net.core.default_qdisc             "fq": fair-queue packet scheduler (pairs with bbr)
   # ==============================================================
@@ -473,7 +472,6 @@
     "net.ipv4.tcp_rmem"               = "4096 87380 134217728";
     "net.ipv4.tcp_wmem"               = "4096 65536 134217728";
     "net.core.netdev_max_backlog"     = 5000;
-    "fs.inotify.max_user_watches"     = 524288;
     "net.ipv4.tcp_congestion_control" = "bbr";
     "net.core.default_qdisc"          = "fq";
   };

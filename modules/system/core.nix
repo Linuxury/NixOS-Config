@@ -401,8 +401,8 @@
   # allows per user. VSCode, the Claude Code extension and Obsidian watch
   # every file in open folders; with large repos and the vault open at once,
   # 524288 (the NixOS default) runs out. 1048576 (1M) leaves headroom.
-  # Set with lib.mkForce, so it wins over the plain 524288 that the server
-  # host files set.
+  # Applies to every host, servers included (Syncthing, Immich and the
+  # torrent client watch large trees too).
   # =========================================================================
   boot.kernel.sysctl."fs.inotify.max_user_watches" = lib.mkForce 1048576;
 

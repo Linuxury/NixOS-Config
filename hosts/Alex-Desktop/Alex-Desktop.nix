@@ -43,7 +43,7 @@
     # ==============================================================
     # Graphical Apps — all optional, comment out to remove
     #   firefox     — primary browser (locked down via policies)
-    #   fluxer      — Discord client
+    #   fluxer      — Fluxer chat client (canary, nixpkgs)
     #   kdeconnect  — phone integration
     # ==============================================================
     ../../modules/system/graphical/firefox.nix

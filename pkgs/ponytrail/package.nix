@@ -32,7 +32,7 @@ stdenv.mkDerivation (finalAttrs: {
       --add-flags "$out/lib/ponytrail/dist/cli.js"
 
     # Bundled agent skill files — installed into the agent's skills dir
-    # via home.activation in modules/development/ai-tools/ponytrail/default.nix
+    # by modules/development/ai-tools/claude.nix
     mkdir -p $out/share/ponytrail/skills
     cp -r package/bundled-skills/pony-trail $out/share/ponytrail/skills/pony-trail
   '';

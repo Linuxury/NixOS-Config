@@ -25,9 +25,6 @@
 #   systemd.user.timers.matugen    runs it once 10s after session start
 #   ~/.config/matugen/config.toml  dark mode, two Kvantum templates
 #                                  (kvconfig + svg)
-#
-# matugen is run three times per change: a HashMap iteration bug in matugen
-# 4.0.0 made it stop after 2–3 of its templates per run.
 # ===========================================================================
 { config, pkgs, ... }:
 
@@ -88,10 +85,6 @@
           log "Color: $HEX (ImageMagick)"
         fi
 
-        # matugen 4.0.0 has a HashMap iteration bug: it crashes after processing
-        # only 2–3 of 5 templates per run. Running 3× ensures full coverage.
-        ${pkgs.matugen}/bin/matugen color hex "$HEX" >> "$LOG" 2>&1 || true
-        ${pkgs.matugen}/bin/matugen color hex "$HEX" >> "$LOG" 2>&1 || true
         ${pkgs.matugen}/bin/matugen color hex "$HEX" >> "$LOG" 2>&1 || true
 
         if [ -d "$(dirname "$SDDM_WALLPAPER")" ]; then

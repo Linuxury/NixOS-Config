@@ -21,35 +21,9 @@
 { pkgs, config, lib, ... }:
 
 let
-  # =========================================================================
-  # BreezeX cursor theme — not in nixpkgs, fetched from GitHub releases
-  #
-  # BreezeX is a refined KDE Breeze cursor with larger sizes and cleaner
-  # rendering. The release bundle ships three variants: Black, Dark, Light;
-  # BreezeX-Light is used here.
-  #
-  # To upgrade: run nix-prefetch-url --unpack <new release URL> and update
-  # version, url and sha256 below; every theme module uses this derivation.
-  # =========================================================================
-  breezex-cursors = pkgs.stdenv.mkDerivation {
-    pname   = "breezex-cursor-theme";
-    version = "2.0.1";
-
-    src = pkgs.fetchzip {
-      url       = "https://github.com/ful1e5/BreezeX_Cursor/releases/download/v2.0.1/BreezeX.tar.xz";
-      sha256    = "10fbvbls52cgp5kshlcxbh3nqarh2mwhpj0w5kkk4hrl3sdc1bcj";
-      stripRoot = false; # archive has multiple top-level dirs (BreezeX, BreezeX-Black, …)
-    };
-
-    dontBuild     = true;
-    dontConfigure = true;
-
-    installPhase = ''
-      mkdir -p $out/share/icons
-      cp -r . $out/share/icons/
-    '';
-  };
-
+  # BreezeX cursor theme (BreezeX-Light used here): pkgs/breezex-cursors,
+  # added to pkgs by the flake overlay. Upgrade it there.
+  breezex-cursors = pkgs.breezex-cursors;
 in
 
 {

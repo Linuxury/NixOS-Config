@@ -125,8 +125,7 @@ in
   # =========================================================================
   # Flatpak — App distribution for packages not in nixpkgs
   #
-  # Needed by user services such as hytale-flatpak-install and
-  # fluxer-flatpak-install. The activation script adds the Flathub remote at
+  # Needed by user services such as hytale-flatpak-install. The activation script adds the Flathub remote at
   # system scope (keeps an existing one) and imports the pinned Flathub
   # signing key into an existing remote that has none.
   # =========================================================================
@@ -142,7 +141,7 @@ in
       ${pkgs.flatpak}/bin/flatpak remote-add --system --if-not-exists flathub \
         https://dl.flathub.org/repo/flathub.flatpakrepo || true
       # --if-not-exists keeps a pre-existing flathub remote that lacks the
-      # signing key ("public key not found", Ryzen5800x 2026-10). Repair it.
+      # signing key (flatpak then fails with "public key not found"). Repair it.
       if ${pkgs.flatpak}/bin/flatpak remote-list --system --columns=name | ${pkgs.gnugrep}/bin/grep -qx flathub \
          && [ ! -s /var/lib/flatpak/repo/flathub.trustedkeys.gpg ]; then
         ${pkgs.flatpak}/bin/flatpak remote-modify --system --gpg-import=${flathubKey} flathub || true
@@ -189,8 +188,6 @@ in
 
   systemd.user.services.flatpak-auto-update = {
     description = "Update installed Flatpak apps (user scope)";
-    after       = [ "network-online.target" ];
-    wants       = [ "network-online.target" ];
     serviceConfig = {
       Type      = "oneshot";
       ExecStart = "${flatpakUpdate}/bin/nixos-flatpak-update --user";

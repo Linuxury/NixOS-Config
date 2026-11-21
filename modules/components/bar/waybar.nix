@@ -31,7 +31,7 @@
           _target="$HOME/.config/hypr/components/bar.lua"
           [ -d "$(dirname "$_target")" ] || mkdir -p "$(dirname "$_target")"
           # Placeholder — add Hyprland keybinds for bar interaction here
-          printf '' > "$_target"
+          printf ''' > "$_target"
         '';
       })
     ];

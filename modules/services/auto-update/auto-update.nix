@@ -67,7 +67,7 @@ in
       description = ''
         Primary user on this host. Vault writes, notification ownership, and
         the smtp-app-password secret are all scoped to this user.
-        Set to "babylinux" on her machines, "alex" on his, etc.
+        Set it to the user who owns the machine (e.g. "babylinux" or "alex").
       '';
     };
 

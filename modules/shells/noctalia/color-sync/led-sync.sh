@@ -1,9 +1,14 @@
-# led-sync — push Noctalia's primary color to the host's RGB.
-# Run as the post_hook of the led-sync user template (modules/shells/noctalia),
+# led-sync — push Noctalia's primary color to the host's RGB devices.
+# Runs as the post_hook of the led-sync user template (shell-noctalia.nix),
 # which writes the bare hex (e.g. cdbdff) to $XDG_CACHE_HOME/noctalia/led-color.
 #
 # Material primaries are pastels (~25% saturation) that look white on LEDs,
-# so saturation is raised to at least LED_MIN_SAT (0-255) and value maxed out.
+# so saturation is raised to at least LED_MIN_SAT and value is maxed out.
+#   LED_MIN_SAT   minimum saturation, 0-255 (default 200)
+#
+# Targets: every device the local OpenRGB server knows (port 6742), and a
+# wired Lemokey P1 HE keyboard over VIA raw HID. Each step ignores errors, so
+# a missing server or keyboard is skipped.
 
 min_sat="${LED_MIN_SAT:-200}"
 hex=$(tr -dc '0-9a-fA-F' < "${XDG_CACHE_HOME:-$HOME/.cache}/noctalia/led-color")
@@ -36,9 +41,10 @@ read -r led_hex qmk_hue qmk_sat < <(awk -v hex="$hex" -v min_sat="$min_sat" 'BEG
     int(h / 360 * 255 + 0.5) % 256, int(s * 255 + 0.5)
 }')
 
-# Aura ARGB headers come up as 0-LED zones (the 1.1 server ignores the saved
-# sizes), so the board's own pink chase keeps running on the strips. Size them
-# first. ponytail: 120 = Aura max, real count unknown; oversizing is harmless.
+# The ASUS Aura ARGB headers (zones 1 and 2) start as 0-LED zones because the
+# OpenRGB server ignores saved sizes, so the board's own effect keeps running
+# on the strips. Resize them before setting the colour.
+# ponytail: 120 = Aura max, real count unknown; oversizing is harmless.
 board="ASUS ROG STRIX B550-E GAMING"
 openrgb --client localhost:6742 -d "$board" -z 1 -sz 120 -d "$board" -z 2 -sz 120 >/dev/null 2>&1 || true
 
