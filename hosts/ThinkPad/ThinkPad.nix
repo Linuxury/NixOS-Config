@@ -284,6 +284,7 @@
   # ==============================================================
   environment.systemPackages = with pkgs; [
     (writeShellScriptBin "add-host" (builtins.readFile ../../scripts/add-host))  # register a host key + re-key secrets (NixOS-Installer's Secrets step)
+    (writeShellScriptBin "install-host" (builtins.readFile ../../scripts/install-host))  # run NixOS-Installer on a live-ISO machine over SSH
     cifs-utils
 
     # Everyday tools

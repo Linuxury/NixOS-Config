@@ -452,6 +452,7 @@
   # ==============================================================
   environment.systemPackages = with pkgs; [
     (writeShellScriptBin "add-host" (builtins.readFile ../../scripts/add-host))  # register a host key + re-key secrets (NixOS-Installer's Secrets step)
+    (writeShellScriptBin "install-host" (builtins.readFile ../../scripts/install-host))  # run NixOS-Installer on a live-ISO machine over SSH
     autorandr  # Automatic monitor layout switching
     cifs-utils # Required for CIFS/Samba mounts
     xfsprogs   # XFS filesystem tools (mkfs.xfs, xfs_repair, etc.)
