@@ -20,8 +20,8 @@
   },
   "jetbrains-file-icon-theme": {
     "publisher": "fogio",
-    "version": "1.8.0",
-    "sha256": "0yi9habmlp7a2ylgl3zvixc8acj5zsgi60nkw4p7sqmgximhz78r",
-    "url": "https://open-vsx.org/api/fogio/jetbrains-file-icon-theme/1.8.0/file/fogio.jetbrains-file-icon-theme-1.8.0.vsix"
+    "version": "1.9.0",
+    "sha256": "1rdl4yp2flf5mrxbx0bslx37r5pci2r6y1iv29r5ij41xqdcgvmi",
+    "url": "https://open-vsx.org/api/fogio/jetbrains-file-icon-theme/1.9.0/file/fogio.jetbrains-file-icon-theme-1.9.0.vsix"
   }
 }

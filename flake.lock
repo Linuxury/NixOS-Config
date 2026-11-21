@@ -51,11 +51,11 @@
     "assets": {
       "flake": false,
       "locked": {
-        "lastModified": 1794077244,
-        "narHash": "sha256-j1Hxgn9r3744vaj+wDeL/xipCPj7vOaZ3MafQjqfoMI=",
+        "lastModified": 1795296392,
+        "narHash": "sha256-4782cex3CQOkFf8mdWNMH9go9IcndMZ38YEAMkX0l1U=",
         "owner": "Linuxury",
         "repo": "Assets",
-        "rev": "fa43d3355c5ba4eb67336903047a5bb7c20fbfce",
+        "rev": "843d057f1dba9cad5fe24044a11b70772fc2a2bb",
         "type": "github"
       },
       "original": {
@@ -135,11 +135,11 @@
     "dotfiles": {
       "flake": false,
       "locked": {
-        "lastModified": 1794865772,
-        "narHash": "sha256-ifcoSTz3GLTiQdc1eHJoHyBX/+myzIERU/or+Rbxhg0=",
+        "lastModified": 1795296389,
+        "narHash": "sha256-/IolYD9n6y151Ro57cVW8bzlzA8dUJ5O6Uy/e70teYk=",
         "owner": "Linuxury",
         "repo": "Dotfiles",
-        "rev": "307ff1fe877a7c7344f91c355cf658ef27cc13b3",
+        "rev": "75bbd81e49db9fd49471e5fe60a10a9855d5ad53",
         "type": "github"
       },
       "original": {
@@ -220,11 +220,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1795035810,
-        "narHash": "sha256-Dk0aWxK5ypX2MdaV2NB1Kdm33XT9dUsv8VwKjueqa4g=",
+        "lastModified": 1795297737,
+        "narHash": "sha256-YyTpCLnrCZI6CNiB7XxMXk+8A8GPLmIc4qCH2T7O0uU=",
         "owner": "schembriaiden",
         "repo": "helium-browser-nix-flake",
-        "rev": "eda99c0c406b8045a4a3e441f2e9608f1d64ab66",
+        "rev": "e955e6105a81b44f51d9bc2fcc8e3dc50438fa0b",
         "type": "github"
       },
       "original": {
@@ -445,11 +445,11 @@
     },
     "nixpkgs_4": {
       "locked": {
-        "lastModified": 1794890597,
-        "narHash": "sha256-lME2lHoDHAaSHP3/okgiVoJ0icVEvsQH8LeU3We7tcc=",
+        "lastModified": 1795234589,
+        "narHash": "sha256-f/VVvxf5RsQgWVhUtefoca5ktVg0DA2bnkMOcmSnozo=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "04906337b6d53e8bb0eaf0470ae9f070a4d4eb55",
+        "rev": "2786a2a72088ecf32aea5b3ec52099e6a7cff78f",
         "type": "github"
       },
       "original": {
@@ -764,11 +764,11 @@
     "zsh": {
       "flake": false,
       "locked": {
-        "lastModified": 1795222384,
-        "narHash": "sha256-HzTFW/z8OEgyiWBHsH8uNaQizZ3ui28cfwy5lpTQVAY=",
+        "lastModified": 1795300108,
+        "narHash": "sha256-b6Nx5Hf+ZqRFSbeTF+5n9NRdoeJMwZXLMEUy7WJxNoo=",
         "owner": "Linuxury",
         "repo": "ZSH",
-        "rev": "5ce3f8e69cdd489ae4c75e3de36b30bc7ab54f9e",
+        "rev": "0f0b221127d2411381098a04206bef46a027f4de",
         "type": "github"
       },
       "original": {
