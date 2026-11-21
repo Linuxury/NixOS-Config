@@ -22,7 +22,8 @@
 #   │     3. nixos-rebuild switch --flake github:linuxury/nixos-config    │
 #   │     4. Record new rev to /etc/nixos-last-update-rev                 │
 #   │     5. Vault log + desktop toast + email on failure                 │
-#   │   Weekly (system.autoUpgrade, Sat 03:00):                           │
+#   │   Scheduled (system.autoUpgrade, schedule option, default daily     │
+#   │   03:00; hosts set their own time):                                 │
 #   │     → Rebuilds from GitHub as safety net for always-on machines     │
 #   └─────────────────────────────────────────────────────────────────────┘
 #

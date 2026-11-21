@@ -17,10 +17,10 @@
 #
 # SETUP — before first nixos-install on a new host:
 #   1. Create secrets/users/linuxury/authorized-key.age (if not already):
-#        nix run nixpkgs#agenix -- -e secrets/users/linuxury/authorized-key.age
+#        nix run nixpkgs#ragenix -- -e secrets/users/linuxury/authorized-key.age
 #      Paste the output of: cat ~/.ssh/id_ed25519.pub
 #   2. After first boot, collect the host key and add it to secrets/secrets.nix,
-#      then re-key: nix run nixpkgs#agenix -- -r
+#      then re-key: nix run nixpkgs#ragenix -- -r
 # ===========================================================================
 
 { ... }:

@@ -18,10 +18,10 @@
 #        ssh-keyscan -t ed25519 <hostname-or-ip>
 #      Paste the key string (without "hostname" prefix) for that host below.
 #   3. Re-encrypt all secrets for the new host:
-#        nix run nixpkgs#agenix -- -r
+#        nix run nixpkgs#ragenix -- -r
 #
 # CREATING A SECRET:
-#   nix run nixpkgs#agenix -- -e secrets/mysecret.age
+#   nix run nixpkgs#ragenix -- -e secrets/mysecret.age
 #   (Opens $EDITOR. Type the secret, save, close.)
 #
 # The encrypted .age files are safe to commit — only holders of the
@@ -124,7 +124,7 @@ in
   # Contains the PRIVATE key + peer config (wg-quick format).
   # NEVER commit the decrypted version. Only the .age file belongs here.
   # Moved from babylinux machines to Radxa-X4 (dedicated torrent host).
-  # After updating: nix run nixpkgs#agenix -- -r
+  # After updating: nix run nixpkgs#ragenix -- -r
   # --------------------------------------------------------------------------
   "network/mullvad-wireguard.age".publicKeys = uniq (linuxury-admins ++ [ Radxa-X4 ]);
 
@@ -132,7 +132,7 @@ in
   # Tailscale auth key for Radxa-X4
   # Reusable key — used by tailscaled-autoconnect to auth on boot without URL.
   # Generate a new key at: https://login.tailscale.com/admin/settings/keys
-  # After updating: nix run nixpkgs#agenix -- -r
+  # After updating: nix run nixpkgs#ragenix -- -r
   # --------------------------------------------------------------------------
   "network/tailscale-auth-radxa.age".publicKeys = uniq (linuxury-admins ++ [ Radxa-X4 ]);
 
@@ -168,7 +168,7 @@ in
   # fileSystems config. Authenticates as linuxury; uid/gid set per host.
   #
   # After updating this list, re-encrypt with:
-  #   nix run nixpkgs#agenix -- -r
+  #   nix run nixpkgs#ragenix -- -r
   # --------------------------------------------------------------------------
   "network/smb-credentials.age".publicKeys = uniq (
     linuxury-admins
@@ -188,7 +188,7 @@ in
   #
   # Plain text password for the FreshRSS admin account (linuxury).
   # Migrated from Radxa-X4 to Media-Server.
-  # After updating: nix run nixpkgs#agenix -- -r
+  # After updating: nix run nixpkgs#ragenix -- -r
   # --------------------------------------------------------------------------
   "services/freshrss-admin-password.age".publicKeys = uniq (linuxury-admins ++ [ Media-Server ]);
 
@@ -196,7 +196,7 @@ in
   # OpenRouter API key for opencode
   #
   # Used by the opencode() shell function to authenticate with OpenRouter.
-  # After updating: nix run nixpkgs#agenix -- -r
+  # After updating: nix run nixpkgs#ragenix -- -r
   # --------------------------------------------------------------------------
   "api-keys/openrouter.age".publicKeys = uniq (
     linuxury-admins
@@ -219,7 +219,7 @@ in
   # Gmail app password (16-char) for msmtp to send failure notifications.
   # Deployed to all hosts that run auto-update.nix.
   # Generate at: https://myaccount.google.com/apppasswords
-  # After updating: nix run nixpkgs#agenix -- -r
+  # After updating: nix run nixpkgs#ragenix -- -r
   # --------------------------------------------------------------------------
   "notifications/smtp-app-password.age".publicKeys = uniq (
     linuxury-admins
@@ -242,7 +242,7 @@ in
   # Stored as env-file format: ZENNOTES_AUTH_TOKEN=<token>
   # Deployed only to Media-Server (server reads it via environmentFiles).
   # Generate: openssl rand -base64 32
-  # After updating: nix run nixpkgs#agenix -- -r
+  # After updating: nix run nixpkgs#ragenix -- -r
   # --------------------------------------------------------------------------
   "services/zennotes-auth-token.age".publicKeys = uniq (linuxury-admins ++ [ Media-Server ]);
 
@@ -273,7 +273,7 @@ in
   # key is effectively root-equivalent THERE: only add hosts you control.
   # Deliberately excluded: the Alex machines (family-controlled) and
   # Asus-A15 (not migrated to this config).
-  # After updating: nix run nixpkgs#agenix -- -r
+  # After updating: nix run nixpkgs#ragenix -- -r
   # --------------------------------------------------------------------------
   "services/nix-builder-key.age".publicKeys = uniq (
     linuxury-admins

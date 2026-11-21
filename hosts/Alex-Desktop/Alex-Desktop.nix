@@ -297,9 +297,9 @@
   # Flatpak — infrastructure kept, all remotes removed
   #
   # cosmic.nix enables Flatpak (it powers the COSMIC app store backend).
-  # We cannot mkForce false here because the Hytale install service in
-  # alex's home.nix uses `flatpak install --user` from a local bundle file,
-  # which requires the flatpak binary to exist.
+  # We cannot mkForce false here because the Hytale install service
+  # (modules/system/graphical/hytale.nix) downloads the launcher bundle from
+  # hytale.com and runs `flatpak install --user`, which needs the flatpak binary.
   #
   # Instead of disabling Flatpak entirely, the activation script below removes all configured
   # system remotes on every rebuild. With no remotes:
