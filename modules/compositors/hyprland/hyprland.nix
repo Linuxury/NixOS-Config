@@ -147,8 +147,13 @@ in
 
   # =========================================================================
   # Polkit — Authentication agent
+  #   security.polkit.enable   run polkitd (set here)
+  #   pathsToLink "/libexec"  link polkit_gnome's agent into
+  #                            /run/current-system/sw/libexec, where
+  #                            dotfiles hypr/modules/autostart.lua starts it
   # =========================================================================
   security.polkit.enable = true;
+  environment.pathsToLink = [ "/libexec" ];
 
   # =========================================================================
   # Keyring — Secret storage for apps
