@@ -283,6 +283,7 @@
   # CIFS tools — required for Samba/SMB mounts
   # ==============================================================
   environment.systemPackages = with pkgs; [
+    (writeShellScriptBin "add-host" (builtins.readFile ../../scripts/add-host))  # register a host key + re-key secrets (NixOS-Installer's Secrets step)
     cifs-utils
 
     # Everyday tools

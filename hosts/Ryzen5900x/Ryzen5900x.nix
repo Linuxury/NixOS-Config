@@ -451,6 +451,7 @@
   # autorandr remembers and restores monitor layouts automatically.
   # ==============================================================
   environment.systemPackages = with pkgs; [
+    (writeShellScriptBin "add-host" (builtins.readFile ../../scripts/add-host))  # register a host key + re-key secrets (NixOS-Installer's Secrets step)
     autorandr  # Automatic monitor layout switching
     cifs-utils # Required for CIFS/Samba mounts
     xfsprogs   # XFS filesystem tools (mkfs.xfs, xfs_repair, etc.)
