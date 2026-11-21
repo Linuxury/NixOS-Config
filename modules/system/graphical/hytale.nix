@@ -105,5 +105,22 @@ in
         --filesystem=/run/udev:ro \
         com.hypixel.HytaleLauncher 2>/dev/null || true
     '';
+
+    # =========================================================================
+    # Flathub cleanup on restricted hosts — on every Home Manager activation
+    #
+    # The install service adds a user "flathub" remote for Hytale's runtime.
+    # Hosts without a system Flathub remote (the child-account hosts remove
+    # every system remote so there is no app store) would otherwise keep that
+    # user remote, and with it a Flathub store. There, the user remote is
+    # deleted again; installed apps stay, Hytale keeps updating itself, and
+    # its runtime updates on the next reinstall. Hosts with a system Flathub
+    # remote are left alone (their users may install from a user remote).
+    # =========================================================================
+    home.activation.hytale-flathub-cleanup = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      if ! ${pkgs.flatpak}/bin/flatpak remote-list --system --columns=name 2>/dev/null | ${pkgs.gnugrep}/bin/grep -qx flathub; then
+        ${pkgs.flatpak}/bin/flatpak remote-delete --user --force flathub 2>/dev/null || true
+      fi
+    '';
   };
 }
