@@ -526,18 +526,18 @@
   programs.hytale.enable = true;
 
   # =========================================================================
-  # "Herdr Team" launcher — opens herdr-app and builds or resumes the Claude
-  # team in it (herdr-team launch, from the ZSH input's conf.d/herdr/team.zsh).
-  # herdr-app keeps the team's panes after a reboot but only runs a shell in
-  # them; this entry puts each member's Claude session back. Plain "Herdr"
-  # still opens the app without touching the team. herdr-app is installed on
-  # ThinkPad and Ryzen5900x, the hosts that use this home config.
+  # "Herdr Team" launcher — opens herdr-app and starts the "desktop team"
+  # (herdr-team launch, from the ZSH input's conf.d/herdr/team.zsh): an Opus
+  # lead in a fresh space; it starts workers on demand. A second click while
+  # the lead runs only notifies. Plain "Herdr" still opens the app without
+  # touching the team. herdr-app is installed on ThinkPad and Ryzen5900x, the
+  # hosts that use this home config.
   #   exec      zsh -ic: herdr-team is a zsh function loaded by the zshrc
   #   terminal  false: herdr-app is a window, the zsh only runs the script
   # =========================================================================
   xdg.desktopEntries.herdr-team = {
     name     = "Herdr Team";
-    comment  = "Open herdr-app with the Claude team (lead + 4 workers)";
+    comment  = "Open herdr-app with the Claude desktop team (lead + on-demand workers)";
     exec     = "zsh -ic \"herdr-team launch\"";
     icon     = "herdr-app";
     terminal = false;
