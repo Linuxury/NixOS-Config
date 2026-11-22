@@ -41,7 +41,16 @@ in
   };
 
   config = lib.mkMerge [
-    { programs.firefox.enable = true; }
+    {
+      programs.firefox.enable = true;
+
+      # HDR video on Wayland: gfx.color_management.hdr. Verified 2026-11-21
+      # on Umbriel (HDR YouTube fullscreen, correct colours, no red tint).
+      # Needs `hdr = "auto"` on the output in umbriel modules/outputs.toml.
+      # "default" status keeps the pref changeable in about:config.
+      programs.firefox.preferences."gfx.color_management.hdr" = true;
+      programs.firefox.preferencesStatus = "default";
+    }
 
     (lib.mkIf cfg.deSlop.enable {
       programs.firefox.policies =
@@ -107,9 +116,4 @@ in
       ];
     }
   ];
-
-  # gfx.color_management.hdr / .force_enabled stay unset: they enable
-  # Wayland HDR video, but Gecko renders it with a blown-out red tint, an
-  # upstream bug (bugzilla 1642854 and related Wayland colour-management
-  # reports) that config cannot fix. SDR looks better than tinted HDR.
 }

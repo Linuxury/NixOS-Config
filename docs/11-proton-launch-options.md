@@ -171,7 +171,7 @@ Reads everything in "Options all four builds read", plus the options below. Each
 | (keyword only) | `noopwrx11` | Turns off Vulkan OPWR when not on Wayland |
 | `DXVK_HDR`, `DXVK_NO_HDR` | | Set by the HDR options above |
 
-With `PROTON_ENABLE_WAYLAND=1` the monitor can switch into true HDR on a compositor with Wayland color management, but the Steam Controller Puck back paddles stop working. Without it, use `PROTON_ADD_CONFIG=hdr,...` for DXVK's internal HDR. The `hdr` keyword on its own does not enable Wayland. The reasoning is in `modules/gaming/gaming.nix`.
+Working setup (Diablo IV, Umbriel, 2026-11-21): `PROTON_ADD_CONFIG=fsr4,fsr4rdna3,wow64,hdr,wayland gamemoderun %command%` gives true HDR and the Steam Controller back paddles keep working. The compositor must advertise HDR: set `hdr = "auto"` on the output in Umbriel's `outputs.toml`, otherwise the in-game HDR checkbox stays greyed out. The `hdr` keyword on its own does not enable Wayland, so keep `wayland` too. The reasoning is in `modules/gaming/gaming.nix`.
 
 ### Upscaling
 

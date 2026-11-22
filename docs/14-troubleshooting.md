@@ -69,7 +69,7 @@ Problems that match the current setup, grouped by area. Secrets problems are als
 | A new Proton build does not show in Steam | The three bundled builds are linked by Home Manager into `~/.local/share/Steam/compatibilitytools.d/`. Rebuild and restart Steam |
 | A launch option does nothing | Check the build reads it: [11-proton-launch-options.md](11-proton-launch-options.md). Unknown `PROTON_ADD_CONFIG` keywords are dropped without an error |
 | `PROTON_ADD_CONFIG=hdr` does nothing | Proton-CachyOS and Valve Proton have no `hdr` keyword. Use Proton-GE |
-| HDR on Proton-GE works but the Steam Controller Puck back paddles stop | That is the cost of `PROTON_ENABLE_WAYLAND=1`. Without it use `PROTON_ADD_CONFIG=hdr,...` for DXVK's internal HDR |
+| In-game HDR checkbox is greyed out on Proton-GE | The compositor is not advertising HDR. Set `hdr = "auto"` on the output in Umbriel's `outputs.toml`, and use `PROTON_ADD_CONFIG=...,hdr,wayland` |
 | MangoHud does not appear | The launch option is `MANGOHUD=1 %command%`, and it is case-sensitive. Some anti-cheat games block overlays |
 | Minecraft (Prism) drops frames | Steam's overlay hooks the JVM. Prism here is wrapped to unset `LD_PRELOAD`, so start Minecraft from the Prism launcher entry installed by this config |
 | Steam Controller or other pad not recognised | `sc-controller` does not autostart: `systemctl --user start scc-daemon`. The Steam Controller Puck is handled by Steam Input, not `sc-controller` |

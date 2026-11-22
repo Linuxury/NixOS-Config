@@ -55,9 +55,13 @@ in
         policies = lib.mkIf cfg.deSlop.enable
           (builtins.fromJSON (builtins.readFile "${inputs.dotfiles}/firefox/policies.json")).policies;
 
-        # gfx.color_management.hdr / .force_enabled stay unset: they hit the
-        # same Gecko red-tint bug as Firefox (see firefox.nix), which config
-        # cannot fix.
+        # HDR video, same Gecko pref as Firefox (see firefox.nix). Added
+        # alongside the verified Firefox setting; check an HDR YouTube video
+        # fullscreen in Zen too.
+        policies.Preferences."gfx.color_management.hdr" = {
+          Value = true;
+          Status = "default";
+        };
       };
     };
   };

@@ -123,15 +123,14 @@ in
   #     wow64, optiscaler, sdlinput. "hdr" only sets DXVK_HDR=1; it does not
   #     imply PROTON_ENABLE_WAYLAND, which is the separate "wayland" key.
   #
-  # HDR trade-off with proton-ge-custom:
-  #   - With PROTON_ENABLE_WAYLAND=1, Hyprland switches the monitor into true
-  #     compositor HDR (needs Wayland color-management-v1; DXVK_HDR=1 alone
-  #     under Xwayland does not get this, see hyprwm/Hyprland#10993), but the
-  #     Steam Controller Puck back paddles (L4/L5/R4/R5) stop working, a gap in
-  #     Wine's native Wayland driver.
-  #   - Without it: `PROTON_ADD_CONFIG=fsr4,fsr4rdna3,hdr,wow64,optiscaler
-  #     gamemoderun %command%` keeps the paddles working and DXVK does internal
-  #     HDR tone-mapping, but the monitor is not switched into true HDR.
+  # Working HDR setup with proton-ge-custom (Diablo IV, Umbriel, verified
+  # 2026-11-21; HDR and the Steam Controller back paddles both work):
+  #   PROTON_ADD_CONFIG=fsr4,fsr4rdna3,wow64,hdr,wayland gamemoderun %command%
+  #   - Needs `hdr = "auto"` on the output in umbriel modules/outputs.toml.
+  #     With "off" the compositor never advertises HDR and the game's HDR
+  #     checkbox stays greyed out, whatever the launch options say.
+  #   - Earlier notes said native Wayland (the "wayland" key) breaks the
+  #     paddles; that did not hold on this setup.
   # =========================================================================
   nixpkgs.overlays = [
     (final: prev:
