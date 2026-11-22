@@ -43,13 +43,6 @@ in
   config = lib.mkMerge [
     {
       programs.firefox.enable = true;
-
-      # HDR video on Wayland: gfx.color_management.hdr. Verified 2026-11-21
-      # on Umbriel (HDR YouTube fullscreen, correct colours, no red tint).
-      # Needs `hdr = "auto"` on the output in umbriel modules/outputs.toml.
-      # "default" status keeps the pref changeable in about:config.
-      programs.firefox.preferences."gfx.color_management.hdr" = true;
-      programs.firefox.preferencesStatus = "default";
     }
 
     (lib.mkIf cfg.deSlop.enable {
@@ -116,4 +109,12 @@ in
       ];
     }
   ];
+
+  # gfx.color_management.hdr stays unset. Tested 2026-11-21 on Umbriel with
+  # Firefox 160: HDR video looks right, but with the pref on every SDR video
+  # gets a red tint (open upstream bug, bugzilla 2083037: Firefox advertises
+  # YUV formats the compositor does not sample correctly). Since most video is
+  # SDR the default stays off. For an HDR session, flip the pref in
+  # about:config and flip it back after. Retest once widget.wayland.hdr.convert-yuv-to-rgb
+  # exists in the shipped build (absent in 160).
 }

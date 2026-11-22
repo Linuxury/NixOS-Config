@@ -55,13 +55,8 @@ in
         policies = lib.mkIf cfg.deSlop.enable
           (builtins.fromJSON (builtins.readFile "${inputs.dotfiles}/firefox/policies.json")).policies;
 
-        # HDR video, same Gecko pref as Firefox (see firefox.nix). Added
-        # alongside the verified Firefox setting; check an HDR YouTube video
-        # fullscreen in Zen too.
-        policies.Preferences."gfx.color_management.hdr" = {
-          Value = true;
-          Status = "default";
-        };
+        # gfx.color_management.hdr stays unset: it tints all SDR video red
+        # (same Gecko bug as Firefox, see firefox.nix).
       };
     };
   };
