@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Bump pkgs/nowted/package.nix to the newest release listed on nowted.com/changelog.
+# Rewrites version + hash only; commit and nru yourself.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+pkg=pkgs/nowted/package.nix
+
+version=$(curl -fsS https://nowted.com/changelog \
+  | grep -oE 'id="v[0-9]+\.[0-9]+\.[0-9]+"' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1)
+[ -n "$version" ] || { echo "no versions found on nowted.com/changelog" >&2; exit 1; }
+current=$(sed -nE 's/^  version = "([^"]+)";/\1/p' "$pkg")
+if [ "$version" = "$current" ]; then echo "already on $version"; exit 0; fi
+
+hash=$(nix store prefetch-file --json \
+  "https://updates.nowted.com/releases/$version/Nowted_${version}_amd64.AppImage" | jq -r .hash)
+[ -n "$hash" ] || { echo "prefetch failed for $version" >&2; exit 1; }
+
+sed -i -E "s|^  version = \"[^\"]+\";|  version = \"$version\";|; s|hash = \"[^\"]+\";|hash = \"$hash\";|" "$pkg"
+echo "pinned $version"

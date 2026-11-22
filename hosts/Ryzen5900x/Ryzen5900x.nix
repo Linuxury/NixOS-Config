@@ -47,10 +47,12 @@
     #   fluxer       — Fluxer chat client (canary, nixpkgs)
     #   kdeconnect   — phone integration
     #   zennotes     — keyboard-first Markdown notes (connects to Media-Server:7879)
+    #   nowted       — private offline notes (AppImage, pkgs/nowted)
     # ==============================================================
     #../../modules/system/graphical/zen-browser.nix
     ../../modules/system/graphical/thunderbird.nix
     ../../modules/system/graphical/app-zennotes.nix
+    ../../modules/system/graphical/app-nowted.nix
     ../../modules/system/graphical/fluxer.nix
     ../../modules/system/graphical/craft-apps.nix
     ../../modules/system/graphical/claude-desktop.nix
