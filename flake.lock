@@ -15,11 +15,11 @@
         "wintypes_shim": "wintypes_shim"
       },
       "locked": {
-        "lastModified": 1795134435,
-        "narHash": "sha256-kXzr6IYA5qovAaa66N9iIqm8DHeRBvKKMf4iPafzzbM=",
+        "lastModified": 1795305373,
+        "narHash": "sha256-jeh9MU9l5Rn8LSOdBRjsd37xSV01HuiwRSh+TSrBx6g=",
         "owner": "mrshmllow",
         "repo": "affinity-nix",
-        "rev": "0eaa225d9ac32a3917e6c8e161de809eb5a3a368",
+        "rev": "188d9365326b8f820e5c2c46069566ef3dfe3330",
         "type": "github"
       },
       "original": {
@@ -638,11 +638,11 @@
         "xdg-desktop-portal-umbriel": "xdg-desktop-portal-umbriel"
       },
       "locked": {
-        "lastModified": 1795301050,
-        "narHash": "sha256-IzfpaufqZiyAun+sm4FhD0dwjuzdEGx/kj1OUzjoji4=",
+        "lastModified": 1795305146,
+        "narHash": "sha256-vIKCfgBI3ZBxdfyrw+Uz1bi2BUOUY2QWFmFfcUrN0oQ=",
         "owner": "noctalia-dev",
         "repo": "umbriel",
-        "rev": "e2eba4f88e0cc744db9396ca6140b5257bd79e24",
+        "rev": "d9b056a72597a4720356975e26667c25f7d02e41",
         "type": "github"
       },
       "original": {
