@@ -131,10 +131,7 @@
     # as the rest of the system.
     # -------------------------------------------------------------------------
     noctalia = {
-      # Pinned to rev e56dee2: upstream 9213809 (async wpa_supplicant BSS
-      # fetch) does not compile against nixpkgs' sdbus-c++ 2.2.1. Drop the rev
-      # once upstream builds again.
-      url = "github:noctalia-dev/noctalia/e56dee2cd4cd0b6b0b5600e50e02610365c9b165";
+      url = "github:noctalia-dev/noctalia";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
