@@ -1,6 +1,6 @@
 # Proton launch options
 
-Launch options per Proton build. Each option below says which build reads it. The lists come from each build's own launcher script (`proton` and its `*.py` helpers), not from upstream documentation. Builds and how to pick one: [10-gaming.md](10-gaming.md).
+Launch options per Proton build. Each build has its own section: what it does, its launch options, and the best launch line to start from. The lists come from each build's own launcher script (`proton` and its `*.py` helpers), not from upstream documentation. Builds and how to pick one: [10-gaming.md](10-gaming.md).
 
 An option missing from a build's list may still be read by that build's Wine, DXVK or vkd3d-proton. This doc lists what the launcher script handles. Names that are internal plumbing (`STEAM_COMPAT_*`, `WINEPREFIX`, `WINEDLLPATH`, `WINELOADERNOEXEC`) are left out.
 
@@ -44,44 +44,6 @@ PROTON_ADD_CONFIG=wow64,fsr4,optiscaler %command%
 - A keyword only works if that build knows it. The tables below list the keyword next to each option. Unknown keywords are dropped without an error.
 - A few keywords also take a value (`fsr4=4.0.0`). GE and CachyOS map `wow64`, `dlss`, `xess`, `fsr3`, `fsr4`, `ffx3`, `ffx4` and `optiscaler` to their variables this way.
 - Valve Proton does not read `PROTON_ADD_CONFIG`. Use the variable forms there.
-
-## Common options
-
-`yes` means that build's script reads the option. `-` means it does not.
-
-| Option | Valve | GE | CachyOS | Wineland | What it does |
-|---|---|---|---|---|---|
-| `PROTON_LOG=1` | yes | yes | yes | yes | Write a log to `~/steam-<appid>.log` |
-| `PROTON_USE_WINED3D=1` | yes | yes | yes | yes | OpenGL-based wined3d instead of DXVK |
-| `PROTON_NO_D3D11=1` | yes | yes | yes | yes | Disable d3d11 |
-| `PROTON_NO_FSYNC=1` | yes | yes | yes | yes | Disable futex-based sync |
-| `PROTON_NO_ESYNC=1` | - | yes | - | yes | Disable eventfd-based sync |
-| `PROTON_USE_WOW64=1` | yes | yes | yes | yes | Run the prefix as WoW64 (no 32-bit Wine) |
-| `PROTON_FORCE_NVAPI=1` | yes | yes | yes | yes | Expose NVAPI even on non-Nvidia GPUs |
-| `PROTON_DISABLE_NVAPI=1` | yes | yes | yes | yes | Turn NVAPI off |
-| `PROTON_HIDE_NVIDIA_GPU=1` | yes | yes | yes | yes | Hide an Nvidia GPU from the game |
-| `PROTON_ENABLE_WAYLAND=1` | - | yes | yes | yes | Native Wayland Wine driver |
-| `PROTON_ENABLE_HDR=1` | - | yes | - | - | HDR (sets `DXVK_HDR`) |
-| `PROTON_FSR4_UPGRADE=1` | - | yes | yes | - | Replace the game's upscaler DLL with FSR4 |
-| `PROTON_DLSS_UPGRADE=1` | - | yes | yes | - | Replace the game's DLSS DLL with a newer one |
-| `PROTON_XESS_UPGRADE=1` | - | yes | yes | - | Replace the game's XeSS DLL with a newer one |
-| `PROTON_USE_OPTISCALER=1` | - | yes | yes | yes | Use OptiScaler |
-| `PROTON_PREFER_SDL=1` | - | yes | yes | yes | Use SDL input instead of Steam Input |
-| `PROTON_NVIDIA_LIBS=1` | - | yes | yes | yes | Nvidia CUDA, NVENC, NVML and OptiX libraries |
-| `PROTON_USE_PIPEWIRE=1` | - | - | yes | yes | Use the PipeWire audio driver |
-| `PROTON_HUD=<1-5>` | - | - | - | yes | DXVK HUD preset |
-| `PROTON_RADV=1` | - | - | - | yes | Use the bundled patched RADV Mesa driver |
-| `PROTON_UPSCALER_UPGRADE=1` | - | - | - | yes | Upgrade FSR4, FFX, DLSS and XeSS components |
-| `PROTON_DXVK_LOWLATENCY=1` | - | - | yes | yes | Low-latency DXVK build |
-| `PROTON_MLFG_UPGRADE=1` | - | yes | - | yes | Multi-frame generation switch |
-| `DXVK_HUD=...` | - | - | - | yes | DXVK HUD items (read by the script itself) |
-
-Notes on the table:
-
-- `PROTON_USE_OPTISCALER`, `PROTON_ENABLE_WAYLAND` and the Nvidia options are not in Valve's script.
-- `PROTON_ENABLE_WAYLAND` is on by default in Proton-Wineland. In GE and CachyOS it is off.
-- `PROTON_UPSCALER_UPGRADE` and `PROTON_RADV` are read by Wineland's helper modules. The Wineland-only names below the table come from the same scripts.
-- Every Valve column entry marked `yes` also works in the other three builds.
 
 ## Options all four builds read
 
@@ -141,6 +103,12 @@ In Valve Proton the keyword column is not usable from launch options, because Va
 
 ## Valve Proton
 
+### What it does
+
+Valve's own build, installed and updated by Steam. It has the fewest extras, and it is the build Steam tests games against. It reads only plain variables: no `PROTON_ADD_CONFIG`, no HDR, no native Wayland, no upscaler upgrades and no HUD preset. Use it as the baseline: when a custom build breaks a game, check here first whether the game works at all.
+
+### Launch options
+
 Reads everything in "Options all four builds read", plus:
 
 | Option | What it does |
@@ -154,11 +122,27 @@ Reads everything in "Options all four builds read", plus:
 
 Valve Proton has no `PROTON_ADD_CONFIG`, no HDR option, no Wayland option, no upscaler upgrade options, no Nvidia library switches and no HUD preset. Its `user_settings.sample.py` documents `PROTON_LOG`, `DXVK_HUD`, `PROTON_USE_WINED3D`, `PROTON_NO_D3D11`, `PROTON_NO_ESYNC` and `PROTON_NO_FSYNC`. Copy it to `user_settings.py` to apply settings to every game, but that folder is owned by Steam and is overwritten on update.
 
+### Best launch option and why
+
+```
+gamemoderun %command%
+```
+
+- Valve has none of the extras the custom builds add, so there is nothing to tune. Leave the game on Valve's defaults, because those are the settings Steam tested.
+- `gamemoderun` asks GameMode to switch the CPU governor to performance while the game runs.
+- When a game crashes, add `PROTON_LOG=1` to get `~/steam-<appid>.log`. Remove it afterwards, because logging slows the game down.
+
 ## Proton-GE
+
+### What it does
+
+GloriousEggroll's custom Proton. It has the widest option set of the four builds: HDR, native Wayland, FSR4, DLSS and XeSS upgrades, OptiScaler, SDL input and Nvidia library switches. It is the only build here with an HDR option, so use it for HDR games.
+
+### Launch options
 
 Reads everything in "Options all four builds read", plus the options below. Each GE keyword goes into `PROTON_ADD_CONFIG`.
 
-### Display, Wayland and HDR
+#### Display, Wayland and HDR
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -171,9 +155,9 @@ Reads everything in "Options all four builds read", plus the options below. Each
 | (keyword only) | `noopwrx11` | Turns off Vulkan OPWR when not on Wayland |
 | `DXVK_HDR`, `DXVK_NO_HDR` | | Set by the HDR options above |
 
-Working setup (Diablo IV, Umbriel, 2026-11-21): `PROTON_ADD_CONFIG=fsr4,fsr4rdna3,wow64,hdr,wayland gamemoderun %command%` gives true HDR and the Steam Controller back paddles keep working. The compositor must advertise HDR: set `hdr = "auto"` on the output in Umbriel's `outputs.toml`, otherwise the in-game HDR checkbox stays greyed out. The `hdr` keyword on its own does not enable Wayland, so keep `wayland` too. The reasoning is in `modules/gaming/gaming.nix`.
+The working HDR line is under "Best launch option and why" at the end of this section.
 
-### Upscaling
+#### Upscaling
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -192,14 +176,14 @@ Working setup (Diablo IV, Umbriel, 2026-11-21): `PROTON_ADD_CONFIG=fsr4,fsr4rdna
 | `PYROVEIL=1` | `pyroveil` | Load the pyroveil layer. `PYROVEIL_CONFIG` picks its config |
 | `PROTON_LOCAL_SHADER_CACHE=1` | `localshadercache` | Per-game shader cache folder (used when Steam shader pre-caching is off) |
 
-### Sync
+#### Sync
 
 | Option | Keyword | What it does |
 |---|---|---|
 | `PROTON_NO_ESYNC=1` | `noesync` | Disable eventfd sync (`WINEESYNC=0`) |
 | `PROTON_NO_NTSYNC=1` | `nontsync` | Do not set `WINENTSYNC`. It is otherwise on |
 
-### Input
+#### Input
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -210,7 +194,7 @@ Working setup (Diablo IV, Umbriel, 2026-11-21): `PROTON_ADD_CONFIG=fsr4,fsr4rdna
 | `SDL_GAMECONTROLLER_ALLOW_STEAM_VIRTUAL_GAMEPAD`, `SDL_GAMECONTROLLER_IGNORE_DEVICES` | | SDL hints the script reads and may clear |
 | `PROTON_ENABLE_WINEBTH=1` | `winebth` | Enable Wine's Bluetooth driver |
 
-### GPU and vendor
+#### GPU and vendor
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -226,21 +210,43 @@ Working setup (Diablo IV, Umbriel, 2026-11-21): `PROTON_ADD_CONFIG=fsr4,fsr4rdna
 | `WINE_SIMULATE_WRITECOPY=1`, `PROTON_USE_WRITECOPY=1` | `writecopy` | Simulate write-copy |
 | `PROTON_USE_XALIA` | | See the shared table. Wayland turns it off |
 
-### Debugging
+#### Debugging
 
 The shared options `PROTON_LOG`, `WINEDEBUG` and `PROTON_REMOTE_DEBUG_CMD` apply. GE adds nothing else for debugging that the script documents.
 
-### Set automatically for some games
+#### Set automatically for some games
 
 The script sets these for certain app IDs: `PROTON_DEATH_STRANDING_CONTROLLER_EFFECTS`, `PROTON_DEATH_STRANDING_FORCE_ENVIRONMENT_EFFECTS`, `PROTON_ENABLE_MHWILDS_USB_AUDIO`, `PROTON_SONY_DUALSENSE_AS_DUALSHOCK4`, `PROTON_SONY_DUALSHOCK4_V2_AS_V1`, `PROTON_XINPUT_PERSISTENT_PLAYER1`, `WINE_DISABLE_EXE_ASLR`, `PROTON_PIPEWIRE_ALSA_PLUGIN`. Setting them by hand is not needed.
 
+### Best launch option and why
+
+Verified on Diablo IV under Umbriel (2026-11-21). It gives true HDR, and the Steam Controller back paddles keep working:
+
+```
+PROTON_ADD_CONFIG=fsr4,fsr4rdna3,wow64,hdr,wayland gamemoderun %command%
+```
+
+- `fsr4` swaps the game's FSR DLL for FSR4. `fsr4rdna3` is the extra GE keyword the verified line uses for an RDNA3 card. The tables above do not list it. On a GPU that is not RDNA3, try the line without it.
+- `wow64` runs the prefix as WoW64, with no separate 32-bit Wine. If an old 32-bit game fails to start, remove it.
+- `hdr` only sets `DXVK_HDR=1`. It does not turn on Wayland, so `wayland` has to be there too, because HDR needs the native Wayland driver.
+- The compositor must advertise HDR as well: set `hdr = "auto"` on the output in Umbriel's `outputs.toml`. With `off`, the game's HDR checkbox stays greyed out whatever the launch options say.
+- Add `fsr4hud` to the list to see an on-screen indicator that FSR4 is active.
+
+The reasoning is in `modules/gaming/gaming.nix`.
+
 ## Proton-CachyOS
+
+### What it does
+
+CachyOS's performance-tuned Proton. Without any launch options it already turns on PipeWire audio, the `s:` game drive and the FSR4 upgrade. It adds low-latency DXVK and vkd3d builds and the `dxvk-sarek` fork for GPUs without Vulkan 1.3. It has no HDR option, so use GE for HDR games.
+
+### Launch options
 
 Reads everything in "Options all four builds read", plus the options below. CachyOS recognises only a small table of `PROTON_ADD_CONFIG` keys for value mapping (`wow64`, `dlss`, `xess`, `fsr3`, `fsr4`, `ffx3`, `ffx4`, `optiscaler`). It has no `hdr` and no `forcehdr`, so `PROTON_ADD_CONFIG=hdr` does nothing here. The script does read `wayland` as a compat keyword and as `PROTON_ENABLE_WAYLAND`.
 
 Defaults the script turns on: `pipewire`, `gamedrive`, `fsr4`, and `dxvksarek` when the GPU does not support Vulkan 1.3 with `descriptorIndexing`.
 
-### Display and Wayland
+#### Display and Wayland
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -248,7 +254,7 @@ Defaults the script turns on: `pipewire`, `gamedrive`, `fsr4`, and `dxvksarek` w
 | `PROTON_NO_WM_DECORATION=1` | `nowmdecoration` | No window-manager decoration |
 | (keyword only) | `noopwrx11` | Vulkan OPWR switch used on X11 |
 
-### Upscaling and frame pacing
+#### Upscaling and frame pacing
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -273,7 +279,7 @@ Defaults the script turns on: `pipewire`, `gamedrive`, `fsr4`, and `dxvksarek` w
 | `DXVK_FILTER_DEVICE_NAME`, `DXVK_FILTER_DEVICE_UUID` | | GPU filter. The script also uses it to test for Vulkan 1.3 |
 | `DXVK_NO_UE4_WORKAROUND` | | Set with `nativeags` (meaning not documented in the script) |
 
-### Audio and media
+#### Audio and media
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -281,7 +287,7 @@ Defaults the script turns on: `pipewire`, `gamedrive`, `fsr4`, and `dxvksarek` w
 | `PROTON_ENABLE_MEDIACONV=1` | `mediaconv` | Turns on `PROTON_VIDEO_CONVERT`, `PROTON_AUDIO_CONVERT`, `PROTON_AUDIO_CONVERT_BIN` and `PROTON_DEMUX` |
 | `PROTON_NATIVE_STEAM=1` | `nativesteam` | Use the native Steam client (drops the `steam.exe` override, sets `PROTON_DISABLE_LSTEAMCLIENT`) |
 
-### Input
+#### Input
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -289,7 +295,7 @@ Defaults the script turns on: `pipewire`, `gamedrive`, `fsr4`, and `dxvksarek` w
 | `PROTON_NO_STEAMINPUT=1`, `PROTON_EMULATE_STEAMINPUT=1` | | Steam Input switches |
 | `SDL_GAMECONTROLLER_ALLOW_STEAM_VIRTUAL_GAMEPAD`, `SDL_GAMECONTROLLER_IGNORE_DEVICES` | | SDL hints the script reads and may clear |
 
-### GPU and vendor
+#### GPU and vendor
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -299,15 +305,34 @@ Defaults the script turns on: `pipewire`, `gamedrive`, `fsr4`, and `dxvksarek` w
 | `DXVK_NVAPI_SET_NGX_DEBUG_OPTIONS` | | NGX debug options |
 | `WINE_SIMULATE_WRITECOPY=1` | `writecopy` | Simulate write-copy |
 
-### Debugging
+#### Debugging
 
 The shared options `PROTON_LOG`, `WINEDEBUG` and `PROTON_REMOTE_DEBUG_CMD` apply. No CachyOS-only debug option.
 
+### Best launch option and why
+
+Not tested yet on this setup:
+
+```
+PROTON_ENABLE_WAYLAND=1 gamemoderun %command%
+```
+
+- FSR4 and PipeWire are already on by default, so they do not need to be in the line.
+- Use the variable, not the `wayland` keyword. The comments in `gaming.nix` say CachyOS's `PROTON_ADD_CONFIG` table does not map `wayland`. The variable always works.
+- Leave HDR out. CachyOS has no HDR option, and `PROTON_ADD_CONFIG=hdr` is dropped without an error.
+- If a game stutters or feels laggy, try `PROTON_DXVK_LOWLATENCY=1` for DirectX 9 to 11 games, or `PROTON_VKD3D_LOWLATENCY=1` for DirectX 12. Change one thing at a time.
+
 ## Proton-Wineland
+
+### What it does
+
+A CachyOS-based Proton focused on Wayland. Native Wayland is on by default. It adds a Steam overlay bridge for Wayland, DXVK HUD presets, an upscaler upgrade with an FSR4 lite model, a bundled patched RADV driver, and a config file that holds options per game. It has no HDR option.
+
+### Launch options
 
 Reads everything in "Options all four builds read", plus the options below. Native Wayland is on by default: the script runs `setdefault("PROTON_ENABLE_WAYLAND", "1")`. Turn it off with `PROTON_ENABLE_WAYLAND=0`. Wineland has no `hdr`, `forcehdr` or `fsr4` keywords in its launcher.
 
-### Display, Wayland and overlay
+#### Display, Wayland and overlay
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -317,7 +342,7 @@ Reads everything in "Options all four builds read", plus the options below. Nati
 | `PROTON_WAYLAND_OPENGL_OVERLAY=1` | | Opt in per game to the EGL adapter for Steam's native OpenGL overlay |
 | `PROTON_WAYLAND_VULKAN_LAYER_ORDER` | | Set by the script after it puts the Steam overlay first, then the Wineland translation layer. Not meant to be set by hand |
 
-### HUD
+#### HUD
 
 | Option | What it does |
 |---|---|
@@ -325,7 +350,7 @@ Reads everything in "Options all four builds read", plus the options below. Nati
 | `DXVK_HUD=<items>` | DXVK's own HUD list |
 | `PROTON_UPSCALER_INFO=1` (`upscalerinfo`) | Show upscaler and frame-generation watermarks (`FSR_WATERMARK`, `FSR_FG_WATERMARK`, NGX indicator options) |
 
-### Upscaling
+#### Upscaling
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -345,14 +370,14 @@ Reads everything in "Options all four builds read", plus the options below. Nati
 | `DXVK_ASYNC` | | Set to 0 by the low-latency option |
 | `DXVK_FILTER_DEVICE_NAME`, `DXVK_FILTER_DEVICE_UUID` | | GPU filter |
 
-### Sync
+#### Sync
 
 | Option | Keyword | What it does |
 |---|---|---|
 | `PROTON_NO_ESYNC=1` | `noesync` | Disable eventfd sync (`WINEESYNC=0`; otherwise 1) |
 | `WINEESYNC` | | Set by the script |
 
-### Audio and media
+#### Audio and media
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -360,7 +385,7 @@ Reads everything in "Options all four builds read", plus the options below. Nati
 | `PROTON_ENABLE_MEDIACONV=1` | `mediaconv` | Media conversion switches |
 | `PROTON_NATIVE_STEAM=1` | `nativesteam` | Use the native Steam client |
 
-### Input
+#### Input
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -368,7 +393,7 @@ Reads everything in "Options all four builds read", plus the options below. Nati
 | `PROTON_NO_STEAMINPUT=1`, `PROTON_EMULATE_STEAMINPUT=1` | | Steam Input switches |
 | `SDL_GAMECONTROLLER_ALLOW_STEAM_VIRTUAL_GAMEPAD`, `SDL_GAMECONTROLLER_IGNORE_DEVICES` | | SDL hints |
 
-### GPU and vendor
+#### GPU and vendor
 
 | Option | Keyword | What it does |
 |---|---|---|
@@ -379,7 +404,7 @@ Reads everything in "Options all four builds read", plus the options below. Nati
 | `WINE_SIMULATE_WRITECOPY=1` | `writecopy` | Simulate write-copy |
 | `WINE_GRAPHICS_DRIVER`, `WINE_USE_EGL` | | Set by the Wayland path |
 
-### Config file
+#### Config file
 
 Wineland can store options in `~/.config/proton/config.ini` (or `$XDG_CONFIG_HOME/proton/config.ini`) instead of launch options. `proton_config.py` reads it. The store copy ships `config.sample.ini`.
 
@@ -397,12 +422,26 @@ PROTON_HUD = 4
 - It only fills variables that are absent. A launch option always wins.
 - The file is created by you. Nothing in this repo writes it.
 
-### Debugging
+#### Debugging
 
 The shared options `PROTON_LOG`, `WINEDEBUG` and `PROTON_REMOTE_DEBUG_CMD` apply, plus `PROTON_HUD` and `DXVK_HUD` above.
+
+### Best launch option and why
+
+Not tested yet on this setup:
+
+```
+PROTON_UPSCALER_UPGRADE=1 WINE_FSR4_LITE=1 PROTON_UPSCALER_INFO=1 gamemoderun %command%
+```
+
+- Wayland is already on, so it does not need to be in the line.
+- `PROTON_UPSCALER_UPGRADE=1` swaps the game's FSR, FFX, DLSS and XeSS components for newer ones. It only works if FSR is also selected in the game's own graphics menu.
+- `WINE_FSR4_LITE=1` uses the lighter FSR4 model. It has no keyword, so it has to be set as a variable. The script already turns it on for some AMD GPUs, so on those cards it is redundant but does no harm.
+- `PROTON_UPSCALER_INFO=1` shows a watermark when the upgraded upscaler is running. Use it to confirm the swap worked, then remove it.
+- Add `PROTON_HUD=1` for an fps counter, or put these variables in `~/.config/proton/config.ini` so you don't have to repeat them for every game.
 
 ## What was left out
 
 - Variables that only pass through to Wine or DXVK without the script acting on them are noted as such where they appear in a table.
 - Per-game workarounds that the script sets for specific Steam app IDs are not listed, except in the GE section.
-- The matrix reads `proton` and the top-level `*.py` files. Wineland's `upscalers/` folder was read separately, which is why `PROTON_UPSCALER_UPGRADE` and the `WINE_*_PROVIDER` names appear only in the Wineland section.
+- The option lists read `proton` and the top-level `*.py` files. Wineland's `upscalers/` folder was read separately, which is why `PROTON_UPSCALER_UPGRADE` and the `WINE_*_PROVIDER` names appear only in the Wineland section.
