@@ -136,14 +136,14 @@ in
     (final: prev:
     let
       protonCachyosTag = "cachyos-11.0-20261015-slr"; # proton-cachyos-nru
-      protonGeTag = "GE-Proton11-12"; # proton-ge-nru
+      protonGeTag = "GE-Proton11-14"; # proton-ge-nru
       protonWinelandTag = "wineland-11.0-20261119"; # proton-wineland-nru
     in
     {
       proton-ge-custom = prev.callPackage ../../pkgs/proton-ge-custom/package.nix {
         proton-ge-src = pkgs.fetchzip {
           url  = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/${protonGeTag}/${protonGeTag}-x86_64.tar.gz"; # proton-ge-url
-          hash = "sha256-i20g9lDz7bR0SXWmvHZHztN4m8AHkcD0/OVGSC4ZzI8="; # proton-ge-hash
+          hash = "sha256-Bru3l0AqrvDl+XYC1dYhmy5XqKP49yFjWVJwZzel60Q="; # proton-ge-hash
         };
       };
 

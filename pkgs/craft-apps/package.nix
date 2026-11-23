@@ -33,12 +33,12 @@
 let
   apps = {
     photocraft  = { version = "0.23.1"; hash = "sha256-Q4Ou9noHzDcK0lCm7WABUgXT5sRj+vP/Sw9nuBeMz8g="; description = "Image editor"; };
-    pdfcraft    = { version = "0.21.1"; hash = "sha256-wpGekETv/eMY5mgHrSohu7dKlVWzwLmfmtDEDPYc4l4="; description = "PDF workbench"; };
+    pdfcraft    = { version = "0.22.0"; hash = "sha256-qJk/nuluh6zOz5CvQib/YKhLnheHrp/Y+kj/4Tlrw14="; description = "PDF workbench"; };
     lightcraft  = { version = "0.21.1"; hash = "sha256-sSPeFpFYCaeeZLpO467p4c3tbvI7c3wG+Bzcfi8obWI="; description = "Photo library and raw developer"; };
     vectorcraft = { version = "0.24.1"; hash = "sha256-oJBRQlL94UVJWsb8Zdb/ExHWmJmOV7pDTV0IlsPR+/o="; description = "Vector illustration"; };
     filmcraft   = { version = "0.20.1"; hash = "sha256-Pk/qPLjUc+aPGJoKh5K6RhYPq1B62rOriSAHP9QfJPo="; description = "Video editor"; };
     effectcraft = { version = "0.24.1"; hash = "sha256-XOA5NpAUQif6kYboIwitY4pu9tn5dsmW5tA7W1G2Wns="; description = "Motion graphics and VFX"; };
-    designcraft = { version = "0.20.1"; hash = "sha256-6RYw1M31eMyx4vOfiOJOhSDxSC1RrkcUZX7kceIjf0Q="; description = "Page layout and publishing"; };
+    designcraft = { version = "0.21.1"; hash = "sha256-IR50ufXO5b/DzbRpg9C9sf29CRZL/YB/T/cHBpNdQK4="; description = "Page layout and publishing"; };
     wordcraft   = { version = "0.18.1"; hash = "sha256-MSoFfUbdgFl8EtzP0Ql84l7epAuqrrULy28BrBrrrbU="; description = "Word processor"; };
     gridcraft   = { version = "0.19.1"; hash = "sha256-jZe7otW7AP1p7VUGSFLB/ZFN5A1ezVXKAcjfgbgolG0="; description = "Spreadsheet"; };
     deckcraft   = { version = "0.18.1"; hash = "sha256-W659VWZjhiRBHvlo8lMqszWNwoCIQURYPkl8VjHbiiY="; description = "Presentations"; };
