@@ -363,17 +363,22 @@ FSR4_UPGRADE=1 gamemoderun %command%
 
 ### What it does
 
-A CachyOS-based Proton focused on Wayland. Native Wayland is on by default. It adds a Steam overlay bridge for Wayland, DXVK HUD presets, an upscaler upgrade with an FSR4 lite model, a bundled patched RADV driver, and a config file that holds options per game. It has no HDR option.
+A CachyOS-based Proton focused on Wayland. Native Wayland is on by default, and unlike CachyOS it keeps Steam Input working there. It adds a Steam overlay bridge for Wayland, DXVK HUD presets, its own upscaler downloader (FSR4, FFX, DLSS, XeSS) with an FSR4 lite model, a bundled patched RADV driver, and a config file that holds options per game. It has no HDR option.
 
 ### Launch options
 
-Reads everything in "Options all four builds read", plus the options below. Native Wayland is on by default: the script runs `setdefault("PROTON_ENABLE_WAYLAND", "1")`. Turn it off with `PROTON_ENABLE_WAYLAND=0`. Wineland has no `hdr`, `forcehdr` or `fsr4` keywords in its launcher.
+Reads everything in "Options all four builds read", plus the options below. Checked against `wineland-11.0-20261119`.
+
+- Native Wayland is on by default: the script runs `setdefault("PROTON_ENABLE_WAYLAND", "1")`. Turn it off with `PROTON_ENABLE_WAYLAND=0`.
+- Every `PROTON_ADD_CONFIG` keyword goes into the compat config, as in CachyOS. Only `wow64` and `optiscaler` also set their variable or take a value.
+- There are no `hdr`, `forcehdr`, `fsr4`, `dlss` or `xess` keywords. Upscaling is set with variables only.
+- Unlike CachyOS, PipeWire audio is not on by default.
 
 #### Display, Wayland and overlay
 
 | Option | Keyword | What it does |
 |---|---|---|
-| `PROTON_ENABLE_WAYLAND=0` | `wayland` | On by default. `0` returns to the X11 path |
+| `PROTON_ENABLE_WAYLAND=0` | `wayland` | On by default. `0` returns to the X11 path. On Wayland the fullscreen hack and Xalia are off, and Steam Input stays on (`PROTON_NO_STEAMINPUT` defaults to `0`, because the script says Steam Input works through its virtual controller) |
 | `PROTON_NO_WM_DECORATION=1` | `nowmdecoration` | No window-manager decoration |
 | `PROTON_WAYLAND_STEAM_OVERLAY=0` | | Turn off the Steam overlay bridge for Wayland (default on under Wayland). The script also turns it off when the native overlay or the translation layer is missing |
 | `PROTON_WAYLAND_OPENGL_OVERLAY=1` | | Opt in per game to the EGL adapter for Steam's native OpenGL overlay |
@@ -391,11 +396,14 @@ Reads everything in "Options all four builds read", plus the options below. Nati
 
 | Option | Keyword | What it does |
 |---|---|---|
-| `PROTON_UPSCALER_UPGRADE=1` | | Upgrade FSR4, FFX, DLSS and XeSS components for the GPU in use. Read by the `upscalers/` helpers, not by the main script |
-| `PROTON_MLFG_UPGRADE=1` | `mlfg` | Multi-frame generation (`MLFG_UPGRADE`) |
-| `PROTON_USE_OPTISCALER=1` | `optiscaler` | Use OptiScaler |
-| `WINE_FSR4_PROVIDER`, `WINE_FFX_PROVIDER`, `WINE_DLSS_PROVIDER`, `WINE_XESS_PROVIDER` | | Point a provider at a specific DLL. Read by the `upscalers/` helpers |
-| `WINE_FSR4_LITE=1` | | FSR4 lite model. The script turns it on for some AMD GPUs |
+| `PROTON_UPSCALER_UPGRADE=1` | | Download and use newer FSR4, FFX, DLSS and XeSS components. Must be exactly `1`. Each one is used only on a GPU that qualifies: FSR4 on an AMD discrete GPU with `VK_KHR_fragment_shading_rate` or `VK_EXT_shader_float8` (an AMD iGPU only when no discrete GPU is visible), DLSS on an Nvidia GPU with cooperative matrix support, and XeSS on any GPU with integer dot product. FFX is set up only when the FSR4 provider is ready |
+| `PROTON_MLFG_UPGRADE=1` | | Multi-frame generation (`MLFG_UPGRADE`). Applied only when an FSR4 provider is active. The `mlfg` keyword is accepted but does nothing, because the FSR helper reads only the variable |
+| `PROTON_USE_OPTISCALER=<1\|version>` | `optiscaler` | Use OptiScaler. Also sets up its FFX, DLSS and XeSS files. With OptiScaler on, the separate FFX, DLSS and XeSS upgrades are skipped |
+| `PROTON_OPTISCALER_NAME=<dll>` | | DLL name OptiScaler loads as (default `dxgi.dll`) |
+| `PROTON_OPTISCALER_CONFIG=<Section.option=value;...>` | | Write values into `OptiScaler.ini` |
+| `WINE_FSR4_PROVIDER`, `WINE_FFX_PROVIDER`, `WINE_DLSS_PROVIDER`, `WINE_XESS_PROVIDER` | | Point at a specific provider DLL or folder. Any one of them turns its upgrade on even without `PROTON_UPSCALER_UPGRADE` |
+| `WINE_FSR4_LITE=1` | | Use the FSR4 lite model, made for GPUs without native FP8 (`VK_EXT_shader_float8`). The script turns it on by itself only on **iGPU-only** AMD systems without FP8. On a desktop with a discrete GPU it stays off unless you set it |
+| `PROTON_FRAME_RATE=<fps>` | | Frame-rate cap through `DXVK_CONFIG` (`dxgi.maxFrameRate`, `d3d9.maxFrameRate`). `DXVK_FRAME_RATE` and `VKD3D_FRAME_RATE` do the same and win if set |
 | `PROTON_NATIVE_AGS=1` | `nativeags` | Native AMD AGS DLLs |
 | `ENABLE_VKBASALT=1` | `vkbasalt` | Bundled vkBasalt layer |
 | `PYROVEIL=1` | `pyroveil` | Pyroveil layer |
@@ -420,7 +428,7 @@ Reads everything in "Options all four builds read", plus the options below. Nati
 |---|---|---|
 | `PROTON_USE_PIPEWIRE=1` | `pipewire` | PipeWire audio. Otherwise `WINE_AUDIO_DRIVER` defaults to `pulse,alsa` |
 | `PROTON_ENABLE_MEDIACONV=1` | `mediaconv` | Media conversion switches |
-| `PROTON_NATIVE_STEAM=1` | `nativesteam` | Use the native Steam client |
+| `PROTON_NATIVE_STEAM=1` | | Use the native Steam client. Must be exactly `1`, and there is no keyword: the script reads the variable directly. It also turns off the Wayland Steam overlay bridge |
 
 #### Input
 
@@ -468,13 +476,14 @@ The shared options `PROTON_LOG`, `WINEDEBUG` and `PROTON_REMOTE_DEBUG_CMD` apply
 Not tested yet on this setup:
 
 ```
-PROTON_UPSCALER_UPGRADE=1 WINE_FSR4_LITE=1 PROTON_UPSCALER_INFO=1 gamemoderun %command%
+PROTON_UPSCALER_UPGRADE=1 PROTON_UPSCALER_INFO=1 gamemoderun %command%
 ```
 
-- Wayland is already on, so it does not need to be in the line.
-- `PROTON_UPSCALER_UPGRADE=1` swaps the game's FSR, FFX, DLSS and XeSS components for newer ones. It only works if FSR is also selected in the game's own graphics menu.
-- `WINE_FSR4_LITE=1` uses the lighter FSR4 model. It has no keyword, so it has to be set as a variable. The script already turns it on for some AMD GPUs, so on those cards it is redundant but does no harm.
+- Wayland is already on, and Steam Input keeps working there, so the Steam Controller paddles are safe without anything extra.
+- `PROTON_UPSCALER_UPGRADE=1` downloads newer FSR4, FFX, DLSS and XeSS components, each only for a GPU that qualifies. FSR also has to be selected in the game's own graphics menu.
 - `PROTON_UPSCALER_INFO=1` shows a watermark when the upgraded upscaler is running. Use it to confirm the swap worked, then remove it.
+- FSR4 lite is left out on purpose. On a desktop with a discrete GPU the script picks the full model. If FSR4 runs badly on a GPU without FP8 (`vulkaninfo | grep shader_float8` prints nothing), add `WINE_FSR4_LITE=1` and compare performance and image quality.
+- Leave HDR out. Wineland has no HDR option. Use GE for HDR games.
 - Add `PROTON_HUD=1` for an fps counter, or put these variables in `~/.config/proton/config.ini` so you don't have to repeat them for every game.
 
 ## What was left out
