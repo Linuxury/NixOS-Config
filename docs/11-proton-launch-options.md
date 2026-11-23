@@ -109,18 +109,23 @@ Valve's own build, installed and updated by Steam. It has the fewest extras, and
 
 ### Launch options
 
-Reads everything in "Options all four builds read", plus:
+Reads everything in "Options all four builds read", plus the options below. Checked against `experimental-bleeding-edge-11.0-479612-20261123`. Steam updates Proton Experimental by itself, so this list can drift from the installed script.
 
 | Option | What it does |
 |---|---|
-| `PROTON_USE_WOW64=1` | WoW64 prefix (`WINEARCH=wow64`). The script sets it for some app IDs. Same name in the three custom builds |
+| `PROTON_USE_WOW64=1` | WoW64 prefix (`WINEARCH=wow64`). Must be exactly `1`. The script sets it for some app IDs. Same name in the three custom builds |
 | `PROTON_USE_ARM64` | Selects the ARM64 PE tree on ARM hosts. Not relevant on x86_64 |
 | `WINE_IGNORE_STARTUP_SHOW_WINDOW=1` | Wine startup-window behaviour. The script sets it for some app IDs (meaning not documented in the script) |
 | `WINE_GST_REGISTRY_DIR` | GStreamer registry folder (set by the script per prefix) |
 | `WINEARCH` | Reset by the script. Set `PROTON_USE_WOW64` instead |
 | `WINE_HIDE_AMD_CPU`, `WINE_HIDE_AMD_GPU` | Wine hide options. The script sets them for some app IDs |
 
-Valve Proton has no `PROTON_ADD_CONFIG`, no HDR option, no Wayland option, no upscaler upgrade options, no Nvidia library switches and no HUD preset. Its `user_settings.sample.py` documents `PROTON_LOG`, `DXVK_HUD`, `PROTON_USE_WINED3D`, `PROTON_NO_D3D11`, `PROTON_NO_ESYNC` and `PROTON_NO_FSYNC`. Copy it to `user_settings.py` to apply settings to every game, but that folder is owned by Steam and is overwritten on update.
+What Valve Proton does not have:
+
+- No `PROTON_ADD_CONFIG`, no HDR, no Wayland, no upscaler upgrades, no Nvidia library switches and no HUD preset.
+- No `PROTON_NO_ESYNC`. Valve's own `user_settings.sample.py` still lists it, but the launcher script does not read it. It only turns esync off by itself for a few app IDs. Use `PROTON_NO_FSYNC=1` to test sync problems.
+
+`user_settings.sample.py` also lists debug settings (`PROTON_LOG`, `WINEDEBUG`, `DXVK_LOG_LEVEL`, `VKD3D_DEBUG`, `DXVK_HUD`). Copy it to `user_settings.py` to apply settings to every game, but that folder is owned by Steam and is overwritten on update. Without it the script turns logging off: `WINEDEBUG=-all`, and DXVK and vkd3d at `none`.
 
 ### Best launch option and why
 
@@ -131,6 +136,7 @@ gamemoderun %command%
 - Valve has none of the extras the custom builds add, so there is nothing to tune. Leave the game on Valve's defaults, because those are the settings Steam tested.
 - `gamemoderun` asks GameMode to switch the CPU governor to performance while the game runs.
 - When a game crashes, add `PROTON_LOG=1` to get `~/steam-<appid>.log`. Remove it afterwards, because logging slows the game down.
+- For an fps counter, `DXVK_HUD=fps` works here too. DXVK reads it directly, not the launcher script.
 
 ## Proton-GE
 
