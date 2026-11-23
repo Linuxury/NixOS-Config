@@ -141,6 +141,7 @@ in
     in
     {
       proton-ge-custom = prev.callPackage ../../pkgs/proton-ge-custom/package.nix {
+        tag = protonGeTag;
         proton-ge-src = pkgs.fetchzip {
           url  = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/${protonGeTag}/${protonGeTag}-x86_64.tar.gz"; # proton-ge-url
           hash = "sha256-Bru3l0AqrvDl+XYC1dYhmy5XqKP49yFjWVJwZzel60Q="; # proton-ge-hash

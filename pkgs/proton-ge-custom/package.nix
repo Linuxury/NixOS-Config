@@ -1,13 +1,14 @@
-{ lib, stdenvNoCC, proton-ge-src }:
+{ lib, stdenvNoCC, tag, proton-ge-src }:
 # GE-Proton prebuilt for Steam's compatibility tools.
 #
-# This file never needs to be edited. The version is read directly from the
-# tarball source. The URL and hash live in modules/gaming/gaming.nix —
+# This file never needs to be edited. The version is the release tag passed in
+# from modules/gaming/gaming.nix, where the URL and hash also live —
 # nru updates them automatically via _nru_update_proton_ge.
 stdenvNoCC.mkDerivation rec {
   pname = "proton-ge-custom";
-  # Read from the version file shipped inside the tarball: "1782266460 GE-Proton11-1"
-  version = lib.last (lib.splitString " " (lib.trim (builtins.readFile "${proton-ge-src}/version")));
+  # The tag, e.g. "GE-Proton11-14". Not read from the tarball's version file:
+  # that would be import-from-derivation (570 MB download during eval).
+  version = tag;
 
   src = proton-ge-src;
 
