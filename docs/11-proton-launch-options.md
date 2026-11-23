@@ -9,7 +9,7 @@ An option missing from a build's list may still be read by that build's Wine, DX
 | Build | Version in this repo | Script read for this doc |
 |---|---|---|
 | Valve Proton | Proton Experimental as installed by Steam. Steam updates it | `steamapps/common/Proton - Experimental/proton` |
-| Proton-GE | `GE-Proton11-12` | `proton`, `utilities.py` in the Nix store copy |
+| Proton-GE | `GE-Proton11-14` | `proton`, `utilities.py` in the Nix store copy |
 | Proton-CachyOS | `cachyos-11.0-20261015-slr` | `proton`, `utilities.py` |
 | Proton-Wineland | `wineland-11.0-20261119` | `proton`, `proton_config.py`, `mesa.py`, `vulkan_layers.py`, `utilities.py`, `config.sample.ini` |
 
@@ -150,6 +150,7 @@ Reads everything in "Options all four builds read", plus the options below. Each
 | `PROTON_WAYLAND_MONITOR=<name>` | | Sets the primary monitor for the Wayland driver. If unset, the script tries to find one |
 | `PROTON_ENABLE_HDR=1`, `PROTON_USE_HDR=1` | `hdr` | Sets `DXVK_HDR=1` only. It does not turn on Wayland. When one of the two variables is set to 0, HDR is turned off (`DXVK_NO_HDR=1`) |
 | `PROTON_FORCE_HDR=1` | `forcehdr` | `DXVK_HDR=1` and `WAYLANDDRV_FORCE_HDR=1` |
+| `DISABLE_WINE_HDR_COLORSPACE_LAYER=1` | | Turn off the HDR colorspace layer. On the Wayland path it is on by default: Wine passes HDR swapchains through to the driver while the Steam overlay and MangoHud still see the real HDR colorspace, so they draw with correct colours |
 | `PROTON_NO_WM_DECORATION=1` | `nowmdecoration` | No window-manager decoration (`WAYLANDDRV_SSD=0`, `WINE_NO_WM_DECORATION=1`) |
 | `WINE_DISABLE_FULLSCREEN_HACK`, `WINE_USE_EGL`, `WINE_NO_WM_DECORATION` | | Set by the Wayland path. The script reads them |
 | (keyword only) | `noopwrx11` | Turns off Vulkan OPWR when not on Wayland |
@@ -161,14 +162,14 @@ The working HDR line is under "Best launch option and why" at the end of this se
 
 | Option | Keyword | What it does |
 |---|---|---|
-| `PROTON_FSR4_UPGRADE=<1\|version>` | `fsr4` | Swap the game's FSR DLL for FSR4 |
+| `PROTON_FSR4_UPGRADE=<1\|version>` | `fsr4` | Swap the game's FSR DLL for FSR4. Setting it also sets `FSR4_UPGRADE=1`, which the script calls extended GPU support: FSR4 is turned on even for GPUs where it is not on by default |
 | `PROTON_FSR3_UPGRADE=1` | `fsr3` | FSR3 upgrade (in `utilities.py` the `fsr3` keyword sets the FSR4 variable) |
 | `PROTON_FSR4_INDICATOR=1` | `fsr4hud` | Show an FSR4 indicator |
 | `PROTON_DLSS_UPGRADE=<1\|version>` | `dlss` | Newer DLSS DLL |
 | `PROTON_DLSS_INDICATOR=1` | `dlsshud` | Show a DLSS indicator |
 | `PROTON_XESS_UPGRADE=<1\|version>` | `xess` | Newer XeSS DLL |
-| `PROTON_STREAMLINE_UPGRADE=1` | `streamline` | Redirect the game's Streamline DLLs to a newer copy (only without OptiScaler) |
-| `PROTON_USE_OPTISCALER=1` | `optiscaler` | Use OptiScaler. It also enables `dlss`, `xess`, `fsr4` and `ffx3` upgrades |
+| `PROTON_STREAMLINE_UPGRADE=1` | `streamline` | Redirect the game's Streamline DLLs to a newer copy. Since 11-14 it only works together with `dlss` |
+| `PROTON_USE_OPTISCALER=1` | `optiscaler` | Use OptiScaler. It also enables the `dlss`, `xess`, `fsr4`, `ffx3` and Streamline upgrades |
 | `PROTON_MLFG_UPGRADE=1` | `mlfg` | Multi-frame generation (`MLFG_UPGRADE`) |
 | `PROTON_NATIVE_AGS=1` | `nativeags` | Native AMD AGS DLLs (`atiadlxx`, `atidxx64`, `amd_ags_x64` overrides) |
 | `ENABLE_VKBASALT=1` | `vkbasalt` | Load the bundled vkBasalt Vulkan layer |
@@ -182,6 +183,21 @@ The working HDR line is under "Best launch option and why" at the end of this se
 |---|---|---|
 | `PROTON_NO_ESYNC=1` | `noesync` | Disable eventfd sync (`WINEESYNC=0`) |
 | `PROTON_NO_NTSYNC=1` | `nontsync` | Do not set `WINENTSYNC`. It is otherwise on |
+
+#### Direct3D 8 and older
+
+| Option | Keyword | What it does |
+|---|---|---|
+| `PROTON_NO_D8VK=1` | `nod8vk` | d3d8 uses DXVK by default (unless wined3d is on). This turns that off. `PROTON_DXVK_D3D8` / `dxvkd3d8` from the shared table are still read but no longer needed |
+| `PROTON_NO_D7VK=1` | `nod7vk` | 32-bit ddraw (D3D7, 6, 5, 3) uses D7VK by default (unless wined3d is on). This turns that off. `PROTON_USE_D7VK` is no longer needed |
+
+#### Audio
+
+| Option | Keyword | What it does |
+|---|---|---|
+| `PROTON_ENABLE_PIPEWIRE=1`, `PROTON_USE_PIPEWIRE=1` | `pipewire` | Talk to PipeWire directly (`WINE_AUDIO_DRIVER=pipewire,pulse,alsa`) instead of through pipewire-pulse. Off by default. An explicit `WINE_AUDIO_DRIVER` wins |
+| `PROTON_NO_MIDI_SYNTH=1` | | Turn off the software MIDI synth. It is on by default and used only when the host has no MIDI device |
+| `PROTON_MIDI_SOUNDFONT=<path>` | | Soundfont for the MIDI synth. Default: the bundled `GeneralUser-GS.sf2` |
 
 #### Input
 
@@ -206,7 +222,7 @@ The working HDR line is under "Best launch option and why" at the end of this se
 | `PROTON_NVIDIA_LIBS_NO_32BIT=1` | `nvidialibsno32` | Skip the 32-bit Nvidia libraries |
 | `DXVK_NVAPI_VKREFLEX=1` | `vkreflex` | dxvk-nvapi Reflex layer (Nvidia driver only) |
 | `DXVK_NVAPI_SET_NGX_DEBUG_OPTIONS` | | NGX debug options passed to dxvk-nvapi |
-| `PROTON_USE_D7VK=1` | | Use D7VK for ddraw |
+| `PROTON_ENABLE_NGX_UPDATER=1` | | Let the Nvidia driver's NGX updater (`nvngx_update.exe`) download newer DLSS versions, and make NGX use them instead of the game's DLLs |
 | `WINE_SIMULATE_WRITECOPY=1`, `PROTON_USE_WRITECOPY=1` | `writecopy` | Simulate write-copy |
 | `PROTON_USE_XALIA` | | See the shared table. Wayland turns it off |
 
@@ -216,17 +232,18 @@ The shared options `PROTON_LOG`, `WINEDEBUG` and `PROTON_REMOTE_DEBUG_CMD` apply
 
 #### Set automatically for some games
 
-The script sets these for certain app IDs: `PROTON_DEATH_STRANDING_CONTROLLER_EFFECTS`, `PROTON_DEATH_STRANDING_FORCE_ENVIRONMENT_EFFECTS`, `PROTON_ENABLE_MHWILDS_USB_AUDIO`, `PROTON_SONY_DUALSENSE_AS_DUALSHOCK4`, `PROTON_SONY_DUALSHOCK4_V2_AS_V1`, `PROTON_XINPUT_PERSISTENT_PLAYER1`, `WINE_DISABLE_EXE_ASLR`, `PROTON_PIPEWIRE_ALSA_PLUGIN`. Setting them by hand is not needed.
+The script sets these for certain app IDs: `PROTON_DEATH_STRANDING_CONTROLLER_EFFECTS`, `PROTON_DEATH_STRANDING_FORCE_ENVIRONMENT_EFFECTS`, `PROTON_ENABLE_MHWILDS_USB_AUDIO`, `PROTON_SONY_DUALSENSE_AS_DUALSHOCK4`, `PROTON_SONY_DUALSHOCK4_V2_AS_V1`, `PROTON_XINPUT_PERSISTENT_PLAYER1`, `PROTON_SONY_AUTO_XINPUT`, `PROTON_SONY_DUALSENSE_EDGE_AS_DUALSENSE` (Diablo IV, so the game recognizes a DualSense Edge), `PROTON_NATIVE_AGS` (Darktide on AMD-only systems), `WINE_IGNORE_STARTUP_SHOW_WINDOW`, `WINE_DISABLE_EXE_ASLR`, `PROTON_PIPEWIRE_ALSA_PLUGIN`. Setting them by hand is not needed.
 
 ### Best launch option and why
 
 Verified on Diablo IV under Umbriel (2026-11-21). It gives true HDR, and the Steam Controller back paddles keep working:
 
 ```
-PROTON_ADD_CONFIG=fsr4,fsr4rdna3,wow64,hdr,wayland gamemoderun %command%
+PROTON_ADD_CONFIG=fsr4,wow64,hdr,wayland gamemoderun %command%
 ```
 
-- `fsr4` swaps the game's FSR DLL for FSR4. `fsr4rdna3` is the extra GE keyword the verified line uses for an RDNA3 card. The tables above do not list it. On a GPU that is not RDNA3, try the line without it.
+- `fsr4` swaps the game's FSR DLL for FSR4. It also sets `FSR4_UPGRADE=1`, so FSR4 runs even on GPUs where it is not on by default.
+- The verified line also had `fsr4rdna3`. No script in GE 11-12 or 11-14 reads that keyword, so GE dropped it without an error. Removing it changes nothing.
 - `wow64` runs the prefix as WoW64, with no separate 32-bit Wine. If an old 32-bit game fails to start, remove it.
 - `hdr` only sets `DXVK_HDR=1`. It does not turn on Wayland, so `wayland` has to be there too, because HDR needs the native Wayland driver.
 - The compositor must advertise HDR as well: set `hdr = "auto"` on the output in Umbriel's `outputs.toml`. With `off`, the game's HDR checkbox stays greyed out whatever the launch options say.

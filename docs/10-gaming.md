@@ -66,7 +66,7 @@ Every user on a gaming host gets the same three links. Faugus and other launcher
 
 | Build | Pinned release | Upstream |
 |---|---|---|
-| Proton-GE | `GE-Proton11-12` | github.com/GloriousEggroll/proton-ge-custom |
+| Proton-GE | `GE-Proton11-14` | github.com/GloriousEggroll/proton-ge-custom |
 | Proton-CachyOS | `cachyos-11.0-20261015-slr` | github.com/CachyOS/proton-cachyos |
 | Proton-Wineland | `wineland-11.0-20261119` | github.com/nanomatters/proton-salkim (the only source of prebuilt releases) |
 

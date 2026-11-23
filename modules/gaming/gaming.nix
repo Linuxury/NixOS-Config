@@ -119,13 +119,15 @@ in
   # the actual HDR/monitor state, not just the game's HDR toggle.
   #   - proton-cachyos: _config_envvars maps wow64, dlss, xess, fsr3, fsr4,
   #     ffx3, ffx4, optiscaler; "hdr" and "wayland" are not recognized.
-  #   - proton-ge-custom: wider key set including hdr, wayland, fsr4, fsr4rdna3,
+  #   - proton-ge-custom: wider key set including hdr, wayland, fsr4,
   #     wow64, optiscaler, sdlinput. "hdr" only sets DXVK_HDR=1; it does not
   #     imply PROTON_ENABLE_WAYLAND, which is the separate "wayland" key.
   #
   # Working HDR setup with proton-ge-custom (Diablo IV, Umbriel, verified
   # 2026-11-21; HDR and the Steam Controller back paddles both work):
-  #   PROTON_ADD_CONFIG=fsr4,fsr4rdna3,wow64,hdr,wayland gamemoderun %command%
+  #   PROTON_ADD_CONFIG=fsr4,wow64,hdr,wayland gamemoderun %command%
+  #   - The verified run also had "fsr4rdna3"; no GE 11-12/11-14 script reads
+  #     it (dropped silently). "fsr4" alone sets FSR4_UPGRADE=1 (extended GPU support).
   #   - Needs `hdr = "auto"` on the output in umbriel modules/outputs.toml.
   #     With "off" the compositor never advertises HDR and the game's HDR
   #     checkbox stays greyed out, whatever the launch options say.
