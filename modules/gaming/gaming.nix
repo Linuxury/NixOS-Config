@@ -118,7 +118,9 @@ in
   # the installed build's source (grep utilities.py / proton for the token) and
   # the actual HDR/monitor state, not just the game's HDR toggle.
   #   - proton-cachyos: _config_envvars maps wow64, dlss, xess, fsr3, fsr4,
-  #     ffx3, ffx4, optiscaler; "hdr" and "wayland" are not recognized.
+  #     ffx3, ffx4, optiscaler to variables. Every other keyword still lands in
+  #     compat_config, so "wayland" works (and sets PROTON_NO_STEAMINPUT=1 by
+  #     default); "hdr" does nothing — the script has no HDR path.
   #   - proton-ge-custom: wider key set including hdr, wayland, fsr4,
   #     wow64, optiscaler, sdlinput. "hdr" only sets DXVK_HDR=1; it does not
   #     imply PROTON_ENABLE_WAYLAND, which is the separate "wayland" key.

@@ -255,41 +255,59 @@ The reasoning is in `modules/gaming/gaming.nix`.
 
 ### What it does
 
-CachyOS's performance-tuned Proton. Without any launch options it already turns on PipeWire audio, the `s:` game drive and the FSR4 upgrade. It adds low-latency DXVK and vkd3d builds and the `dxvk-sarek` fork for GPUs without Vulkan 1.3. It has no HDR option, so use GE for HDR games.
+CachyOS's performance-tuned Proton. Without any launch options it already turns on PipeWire audio, the `s:` game drive and the FSR4 upgrade. It adds low-latency DXVK and vkd3d builds, a frame-rate cap and the `dxvk-sarek` fork for GPUs without Vulkan 1.3. It has no HDR option, so use GE for HDR games. Its native Wayland mode turns Steam Input off by default.
 
 ### Launch options
 
-Reads everything in "Options all four builds read", plus the options below. CachyOS recognises only a small table of `PROTON_ADD_CONFIG` keys for value mapping (`wow64`, `dlss`, `xess`, `fsr3`, `fsr4`, `ffx3`, `ffx4`, `optiscaler`). It has no `hdr` and no `forcehdr`, so `PROTON_ADD_CONFIG=hdr` does nothing here. The script does read `wayland` as a compat keyword and as `PROTON_ENABLE_WAYLAND`.
+Reads everything in "Options all four builds read", plus the options below. Checked against `cachyos-11.0-20261015-slr`.
 
-Defaults the script turns on: `pipewire`, `gamedrive`, `fsr4`, and `dxvksarek` when the GPU does not support Vulkan 1.3 with `descriptorIndexing`.
+How CachyOS reads `PROTON_ADD_CONFIG`:
+
+- Every keyword in the list goes into the compat config, so any keyword in the tables below works there, `wayland` included.
+- Only `wow64`, `dlss`, `xess`, `fsr3`, `fsr4`, `ffx3`, `ffx4` and `optiscaler` also take a value (`fsr4=4.0.0`) and set their variable.
+- There is no `hdr` or `forcehdr` anywhere in the script, so `PROTON_ADD_CONFIG=hdr` does nothing.
+
+Defaults the script turns on:
+
+| Default | Turn it off with |
+|---|---|
+| `fsr4` (FSR4 upgrade) | `PROTON_FSR4_UPGRADE=0` |
+| `pipewire` (PipeWire audio) | `PROTON_USE_PIPEWIRE=0`. Audio then uses `pulse,alsa` |
+| `gamedrive` (game library as drive `s:`) | `PROTON_SET_GAME_DRIVE=0` |
+| `dxvksarek`, only when the GPU lacks Vulkan 1.3 with `descriptorIndexing` | `PROTON_DXVK_SAREK=0` |
 
 #### Display and Wayland
 
 | Option | Keyword | What it does |
 |---|---|---|
-| `PROTON_ENABLE_WAYLAND=1`, `PROTON_USE_WAYLAND=1` | `wayland` | Native Wayland Wine driver |
-| `PROTON_NO_WM_DECORATION=1` | `nowmdecoration` | No window-manager decoration |
+| `PROTON_ENABLE_WAYLAND=1`, `PROTON_USE_WAYLAND=1` | `wayland` | Native Wayland Wine driver, only when `WAYLAND_DISPLAY` is set. Also turns off the fullscreen hack and Xalia, turns on `WINE_MOVE_HACK`, and **sets `PROTON_NO_STEAMINPUT=1` by default**, because the script says Steam Input does not work on Wayland. Steam Controller paddles and Steam Input layouts stop working. `PROTON_NO_STEAMINPUT=0` overrides it, but the script expects it not to work |
+| `PROTON_NO_WM_DECORATION=1` | `nowmdecoration` | No window-manager decoration (`WAYLANDDRV_SSD=0`, `WINE_NO_WM_DECORATION=1`) |
 | (keyword only) | `noopwrx11` | Vulkan OPWR switch used on X11 |
 
 #### Upscaling and frame pacing
 
 | Option | Keyword | What it does |
 |---|---|---|
-| `PROTON_FSR4_UPGRADE=<1\|version>` | `fsr4` | Swap the game's FSR DLL for FSR4. The script adds `fsr4` by default |
-| `PROTON_FSR4_INDICATOR=1` | `fsr4hud` | Show an FSR4 indicator |
+| `PROTON_FSR4_UPGRADE=<1\|version>` | `fsr4` | Swap the game's FSR DLL for FSR4. The script adds `fsr4` by default. Unlike GE, it never sets `FSR4_UPGRADE=1`, so FSR4 is not forced on GPUs where it is off by default |
+| `FSR4_UPGRADE=1` | | Read by the bundled `amdxc64.dll`. Turns on FSR4 for GPUs where it is not on by default (GE calls this extended GPU support). Set it by hand here |
+| `PROTON_FSR4_INDICATOR=1` | `fsr4hud` | Show FSR4 and frame-generation watermarks (`FSR_WATERMARK`, `FSR_FG_WATERMARK`) |
 | `PROTON_FFX3_UPGRADE=1` | `ffx3` | FFX3 upgrade |
 | `PROTON_FFX4_UPGRADE=1` | `ffx4` | FFX4 upgrade |
 | `PROTON_DLSS_UPGRADE=<1\|version>` | `dlss` | Newer DLSS DLL |
 | `PROTON_DLSS_INDICATOR=1` | `dlsshud` | Show a DLSS indicator |
 | `PROTON_XESS_UPGRADE=<1\|version>` | `xess` | Newer XeSS DLL |
-| `PROTON_USE_OPTISCALER=1` | `optiscaler` | Use OptiScaler |
+| `PROTON_USE_OPTISCALER=1` | `optiscaler` | Use OptiScaler. It also enables the `dlss`, `xess`, `fsr4` and `ffx3` upgrades |
+| `PROTON_OPTISCALER_CONFIG=<Section.option=value;...>` | | Write values into `OptiScaler.ini`. Unknown options are logged and skipped |
+| `PROTON_OPTISCALER_NAME=<dll>` | | DLL name OptiScaler loads as (default `dxgi.dll`) |
+| `PROTON_OPTISCALER_STREAMLINE=<1\|version>` | | Also install a newer Streamline with OptiScaler |
+| `PROTON_FRAME_RATE=<fps>` | | Frame-rate cap. Written to `DXVK_CONFIG` as `dxgi.maxFrameRate` and `d3d9.maxFrameRate`. `DXVK_FRAME_RATE` and `VKD3D_FRAME_RATE` do the same and win if set |
 | `PROTON_NATIVE_AGS=1` | `nativeags` | Native AMD AGS DLLs |
 | `ENABLE_VKBASALT=1` | `vkbasalt` | Bundled vkBasalt layer |
 | `LOW_LATENCY_LAYER=1` | `lowlatencylayer` | Low-latency Vulkan layer |
-| `PROTON_DXVK_LOWLATENCY=1` | `dxvklowlatency` | Use the low-latency DXVK build, and turn async off |
+| `PROTON_DXVK_LOWLATENCY=1` | `dxvklowlatency` | Use the low-latency DXVK build, turn async off (`dxvk.enableAsync=False`), and also turn on `dxvkllasync` |
 | `PROTON_VKD3D_LOWLATENCY=1` | `vkd3dlowlatency` | Use the low-latency vkd3d-proton build |
 | `PROTON_DXVK_SAREK=1` | `dxvksarek` | Use the `dxvk-sarek` build (default when the GPU lacks Vulkan 1.3) |
-| (keyword only) | `dxvkllasync` | DXVK async with compiler threads and graphics pipeline libraries |
+| (keyword only) | `dxvkllasync` | DXVK shader compiler threads set to the CPU core count minus 2, and graphics pipeline libraries on `Auto` |
 | `DXVK_ASYNC` | | Set to 0 by the low-latency option |
 | `PROTON_D7VK_DDRAW=1` | `d7vkddraw` | D7VK ddraw |
 | `PROTON_LOCAL_SHADER_CACHE=1` | `localshadercache` | Per-game shader cache folder |
@@ -331,12 +349,14 @@ The shared options `PROTON_LOG`, `WINEDEBUG` and `PROTON_REMOTE_DEBUG_CMD` apply
 Not tested yet on this setup:
 
 ```
-PROTON_ENABLE_WAYLAND=1 gamemoderun %command%
+FSR4_UPGRADE=1 gamemoderun %command%
 ```
 
 - FSR4 and PipeWire are already on by default, so they do not need to be in the line.
-- Use the variable, not the `wayland` keyword. The comments in `gaming.nix` say CachyOS's `PROTON_ADD_CONFIG` table does not map `wayland`. The variable always works.
+- `FSR4_UPGRADE=1` is the part CachyOS leaves out compared with GE's `fsr4`. It turns FSR4 on for GPUs where it is not on by default. It does no harm on GPUs where FSR4 is already on. Add `PROTON_FSR4_INDICATOR=1` once to confirm FSR4 is active.
+- Leave Wayland off. In CachyOS, Wayland turns Steam Input off by default, so the Steam Controller paddles and Steam Input layouts would stop working. It also brings no HDR, so there is little to gain.
 - Leave HDR out. CachyOS has no HDR option, and `PROTON_ADD_CONFIG=hdr` is dropped without an error.
+- For a frame-rate cap without MangoHud, add `PROTON_FRAME_RATE=<fps>`.
 - If a game stutters or feels laggy, try `PROTON_DXVK_LOWLATENCY=1` for DirectX 9 to 11 games, or `PROTON_VKD3D_LOWLATENCY=1` for DirectX 12. Change one thing at a time.
 
 ## Proton-Wineland
