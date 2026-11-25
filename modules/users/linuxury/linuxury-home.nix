@@ -70,13 +70,13 @@
   #
   # Some apps (scripts, Claude Code, file managers' "Open Terminal Here",
   # language runtimes, etc.) use $BROWSER/$TERMINAL instead of xdg-open.
-  #   BROWSER   zen-beta (matches the xdg.mimeApps default below)
+  #   BROWSER   firefox (matches the xdg.mimeApps default below)
   #   TERMINAL  kitty
   # home.sessionVariables writes to ~/.config/environment.d/ so every
   # app in the systemd user session inherits them — not just shell children.
   # =========================================================================
   home.sessionVariables = {
-    BROWSER  = "zen-beta";
+    BROWSER  = "firefox";
     TERMINAL = "kitty";
   };
 
@@ -103,10 +103,10 @@
   # xdg.mimeApps.defaultApplications maps a MIME type or URL scheme to a .desktop file.
   # =========================================================================
   xdg.mimeApps.defaultApplications = {
-    "x-scheme-handler/http"  = "zen-beta.desktop";
-    "x-scheme-handler/https" = "zen-beta.desktop";
-    "text/html"              = "zen-beta.desktop";
-    "application/xhtml+xml"  = "zen-beta.desktop";
+    "x-scheme-handler/http"  = "firefox.desktop";
+    "x-scheme-handler/https" = "firefox.desktop";
+    "text/html"              = "firefox.desktop";
+    "application/xhtml+xml"  = "firefox.desktop";
   };
 
   # =========================================================================
