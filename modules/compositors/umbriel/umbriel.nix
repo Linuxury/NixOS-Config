@@ -145,7 +145,7 @@
     # Brightness control
     brightnessctl
 
-    # File manager — off: dux-files is the default on this host.
+    # File manager — off: Luciole is the default on this host (modules/system/graphical/luciole.nix).
     # Nautilus + Thunar kept below, commented, to re-enable if needed.
     # File manager — Nautilus
     #nautilus

@@ -60,6 +60,7 @@
     ../../modules/services/kdeconnect.nix
     ../../modules/system/graphical/firefox.nix
     #../../modules/system/graphical/helium.nix
+    ../../modules/system/graphical/luciole.nix
 
     # ==============================================================
     # Desktop Environment — enable ONE (includes shell + greeter)
@@ -167,20 +168,24 @@
   # ==============================================================
   networking.hostName = "Ryzen5900x";
 
-  # Dux Files: a Wayland file manager, used as the default folder handler and for Open/Save dialogs.
-  #   programs.dux-files.enable          install Dux Files and its D-Bus service (set here)
-  #   programs.dux-files.portal.enable   register Dux Files as the file-chooser portal backend (set here)
-  #   programs.dux-files.package         the package; set below to add a patch
-  #   programs.dux-files.systemd.enable  start it with the graphical session (off)
-  programs.dux-files.enable = true;
-  programs.dux-files.portal.enable = true;
-  # The Umbriel portal has no FileChooser, so Open/Save dialogs go to Dux Files ("dfiles") instead of GTK.
-  xdg.portal.config.umbriel."org.freedesktop.impl.portal.FileChooser" = [ "dfiles" ];
-  # Home Manager (every user on this host): folders open in Dux Files. mkForce overrides the
+  # Luciole (modules/system/graphical/luciole.nix) is the default file manager: it opens folders and
+  # handles Open/Save dialogs. The Umbriel portal has no FileChooser, so dialogs go to Luciole's
+  # portal backend ("luciole"), with GTK as fallback if it is missing.
+  xdg.portal.extraPortals = [ inputs.luciole.packages.${pkgs.stdenv.hostPlatform.system}.default ];
+  xdg.portal.config.umbriel."org.freedesktop.impl.portal.FileChooser" = [ "luciole" "gtk" ];
+  # Home Manager (every user on this host): folders open in Luciole. mkForce overrides the
   # mkDefault Nautilus entry set in graphical.nix.
   home-manager.sharedModules = [{
-    xdg.mimeApps.defaultApplications."inode/directory" = pkgs.lib.mkForce "dev.duxlabs.files.desktop";
+    xdg.mimeApps.defaultApplications."inode/directory" = pkgs.lib.mkForce "dev.noctalia.luciole.desktop";
   }];
+
+  # Dux Files: the previous default, kept installed as a fallback. To switch back, set
+  # portal.enable = true, the FileChooser above to [ "dfiles" ] and the mime entry to
+  # "dev.duxlabs.files.desktop".
+  #   programs.dux-files.enable          install Dux Files and its D-Bus service (set here)
+  #   programs.dux-files.portal.enable   register Dux Files as the file-chooser portal backend (off)
+  #   programs.dux-files.package         the package; set below to add a patch
+  programs.dux-files.enable = true;
   # Patch for Dux Files: Papirus folder and sidebar icons stay stale after Noctalia recolors them
   # (upstream #46). The patch reloads theme icons 1.5 s after the shell rewrites
   # ~/.cache/dms/dms-colors.json, since Noctalia retargets the folder links within about 1 s and

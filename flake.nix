@@ -175,6 +175,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # luciole — noctalia-dev's native Wayland file manager (C++/GLES, no
+    # Qt/GTK), also usable as a FileChooser portal backend. Tracks the
+    # default branch like umbriel. Used by modules/system/graphical/luciole.nix.
+    luciole = {
+      url = "github:noctalia-dev/luciole";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # bedrock-on-linux — Minecraft Bedrock (Windows/GDK) launcher. Follows
     # this flake's nixpkgs so its steam-run/Mesa match the system's GPU
     # driver (with its own nixpkgs the GPU is not used). Installed by

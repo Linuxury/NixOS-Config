@@ -290,6 +290,26 @@
         "type": "github"
       }
     },
+    "luciole": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795566555,
+        "narHash": "sha256-KtHNDr3BT1VgRr9YJggdY3hh0MJGPHOoq8u8wEXkNjI=",
+        "owner": "noctalia-dev",
+        "repo": "luciole",
+        "rev": "b7a3ec25a2fb4caba4c6ae51934e9484a37870e9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "noctalia-dev",
+        "repo": "luciole",
+        "type": "github"
+      }
+    },
     "millennium": {
       "inputs": {
         "millennium-src": "millennium-src",
@@ -585,6 +605,7 @@
         "helium-browser": "helium-browser",
         "home-manager": "home-manager",
         "impeccable": "impeccable",
+        "luciole": "luciole",
         "millennium": "millennium",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_7",

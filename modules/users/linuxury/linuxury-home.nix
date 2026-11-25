@@ -33,7 +33,7 @@
     ../../system/graphical/hytale.nix
     ../wallpapers.nix
     ../../system/graphical/nautilus.nix
-    #../../system/graphical/thunar.nix   # alternative file manager, not imported (dux-files is the default)
+    #../../system/graphical/thunar.nix   # alternative file manager, not imported (Luciole is the default)
   ];
 
   # =========================================================================
