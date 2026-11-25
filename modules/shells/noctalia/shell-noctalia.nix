@@ -104,6 +104,14 @@ in
                 input_path  = "${./dux-files/dms-colors.json}";
                 output_path = "$XDG_CACHE_HOME/dms/dms-colors.json";
               };
+            } // lib.optionalAttrs (config.programs.luciole.enable or false) {
+              # Luciole reads ~/.config/luciole/colors.toml and reloads it on
+              # write; the template ships in its package. Only on hosts that
+              # import modules/system/graphical/luciole.nix.
+              luciole = {
+                input_path  = "${config.programs.luciole.package}/share/luciole/templates/colors.toml";
+                output_path = "$XDG_CONFIG_HOME/luciole/colors.toml";
+              };
             } // lib.optionalAttrs config.hardware.openrgb.enable {
               # LED sync: render the bare primary hex, then push it to the
               # RGB hardware (see color-sync/led-sync.sh).
