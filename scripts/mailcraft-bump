@@ -5,9 +5,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 out=pkgs/mailcraft/mailcraft.json
-repo=UCS-Care-Group/mailcraft
+repo=UCSLabs/mailcraft
 
-tag=$(curl -fsS "https://api.github.com/repos/$repo/releases/latest" | jq -r .tag_name)
+tag=$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest" | jq -r .tag_name)
 version=${tag#v}
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "unexpected release tag: $tag" >&2; exit 1; }
 cur=$(jq -r .version "$out")

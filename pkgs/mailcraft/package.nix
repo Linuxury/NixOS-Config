@@ -26,7 +26,7 @@ stdenv.mkDerivation {
   inherit (pin) version;
 
   src = fetchurl {
-    url = "https://github.com/UCS-Care-Group/mailcraft/releases/download/v${pin.version}/mailcraft-${pin.version}-linux-x86_64.tar.gz";
+    url = "https://github.com/UCSLabs/mailcraft/releases/download/v${pin.version}/mailcraft-${pin.version}-linux-x86_64.tar.gz";
     inherit (pin) hash;
   };
 
