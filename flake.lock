@@ -240,11 +240,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795706770,
-        "narHash": "sha256-C1x4TKbpiWX5lRsTQFwok5te55luUM76u1d8CjplXgI=",
+        "lastModified": 1795713076,
+        "narHash": "sha256-GUY/RHSSnAJKKI3xk7xrSXrsXFgIOgFrRJOD4uub5J8=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "5ef710576b9282ff6ae21b86b9316df393592cce",
+        "rev": "361da94fb55c67094ec47322d2757d6616a0de92",
         "type": "github"
       },
       "original": {
@@ -675,11 +675,11 @@
     "upstream-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1795709110,
-        "narHash": "sha256-6tRy+iKjHErKhFJ+c1gRSsB+wqk8/0E5OOUYS1uPfVI=",
+        "lastModified": 1795718663,
+        "narHash": "sha256-7uNifv8YYoG2o2nsoqizROWd/Eoua/m9Mq29+Y14EF4=",
         "owner": "sickn33",
         "repo": "agentic-awesome-skills",
-        "rev": "8a2b684a5b34968bcd60951f854be3f9930d20b1",
+        "rev": "ca18ff485998192914e1003cbc1d7489cd1c3e65",
         "type": "github"
       },
       "original": {
