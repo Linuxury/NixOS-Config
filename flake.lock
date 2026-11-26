@@ -135,11 +135,11 @@
     "dotfiles": {
       "flake": false,
       "locked": {
-        "lastModified": 1795473522,
-        "narHash": "sha256-FfB7A2n9RDp9+NCHypkJF7L4JH1g7VDNBTJ0wYxbmnw=",
+        "lastModified": 1795677182,
+        "narHash": "sha256-gV55R5f07pll7+u1BcVpPRqXjMkoyIOt7MASS7pKuxk=",
         "owner": "Linuxury",
         "repo": "Dotfiles",
-        "rev": "9e1421b80aed1d36e060e645908f6c9a4a0d689c",
+        "rev": "5b81f8901fd9340bb73328d9a9aba1bed5efce75",
         "type": "github"
       },
       "original": {
