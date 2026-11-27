@@ -39,7 +39,9 @@
       };
 
       # Helix desktop entry — opens files in Kitty (Kitty is on every graphical host).
-      xdg.desktopEntries.helix = {
+      # Named "Helix" (capital H) to match the package's own Helix.desktop: the per-user
+      # profile comes first in XDG_DATA_DIRS, so this one shadows it and the menu shows one entry.
+      xdg.desktopEntries.Helix = {
         name        = "Helix";
         genericName = "Text Editor";
         comment     = "Modal terminal text editor";
@@ -59,12 +61,12 @@
 
       # Text files open in Helix.
       xdg.mimeApps.defaultApplications = {
-        "text/plain"                = "helix.desktop";
-        "application/json"          = "helix.desktop";
-        "application/x-yaml"        = "helix.desktop";
-        "application/toml"          = "helix.desktop";
-        "application/x-shellscript" = "helix.desktop";
-        "text/x-shellscript"        = "helix.desktop";
+        "text/plain"                = "Helix.desktop";
+        "application/json"          = "Helix.desktop";
+        "application/x-yaml"        = "Helix.desktop";
+        "application/toml"          = "Helix.desktop";
+        "application/x-shellscript" = "Helix.desktop";
+        "text/x-shellscript"        = "Helix.desktop";
       };
     })
   ];
