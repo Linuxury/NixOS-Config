@@ -322,7 +322,6 @@ in
     # Documents & office
     # -----------------------------------------------------------------------
     papers                   # GNOME document viewer — PDFs and more (GTK4, modern)
-    neovim                   # Fallback text editor — always available on every graphical host
 
     # -----------------------------------------------------------------------
     # System monitoring
