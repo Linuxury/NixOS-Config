@@ -124,11 +124,13 @@
     #   neovim   — full IDE: custom config, LSPs, opencode-nvim, claude wrapper
     #   vscodium — GUI editor: Catppuccin theme, Claude Code + OpenCode extensions
     #   zed      — fast Wayland-native editor (Rust), vim mode
+    #   helix    — modal terminal editor (hx), default config
     # ==============================================================
     ../../modules/development/editors/neovim/neovim.nix
     ../../modules/development/editors/vscodium/vscodium.nix
     ../../modules/development/editors/vscode/vscode.nix
     ../../modules/development/editors/zed.nix
+    ../../modules/development/editors/helix.nix
 
     # ==============================================================
     # Development — Languages
