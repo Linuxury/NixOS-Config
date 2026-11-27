@@ -107,11 +107,14 @@
     #../../modules/development/ai-tools/lm-studio.nix
 
     # ==============================================================
-    # Development — Editors (not a development host)
-    #   neovim   — full IDE: custom config, LSPs, opencode-nvim, claude wrapper
-    #   vscodium — GUI editor: Catppuccin theme, Claude Code + OpenCode extensions
-    #   zed      — fast Wayland-native editor (Rust), vim mode
+    # Development — Editors
+    #   vscode   — VS Code (Microsoft build), sets VISUAL="code --wait"
+    #   helix    — LSPs + "Helix" desktop entry for text files; the helix
+    #              package and EDITOR=hx come from core.nix on every host
+    #   off: neovim, vscodium, zed (uncomment to turn one back on)
     # ==============================================================
+    ../../modules/development/editors/vscode/vscode.nix
+    ../../modules/development/editors/helix.nix
     #../../modules/development/editors/neovim/neovim.nix
     #../../modules/development/editors/vscodium/vscodium.nix
     #../../modules/development/editors/zed.nix

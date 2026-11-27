@@ -329,7 +329,7 @@
     rm -f "$HOME/.local/share/applications/mimeapps.list"
   '';
 
-  # The live links (hypr, nvim, umbriel, ...) and the seeds below read from a
+  # The live links (hypr, helix, umbriel, ...) and the seeds below read from a
   # clone of Linuxury/Dotfiles at ~/dotfiles. Cloned when missing (a non-git
   # path is left alone, a failed clone only warns), never updated.
   home.activation.dotfilesClone = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
@@ -432,7 +432,7 @@
         age-rekey = "env -C ~/nixos-config/secrets nix run nixpkgs#ragenix -- -r";
 
         # Jarvis vault
-        notes = "cd ~/Jarvis && nvim .";
+        notes = "cd ~/Jarvis && hx .";
 
         # Snapper snapshot management
         snaps = "sudo snapper -c root list";
@@ -474,7 +474,7 @@
       user.name = "Linuxury";
       init.defaultBranch = "main";
       pull.rebase = false;
-      core.editor = "nvim";
+      core.editor = "hx";
       alias = {
         st = "status";
         co = "checkout";

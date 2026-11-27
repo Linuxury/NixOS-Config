@@ -367,8 +367,8 @@ in
   # their own modules, so a module that is not imported leaves no entries.
   # Per-user choices (browser) stay in each user's home.nix.
   #
-  # Also added here: keybinds.nix (shared keybinds) and an nvim desktop
-  # entry.
+  # Also added here: keybinds.nix (shared keybinds). Text files: helix.nix
+  # (Helix in Kitty).
   # =========================================================================
   home-manager.sharedModules = [
     ./keybinds.nix
@@ -435,37 +435,7 @@ in
         "application/vnd.comicbook+zip" = "org.gnome.Papers.desktop";
         "application/x-cbz"             = "org.gnome.Papers.desktop";
         "application/x-cbr"             = "org.gnome.Papers.desktop";
-
-        # -----------------------------------------------------------------------
-        # Text Editor — Neovim (fallback, lowest priority)
-        # Overridden by VSCodium (plain) or Zed (mkForce) when installed.
-        # -----------------------------------------------------------------------
-        "text/plain"             = lib.mkDefault "nvim.desktop";
-        "application/json"       = lib.mkDefault "nvim.desktop";
-        "application/x-yaml"     = lib.mkDefault "nvim.desktop";
-        "application/toml"       = lib.mkDefault "nvim.desktop";
-        "application/x-shellscript" = lib.mkDefault "nvim.desktop";
-        "text/x-shellscript"     = lib.mkDefault "nvim.desktop";
       };
-    };
-
-    # Neovim desktop entry — opens in Kitty (available on all graphical hosts)
-    xdg.desktopEntries.nvim = {
-      name        = "Neovim";
-      genericName = "Text Editor";
-      comment     = "Hyperextensible Vim-based text editor";
-      exec        = "kitty nvim %F";
-      terminal    = false;
-      categories  = [ "Utility" "TextEditor" ];
-      icon        = "nvim";
-      mimeType    = [
-        "text/plain"
-        "application/json"
-        "application/x-yaml"
-        "application/toml"
-        "application/x-shellscript"
-        "text/x-shellscript"
-      ];
     };
 
     # Replace an existing hand-edited mimeapps.list instead of failing the

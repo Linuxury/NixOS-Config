@@ -342,7 +342,9 @@
     dig          # DNS lookup tool
     rsync        # Fast file sync — local copies, remote backups, deploy scripts
 
-    # Text editors (minimal, for emergency server access)
+    # Text editors — Helix is $EDITOR on every host (set below); nano stays
+    # as a simple fallback for emergency access.
+    helix        # Modal terminal editor (hx)
     nano         # Simple editor, available on every host
     # Shell tools
     fastfetch    # System info display — useful on desktops AND servers via SSH
@@ -362,6 +364,11 @@
     # Enable Exa web search in OpenCode
     OPENCODE_ENABLE_EXA = "true";
   };
+
+  # Default terminal editor on every host (git commit, sudoedit, crontab -e).
+  # VISUAL is set by vscode.nix on graphical hosts; the ZSH repo only falls
+  # back to hx when these are unset.
+  environment.variables.EDITOR = "hx";
 
   # =========================================================================
   # POLKIT — allow wheel group to manage systemd units without interactive auth

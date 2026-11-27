@@ -122,15 +122,16 @@
 
     # ==============================================================
     # Development — Editors
-    #   neovim   — full IDE: custom config, LSPs, opencode-nvim, claude wrapper
-    #   vscodium — GUI editor: Catppuccin theme, Claude Code + OpenCode extensions
-    #   zed      — fast Wayland-native editor (Rust), vim mode
-    #   helix    — modal terminal editor (hx), Noctalia theme
+    #   vscode   — VS Code (Microsoft build), sets VISUAL="code --wait"
+    #   helix    — LSPs + "Helix" desktop entry for text files; the helix
+    #              package and EDITOR=hx come from core.nix on every host
+    #   off: neovim, vscodium, zed (uncomment to turn one back on)
     # ==============================================================
+    ../../modules/development/editors/vscode/vscode.nix
+    ../../modules/development/editors/helix.nix
     #../../modules/development/editors/neovim/neovim.nix
     #../../modules/development/editors/vscodium/vscodium.nix
-    ../../modules/development/editors/zed.nix
-    ../../modules/development/editors/helix.nix
+    #../../modules/development/editors/zed.nix
 
     # ==============================================================
     # Development — Languages
