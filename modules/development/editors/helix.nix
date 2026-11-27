@@ -13,7 +13,9 @@
 { pkgs, ... }:
 
 {
-  environment.systemPackages = [ pkgs.helix ];
+  # taplo: TOML language server; marksman: Markdown language server.
+  # Other languages reuse servers installed by the neovim/zed/language modules.
+  environment.systemPackages = with pkgs; [ helix taplo marksman ];
 
   # Live link into the ~/dotfiles clone: edits there apply on the next hx start.
   home-manager.users.linuxury = { config, ... }: {
