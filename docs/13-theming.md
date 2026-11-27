@@ -20,7 +20,6 @@ Two templates are added by this repo:
 
 | Template | What it does |
 |---|---|
-| `dux-files` | Renders Noctalia's palette into `~/.cache/dms/dms-colors.json` so the Dux Files app follows the wallpaper |
 | `led-sync` | Only when `hardware.openrgb.enable` is set on the host. Renders the primary colour as a hex and runs `led-sync` |
 
 ### led-sync

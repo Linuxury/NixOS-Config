@@ -181,21 +181,6 @@
     xdg.mimeApps.defaultApplications."inode/directory" = pkgs.lib.mkForce "dev.noctalia.luciole.desktop";
   }];
 
-  # Dux Files: the previous default, kept installed as a fallback. To switch back, set
-  # portal.enable = true, the FileChooser above to [ "dfiles" ] and the mime entry to
-  # "dev.duxlabs.files.desktop".
-  #   programs.dux-files.enable          install Dux Files and its D-Bus service (set here)
-  #   programs.dux-files.portal.enable   register Dux Files as the file-chooser portal backend (off)
-  #   programs.dux-files.package         the package; set below to add a patch
-  programs.dux-files.enable = true;
-  # Patch for Dux Files: Papirus folder and sidebar icons stay stale after Noctalia recolors them
-  # (upstream #46). The patch reloads theme icons 1.5 s after the shell rewrites
-  # ~/.cache/dms/dms-colors.json, since Noctalia retargets the folder links within about 1 s and
-  # watching the icon files themselves misses the replaced files. Remove the patch once #46 is fixed upstream.
-  programs.dux-files.package = pkgs.dux-files.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ ../../pkgs/dux-files/icon-refresh.patch ];
-  });
-
   # ==============================================================
   # Auto-update — primary host (services.nixos-auto-update)
   #   isPrimary  true (set here): this host advances the nixpkgs pin, builds from the local

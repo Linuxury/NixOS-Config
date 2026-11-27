@@ -122,7 +122,6 @@ Other packages are added by the module that uses them, so a host that does not i
 | `proton-ge-custom` | GloriousEggroll's Proton build for Steam | `modules/gaming/gaming.nix` |
 | `proton-cachyos` | CachyOS Proton build (nixpkgs has none) | `modules/gaming/gaming.nix` |
 | `proton-wineland` | Proton Wineland, a CachyOS-based Proton with Wayland improvements | `modules/gaming/gaming.nix` |
-| `dux-files` | Only `icon-refresh.patch`, applied to the nixpkgs `dux-files` package on Ryzen5900x | `hosts/Ryzen5900x/Ryzen5900x.nix` |
 | `hash-fixes.nix` | The hash overrides described above | `flake.nix` |
 
 The Proton tags and hashes live in `modules/gaming/gaming.nix`; `nru` rewrites them. See [10-gaming.md](10-gaming.md).

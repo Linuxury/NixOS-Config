@@ -128,7 +128,7 @@ All under `modules/development/`, imported per host.
 | `ai-tools/opencode.nix` | OpenCode, a terminal coding agent |
 | `ai-tools/goose.nix` | Goose, driving Claude Code through an adapter. Built from the pinned `nixpkgs-goose` input |
 
-Kitty is the primary terminal and Neovim the primary editor. Ryzen5900x uses Luciole (`modules/system/graphical/luciole.nix`) as its default file manager and file picker; `programs.dux-files` stays installed as a fallback.
+Kitty is the primary terminal and Neovim the primary editor. Ryzen5900x uses Luciole (`modules/system/graphical/luciole.nix`) as its default file manager and file picker (the only file manager installed there).
 
 Modules that exist but no host imports: `ai-tools/local-llm.nix` (Ollama on demand), `ai-tools/lm-studio.nix`.
 

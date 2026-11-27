@@ -95,16 +95,7 @@ in
           theme = {
             mode   = "dark";
             source = "wallpaper";
-            templates.user = {
-              # Dux Files reads DankMaterialShell's color handoff file
-              # (~/.cache/dms/dms-colors.json) when its Color source is "Auto".
-              # Render the same matugen-style JSON from Noctalia's palette so
-              # it follows the wallpaper. Harmless if dux-files isn't installed.
-              dux-files = {
-                input_path  = "${./dux-files/dms-colors.json}";
-                output_path = "$XDG_CACHE_HOME/dms/dms-colors.json";
-              };
-            } // lib.optionalAttrs config.hardware.openrgb.enable {
+            templates.user = lib.optionalAttrs config.hardware.openrgb.enable {
               # LED sync: render the bare primary hex, then push it to the
               # RGB hardware (see color-sync/led-sync.sh).
               led-sync = {
