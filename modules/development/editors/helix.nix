@@ -2,8 +2,9 @@
 # modules/development/editors/helix.nix — Helix
 #
 # Modal terminal editor (binary: hx). Run `hx --health` to see which LSPs it
-# finds. Only config.toml is managed (theme = noctalia); themes/noctalia.toml
-# is written by Noctalia itself, so themes/ stays unmanaged and writable.
+# finds. config.toml lives in the dotfiles repo (~/dotfiles/helix/) and is
+# linked as a single file; themes/noctalia.toml is written by Noctalia itself,
+# so themes/ stays unmanaged and writable.
 #
 # Enable per host by importing this module (remove the import to turn it off):
 #   ../../modules/development/editors/helix.nix
@@ -14,7 +15,9 @@
 {
   environment.systemPackages = [ pkgs.helix ];
 
-  home-manager.users.linuxury.xdg.configFile."helix/config.toml".text = ''
-    theme = "noctalia"
-  '';
+  # Live link into the ~/dotfiles clone: edits there apply on the next hx start.
+  home-manager.users.linuxury = { config, ... }: {
+    xdg.configFile."helix/config.toml".source =
+      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/helix/config.toml";
+  };
 }
