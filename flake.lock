@@ -135,11 +135,11 @@
     "dotfiles": {
       "flake": false,
       "locked": {
-        "lastModified": 1795816504,
-        "narHash": "sha256-/9+tVpUlfCe32Fbs4sWu+b45x+iMP7pRTvGvpkNPZqM=",
+        "lastModified": 1795817869,
+        "narHash": "sha256-WlZt+w4T2Y1AK18j7SoUDpb9QpNwqck4ec37Wt6Rbng=",
         "owner": "Linuxury",
         "repo": "Dotfiles",
-        "rev": "3bc119a4b72adfc106251249ed93a133e47c98ab",
+        "rev": "18ca9553e1548b22c24f23e14f7e6ef74895260b",
         "type": "github"
       },
       "original": {
@@ -659,11 +659,11 @@
         "xdg-desktop-portal-umbriel": "xdg-desktop-portal-umbriel"
       },
       "locked": {
-        "lastModified": 1795808916,
-        "narHash": "sha256-IPsffvsOJAFYdhkCSVfEnu2rluGKgbhl5pO/ZDoWjUE=",
+        "lastModified": 1795818150,
+        "narHash": "sha256-jPsWTETNtooGOFqGZQ2AIJWw3LLluHRCPBO13AHn7Uo=",
         "owner": "noctalia-dev",
         "repo": "umbriel",
-        "rev": "2bd1da5e24f71239ad49e374d389332756093f6e",
+        "rev": "86a49f47eb36de83cdd21e174eeb45b0d59bf451",
         "type": "github"
       },
       "original": {
