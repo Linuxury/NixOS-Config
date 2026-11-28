@@ -233,7 +233,7 @@ in
     script = ''
       # The server lists no devices until its detection finishes (~20 s max).
       for _ in $(seq 20); do
-        openrgb --client localhost:6742 --list-devices 2>/dev/null | grep -q '^0:' && break
+        openrgb --nodetect --list-devices 2>/dev/null | grep -q '^0:' && break
         sleep 1
       done
       ${ledSync}/bin/led-sync off

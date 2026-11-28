@@ -17,13 +17,17 @@
 #                 null (default) loads none. Leave it null when something
 #                 else sets the colours (Noctalia led-sync): a startup profile
 #                 is applied after device detection and overrides it.
+#                 null also switches off every ProfileManager trigger
+#                 (startup/suspend/resume/shutdown...) in the server's
+#                 /var/lib/OpenRGB/OpenRGB.json before each start: OpenRGB
+#                 1.1 keeps those GUI-set triggers there, outside the CLI flag.
 #
 # Upstream services.hardware.openrgb also offers, not set here:
 #   package       OpenRGB build to use (default pkgs.openrgb)
 #   server.port   SDK server port (default 6742)
 # ===========================================================================
 
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   cfg = config.hardware.openrgb;
@@ -57,5 +61,14 @@ in
       motherboard = cfg.motherboard;
       startupProfile = cfg.profile;
     };
+
+    # No profile: keep the server from loading any saved profile itself.
+    systemd.services.openrgb.preStart = lib.mkIf (cfg.profile == null) ''
+      f=/var/lib/OpenRGB/OpenRGB.json
+      if [ -f "$f" ] && ${pkgs.jq}/bin/jq -e '.ProfileManager' "$f" >/dev/null; then
+        ${pkgs.jq}/bin/jq '.ProfileManager |= with_entries(.value.enabled = false)' "$f" > "$f.tmp"
+        mv "$f.tmp" "$f"
+      fi
+    '';
   };
 }

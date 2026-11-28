@@ -56,10 +56,10 @@ fi
 # on the strips. Resize them before setting the colour.
 # ponytail: 120 = Aura max, real count unknown; oversizing is harmless.
 board="ASUS ROG STRIX B550-E GAMING"
-openrgb --client localhost:6742 -d "$board" -z 1 -sz 120 -d "$board" -z 2 -sz 120 >/dev/null 2>&1 || true
+openrgb --nodetect -d "$board" -z 1 -sz 120 -d "$board" -z 2 -sz 120 >/dev/null 2>&1 || true
 
 # OpenRGB: RAM, motherboard (+ ARGB headers), monitor — everything the server knows.
-openrgb --client localhost:6742 --mode static --color "$led_hex" >/dev/null 2>&1 || true
+openrgb --nodetect --mode static --color "$led_hex" >/dev/null 2>&1 || true
 
 # Lemokey P1 HE (wired): VIA raw-HID interface = usage page 0xFF60.
 # 07 03 02 01 = rgb_matrix effect -> solid color; 07 03 04 HH SS = hue, sat.
