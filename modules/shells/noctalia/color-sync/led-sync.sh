@@ -9,8 +9,17 @@
 # Targets: every device the local OpenRGB server knows (port 6742), and a
 # wired Lemokey P1 HE keyboard over VIA raw HID. Each step ignores errors, so
 # a missing server or keyboard is skipped.
+#
+# `led-sync off` skips the palette: OpenRGB devices go black and the keyboard
+# white. Run by rgb-off.service at boot and by powerManagement before
+# suspend/shutdown (shell-noctalia.nix).
 
 min_sat="${LED_MIN_SAT:-200}"
+
+if [ "${1:-}" = off ]; then
+  # Known idle state: OpenRGB devices black, keyboard white (sat 0).
+  led_hex=000000 qmk_hue=0 qmk_sat=0
+else
 hex=$(tr -dc '0-9a-fA-F' < "${XDG_CACHE_HOME:-$HOME/.cache}/noctalia/led-color")
 
 # hex -> HSV -> boosted hex + QMK hue/sat (both 0-255)
@@ -40,6 +49,7 @@ read -r led_hex qmk_hue qmk_sat < <(awk -v hex="$hex" -v min_sat="$min_sat" 'BEG
   printf "%02x%02x%02x %d %d\n", (R + m) * 255 + 0.5, (G + m) * 255 + 0.5, (B + m) * 255 + 0.5,
     int(h / 360 * 255 + 0.5) % 256, int(s * 255 + 0.5)
 }')
+fi
 
 # The ASUS Aura ARGB headers (zones 1 and 2) start as 0-LED zones because the
 # OpenRGB server ignores saved sizes, so the board's own effect keeps running

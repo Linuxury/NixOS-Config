@@ -16,7 +16,9 @@
 #     session menu, plugins, hooks; see each block below). The
 #     wallpaper_changed hook writes ~/.local/share/current-wallpaper so the
 #     matugen path unit (themes/theme-matugen.nix) runs.
-#   - led-sync template                 on hosts with hardware.openrgb.enable
+#   - led-sync template                 on hosts with hardware.openrgb.enable,
+#     plus the idle state: rgb-off.service (boot, before the greeter) and
+#     powerManagement hooks (off before suspend/shutdown, palette on resume)
 #   - greeters/greeter-noctalia.nix     noctalia-greeter (greetd), imported
 #     here so hosts need no separate greeter import; unlike wayle it does
 #     not need greeters/sddm.
@@ -43,7 +45,7 @@
 # plus greeters/sddm.
 # ===========================================================================
 
-{ config, inputs, pkgs, ... }:
+{ config, inputs, lib, pkgs, ... }:
 
 let
   # Pushes the palette's primary color to OpenRGB devices + the Lemokey
@@ -214,4 +216,37 @@ in
     })
 
   ];
+
+  # =========================================================================
+  # RGB idle state: off (keyboard white) until login, before suspend and at
+  # shutdown; the led-sync template recolors at login and on palette change.
+  # =========================================================================
+  systemd.services.rgb-off = lib.mkIf config.hardware.openrgb.enable {
+    description = "Turn RGB lighting off until login";
+    wantedBy = [ "multi-user.target" ];
+    after    = [ "openrgb.service" ];
+    wants    = [ "openrgb.service" ];
+    # Before the greeter, so it can never override login's led-sync.
+    before   = [ "display-manager.service" ];
+    path     = [ config.services.hardware.openrgb.package ];
+    serviceConfig = { Type = "oneshot"; TimeoutStartSec = 30; };
+    script = ''
+      # The server lists no devices until its detection finishes (~20 s max).
+      for _ in $(seq 20); do
+        openrgb --client localhost:6742 --list-devices 2>/dev/null | grep -q '^0:' && break
+        sleep 1
+      done
+      ${ledSync}/bin/led-sync off
+    '';
+  };
+
+  powerManagement = lib.mkIf config.hardware.openrgb.enable {
+    # Runs before suspend/hibernate and at shutdown.
+    powerDownCommands = "${ledSync}/bin/led-sync off || true";
+    # Re-apply the most recent palette color (newest user cache wins).
+    resumeCommands = ''
+      f=$(ls -t /home/*/.cache/noctalia/led-color 2>/dev/null | head -n1)
+      [ -n "$f" ] && XDG_CACHE_HOME=''${f%/noctalia/led-color} ${ledSync}/bin/led-sync || true
+    '';
+  };
 }
